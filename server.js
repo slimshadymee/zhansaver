@@ -4,13 +4,170 @@ const path = require('path');
 const fs = require('fs');
 
 const app = express();
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
+
+// ─── Telegram Bot ─────────────────────────────────────────────────────────────
+const TG_TOKEN = process.env.TG_TOKEN || '8252644018:AAGOkyp67N0Myv0o-_LWfSpieGtYba6if0w';
+const TG_API = `https://api.telegram.org/bot${TG_TOKEN}`;
+
+let lastUpdateId = 0;
+
+// Отправить текст в Telegram
+async function tgSend(chatId, text) {
+  await axios.post(`${TG_API}/sendMessage`, { chat_id: chatId, text });
+}
+
+// Отправить фото в Telegram по URL
+async function tgSendPhoto(chatId, url) {
+  const response = await axios.get(url, {
+    headers: { ...getHeaders(), 'Accept': 'image/*, */*' },
+    responseType: 'arraybuffer',
+    timeout: 60000,
+  });
+  const buffer = Buffer.from(response.data);
+  const FormData = require('form-data');
+  const form = new FormData();
+  form.append('chat_id', String(chatId));
+  form.append('photo', buffer, { filename: 'photo.jpg', contentType: 'image/jpeg' });
+  await axios.post(`${TG_API}/sendPhoto`, form, { headers: form.getHeaders(), timeout: 60000 });
+}
+
+// Отправить видео в Telegram по URL
+async function tgSendVideo(chatId, url) {
+  const response = await axios.get(url, {
+    headers: { ...getHeaders(), 'Accept': 'video/*, */*' },
+    responseType: 'arraybuffer',
+    timeout: 120000,
+  });
+  const buffer = Buffer.from(response.data);
+  const FormData = require('form-data');
+  const form = new FormData();
+  form.append('chat_id', String(chatId));
+  form.append('video', buffer, { filename: 'video.mp4', contentType: 'video/mp4' });
+  await axios.post(`${TG_API}/sendVideo`, form, { headers: form.getHeaders(), timeout: 120000 });
+}
+
+// Отправить медиагруппу (несколько фото/видео)
+async function tgSendMediaGroup(chatId, mediaItems) {
+  const FormData = require('form-data');
+
+  // Telegram mediaGroup поддерживает до 10 файлов
+  const chunks = [];
+  for (let i = 0; i < mediaItems.length; i += 10) {
+    chunks.push(mediaItems.slice(i, i + 10));
+  }
+
+  for (const chunk of chunks) {
+    const form = new FormData();
+    const mediaJson = [];
+
+    for (let i = 0; i < chunk.length; i++) {
+      const item = chunk[i];
+      const response = await axios.get(item.url, {
+        headers: { ...getHeaders(), 'Accept': '*/*' },
+        responseType: 'arraybuffer',
+        timeout: 120000,
+      });
+      const buffer = Buffer.from(response.data);
+      const fieldName = `file${i}`;
+      const ext = item.type === 'video' ? 'mp4' : 'jpg';
+      const ct = item.type === 'video' ? 'video/mp4' : 'image/jpeg';
+      form.append(fieldName, buffer, { filename: `media_${i+1}.${ext}`, contentType: ct });
+      mediaJson.push({ type: item.type === 'video' ? 'video' : 'photo', media: `attach://${fieldName}` });
+    }
+
+    form.append('chat_id', String(chatId));
+    form.append('media', JSON.stringify(mediaJson));
+    await axios.post(`${TG_API}/sendMediaGroup`, form, { headers: form.getHeaders(), timeout: 180000 });
+  }
+}
+
+// Получить медиа из Instagram и отправить в Telegram
+async function handleTgMessage(chatId, text) {
+  const shortcode = getShortcode(text);
+  if (!shortcode) {
+    await tgSend(chatId, '❌ Не вижу ссылку на Instagram. Отправь ссылку вида:\nhttps://www.instagram.com/p/ABC123/');
+    return;
+  }
+
+  await tgSend(chatId, '⏳ Скачиваю...');
+
+  const errors = [];
+  const methods = [
+    { name: 'API ?__a=1', fn: () => tryApiA1(shortcode) },
+    { name: 'GraphQL v2', fn: () => tryGraphQL2(shortcode) },
+    { name: 'GraphQL v1', fn: () => tryGraphQL(shortcode) },
+    { name: 'HTML Parser', fn: () => tryHtmlParse(shortcode) },
+  ];
+
+  let media = null;
+  for (const method of methods) {
+    try {
+      const result = await method.fn();
+      if (result?.length > 0) { media = result; break; }
+    } catch (err) {
+      errors.push(`${method.name}: ${err.message}`);
+    }
+  }
+
+  if (!media) {
+    await tgSend(chatId, '❌ Не удалось получить медиа. Возможно пост приватный или куки устарели.');
+    return;
+  }
+
+  try {
+    if (media.length === 1) {
+      if (media[0].type === 'video') {
+        await tgSendVideo(chatId, media[0].url);
+      } else {
+        await tgSendPhoto(chatId, media[0].url);
+      }
+    } else {
+      await tgSendMediaGroup(chatId, media);
+    }
+    await tgSend(chatId, `✅ Готово! Отправил ${media.length} файл(ов).`);
+  } catch (err) {
+    await tgSend(chatId, '❌ Ошибка при отправке файлов: ' + err.message);
+  }
+}
+
+// Long polling — получаем обновления от Telegram
+async function pollTelegram() {
+  while (true) {
+    try {
+      const res = await axios.get(`${TG_API}/getUpdates`, {
+        params: { offset: lastUpdateId + 1, timeout: 30, allowed_updates: ['message'] },
+        timeout: 35000,
+      });
+      const updates = res.data.result || [];
+      for (const update of updates) {
+        lastUpdateId = update.update_id;
+        const msg = update.message;
+        if (!msg || !msg.text) continue;
+        const chatId = msg.chat.id;
+        const text = msg.text.trim();
+
+        // Обрабатываем в фоне чтобы не блокировать polling
+        handleTgMessage(chatId, text).catch(e => console.error('[TG] Error:', e.message));
+      }
+    } catch (err) {
+      if (!err.message.includes('timeout')) {
+        console.error('[TG] Poll error:', err.message);
+      }
+      await new Promise(r => setTimeout(r, 3000));
+    }
+  }
+}
 
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
 // ─── Загрузка куки из config.json ───────────────────────────────────────────
 function getCookie() {
+  try {
+    const cookie = process.env.COOKIE || '';
+    if (cookie.length > 10) return cookie;
+  } catch {}
   try {
     const config = JSON.parse(fs.readFileSync(path.join(__dirname, 'config.json'), 'utf8'));
     const cookie = config.cookie || '';
@@ -87,7 +244,7 @@ function findMediaInJson(obj, results, depth = 0) {
   }
 }
 
-// ─── Метод 1: API ?__a=1 (работает с куками) ────────────────────────────────
+// ─── Метод 1: API ?__a=1 ────────────────────────────────────────────────────
 async function tryApiA1(shortcode) {
   const url = `https://www.instagram.com/p/${shortcode}/?__a=1&__d=dis`;
   const res = await axios.get(url, { headers: getHeaders(), timeout: 10000 });
@@ -113,7 +270,6 @@ async function tryGraphQL(shortcode) {
 // ─── Метод 3: Новый GraphQL endpoint ─────────────────────────────────────────
 async function tryGraphQL2(shortcode) {
   const headers = getHeaders();
-  // Получаем csrftoken из куки
   const cookie = getCookie() || '';
   const csrfMatch = cookie.match(/csrftoken=([^;]+)/);
   const csrf = csrfMatch ? csrfMatch[1] : 'missing';
@@ -150,26 +306,19 @@ async function tryHtmlParse(shortcode) {
   };
   const res = await axios.get(`https://www.instagram.com/p/${shortcode}/`, { headers, timeout: 12000 });
   const html = res.data;
-
   const media = [];
 
-  // og:image
   for (const m of html.matchAll(/property="og:image"\s+content="([^"]+)"/g)) {
     const u = m[1].replace(/&amp;/g, '&');
     if (!media.find(r => r.url === u)) media.push({ url: u, type: 'image' });
   }
-  // og:video
   for (const m of html.matchAll(/property="og:video(?::url)?"\s+content="([^"]+)"/g)) {
     const u = m[1].replace(/&amp;/g, '&');
     if (!media.find(r => r.url === u)) media.push({ url: u, type: 'video' });
   }
-
-  // JSON в script тегах
   for (const m of html.matchAll(/<script type="application\/json"[^>]*>([\s\S]*?)<\/script>/g)) {
     try { findMediaInJson(JSON.parse(m[1]), media); } catch {}
   }
-
-  // window.__additionalDataLoaded
   const addDataMatch = html.match(/window\.__additionalDataLoaded\s*\([^,]+,\s*({.+?})\s*\);/s);
   if (addDataMatch) {
     try { findMediaInJson(JSON.parse(addDataMatch[1]), media); } catch {}
@@ -179,16 +328,13 @@ async function tryHtmlParse(shortcode) {
   return media;
 }
 
-// ─── Прокси для скачивания (обходит CORS) ────────────────────────────────────
+// ─── Прокси для скачивания ────────────────────────────────────────────────────
 app.get('/proxy', async (req, res) => {
   const { url } = req.query;
   if (!url) return res.status(400).send('No URL');
   try {
     const response = await axios.get(url, {
-      headers: {
-        ...getHeaders(),
-        'Accept': 'image/*, video/*, */*',
-      },
+      headers: { ...getHeaders(), 'Accept': 'image/*, video/*, */*' },
       responseType: 'stream',
       timeout: 60000,
     });
@@ -196,9 +342,7 @@ app.get('/proxy', async (req, res) => {
     const ext = ct.includes('video') ? 'mp4' : 'jpg';
     res.setHeader('Content-Type', ct);
     res.setHeader('Content-Disposition', `attachment; filename="instagram_${Date.now()}.${ext}"`);
-    if (response.headers['content-length']) {
-      res.setHeader('Content-Length', response.headers['content-length']);
-    }
+    if (response.headers['content-length']) res.setHeader('Content-Length', response.headers['content-length']);
     response.data.pipe(res);
   } catch (err) {
     res.status(500).send(err.message);
@@ -207,8 +351,7 @@ app.get('/proxy', async (req, res) => {
 
 // ─── Статус куки ──────────────────────────────────────────────────────────────
 app.get('/api/status', (req, res) => {
-  const cookie = getCookie();
-  res.json({ hasCookie: !!cookie });
+  res.json({ hasCookie: !!getCookie() });
 });
 
 // ─── Сохранить куки ───────────────────────────────────────────────────────────
@@ -264,12 +407,16 @@ app.post('/api/fetch', async (req, res) => {
   });
 });
 
+// ─── Запуск ───────────────────────────────────────────────────────────────────
 app.listen(PORT, () => {
-  const hasCookie = !!getCookie();
   console.log(`\n✅ InstaLoader запущен: http://localhost:${PORT}`);
-  if (!hasCookie) {
-    console.log(`⚠️  Куки не настроены. Открой http://localhost:${PORT} и вставь куки в настройках.\n`);
+  if (!getCookie()) {
+    console.log(`⚠️  Куки не настроены.\n`);
   } else {
-    console.log(`🍪 Куки загружены — работаем с авторизацией!\n`);
+    console.log(`🍪 Куки загружены!\n`);
   }
 });
+
+// Запускаем Telegram бота
+pollTelegram().then(() => {}).catch(console.error);
+console.log(`🤖 Telegram бот запущен!`);

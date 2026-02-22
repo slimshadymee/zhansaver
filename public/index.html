@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
-  <title>ZHANDEV SAVER</title>
+  <title>ZHANSAVER</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@700;800&display=swap" rel="stylesheet">
   <style>
@@ -290,6 +290,27 @@
     }
 
     .btn-dl-all:hover { opacity: 0.82; }
+
+    .btn-tg {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 9px 16px;
+      background: transparent;
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 9px;
+      font-size: 0.8rem;
+      font-family: 'Syne', sans-serif;
+      font-weight: 800;
+      cursor: pointer;
+      transition: background 0.15s, border-color 0.15s;
+      letter-spacing: -0.01em;
+      text-decoration: none;
+      white-space: nowrap;
+    }
+
+    .btn-tg:hover { background: var(--surface2); border-color: #444; }
 
     /* ── MEDIA GRID ── */
     .media-grid {
@@ -606,7 +627,7 @@
       <circle cx="17.5" cy="6.5" r="1" fill="white" stroke="none"/>
     </svg>
   </div>
-  <h1>ZHANDEV SAVER</h1>
+  <h1>ZHANSAVER</h1>
   <p class="tagline">Скачивай фото и видео из Instagram</p>
 
   <div class="cookie-banner" id="cookieBanner" style="margin: 0 auto 20px;">
@@ -770,7 +791,37 @@
         dlBtn.textContent = '✓ Загружается';
         setTimeout(() => { dlBtn.className = 'btn-dl'; dlBtn.innerHTML = `${DL_ICON} Скачать`; }, 3000);
       };
-      wrap.appendChild(dlBtn);
+
+      const shareBtn = document.createElement('button');
+      shareBtn.className = 'btn-tg';
+      shareBtn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.894 8.221-1.97 9.28c-.145.658-.537.818-1.084.508l-3-2.21-1.447 1.394c-.16.16-.295.295-.605.295l.213-3.053 5.56-5.023c.242-.213-.054-.333-.373-.12L7.17 13.5l-2.95-.924c-.64-.204-.654-.64.136-.954l11.5-4.432c.534-.194 1.003.131.838.931z"/></svg> Поделиться`;
+      shareBtn.onclick = async () => {
+        if (!navigator.share) { showToast('Поделиться доступно только на мобильном'); return; }
+        shareBtn.disabled = true;
+        shareBtn.style.opacity = '0.5';
+        showToast('Загружаем файл...');
+        try {
+          const res = await fetch(`/proxy?url=${encodeURIComponent(item.url)}`);
+          const blob = await res.blob();
+          const file = new File([blob], `instagram_${shortcode}.${ext}`, { type: blob.type });
+          if (navigator.canShare && navigator.canShare({ files: [file] })) {
+            await navigator.share({ files: [file], title: 'Instagram медиа' });
+          } else {
+            showToast('Браузер не поддерживает отправку файлов');
+          }
+        } catch (e) {
+          if (e.name !== 'AbortError') showToast('Ошибка: ' + e.message);
+        } finally {
+          shareBtn.disabled = false;
+          shareBtn.style.opacity = '1';
+        }
+      };
+
+      const btnRow = document.createElement('div');
+      btnRow.style.cssText = 'display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:center;';
+      btnRow.appendChild(dlBtn);
+      btnRow.appendChild(shareBtn);
+      wrap.appendChild(btnRow);
       results.appendChild(wrap);
     } else {
       const header = document.createElement('div');
@@ -784,8 +835,43 @@
       dlAll.onclick = () => media.forEach((item, i) =>
         setTimeout(() => download(item.url, `instagram_${shortcode}_${i+1}.${item.type==='video'?'mp4':'jpg'}`), i * 700)
       );
+
+      const tgBtn = document.createElement('button');
+      tgBtn.className = 'btn-tg';
+      tgBtn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.894 8.221-1.97 9.28c-.145.658-.537.818-1.084.508l-3-2.21-1.447 1.394c-.16.16-.295.295-.605.295l.213-3.053 5.56-5.023c.242-.213-.054-.333-.373-.12L7.17 13.5l-2.95-.924c-.64-.204-.654-.64.136-.954l11.5-4.432c.534-.194 1.003.131.838.931z"/></svg> Поделиться`;
+      tgBtn.onclick = async () => {
+        if (!navigator.share) { showToast('Поделиться доступно только на мобильном'); return; }
+        tgBtn.disabled = true;
+        tgBtn.style.opacity = '0.5';
+        showToast('Загружаем файлы...');
+        try {
+          const files = await Promise.all(media.map(async (item, i) => {
+            const ext = item.type === 'video' ? 'mp4' : 'jpg';
+            const res = await fetch(`/proxy?url=${encodeURIComponent(item.url)}`);
+            const blob = await res.blob();
+            return new File([blob], `instagram_${shortcode}_${i+1}.${ext}`, { type: blob.type });
+          }));
+          if (navigator.canShare && navigator.canShare({ files })) {
+            await navigator.share({ files, title: 'Instagram медиа' });
+          } else {
+            // fallback — шарим только первый файл
+            await navigator.share({ files: [files[0]], title: 'Instagram медиа' });
+          }
+        } catch (e) {
+          if (e.name !== 'AbortError') showToast('Ошибка: ' + e.message);
+        } finally {
+          tgBtn.disabled = false;
+          tgBtn.style.opacity = '1';
+        }
+      };
+
+      const btnGroup = document.createElement('div');
+      btnGroup.style.cssText = 'display:flex;gap:8px;align-items:center;flex-wrap:wrap;';
+      btnGroup.appendChild(dlAll);
+      btnGroup.appendChild(tgBtn);
+
       header.appendChild(title);
-      header.appendChild(dlAll);
+      header.appendChild(btnGroup);
       results.appendChild(header);
 
       const grid = document.createElement('div');
