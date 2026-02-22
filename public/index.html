@@ -1,0 +1,857 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
+  <title>ZHANDEV SAVER</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@700;800&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #000;
+      --surface: #111;
+      --surface2: #1a1a1a;
+      --border: #2a2a2a;
+      --border-active: #fff;
+      --text: #fff;
+      --text-muted: #666;
+      --text-dim: #999;
+      --accent: #fff;
+      --btn-bg: #fff;
+      --btn-text: #000;
+      --danger: #ff3b3b;
+      --success: #3bff8a;
+      --radius: 12px;
+    }
+
+    html { font-size: 16px; }
+
+    body {
+      min-height: 100vh;
+      background: var(--bg);
+      font-family: 'Space Mono', monospace;
+      color: var(--text);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding-bottom: 60px;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ── HEADER ── */
+    .header {
+      width: 100%;
+      max-width: 640px;
+      padding: 40px 20px 0;
+      text-align: center;
+    }
+
+    .logo-mark {
+      display: inline-block;
+      width: 44px;
+      height: 44px;
+      border: 2px solid var(--text);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 16px;
+    }
+
+    .logo-mark svg { display: block; }
+
+    h1 {
+      font-family: 'Syne', sans-serif;
+      font-weight: 800;
+      font-size: clamp(1.6rem, 7vw, 2.2rem);
+      letter-spacing: -0.03em;
+      color: var(--text);
+      line-height: 1;
+      margin-bottom: 8px;
+    }
+
+    .tagline {
+      color: var(--text-muted);
+      font-size: 0.78rem;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      margin-bottom: 28px;
+    }
+
+    /* ── COOKIE BANNER ── */
+    .cookie-banner {
+      width: 100%;
+      max-width: 640px;
+      margin: 0 20px 16px;
+      padding: 12px 14px;
+      background: transparent;
+      border: 1px solid var(--danger);
+      border-radius: var(--radius);
+      font-size: 0.75rem;
+      color: var(--danger);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .cookie-banner.ok {
+      border-color: var(--success);
+      color: var(--success);
+    }
+
+    .btn-setup {
+      padding: 6px 12px;
+      background: transparent;
+      border: 1px solid currentColor;
+      color: inherit;
+      border-radius: 8px;
+      font-size: 0.72rem;
+      font-family: 'Space Mono', monospace;
+      font-weight: 700;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: background 0.15s, color 0.15s;
+      letter-spacing: 0.02em;
+    }
+
+    .btn-setup:hover { background: rgba(255,255,255,0.08); }
+
+    /* ── SEARCH AREA ── */
+    .search-area {
+      width: 100%;
+      max-width: 640px;
+      padding: 0 20px;
+    }
+
+    .input-row {
+      display: flex;
+      gap: 8px;
+      width: 100%;
+    }
+
+    .input-group {
+      flex: 1;
+      display: flex;
+      background: var(--surface);
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      transition: border-color 0.2s;
+    }
+
+    .input-group:focus-within {
+      border-color: var(--border-active);
+    }
+
+    input[type="text"] {
+      flex: 1;
+      padding: 14px 14px;
+      background: transparent;
+      border: none;
+      color: var(--text);
+      font-size: 0.875rem;
+      font-family: 'Space Mono', monospace;
+      outline: none;
+      min-width: 0;
+    }
+
+    input[type="text"]::placeholder { color: var(--text-muted); }
+
+    .btn-paste {
+      padding: 0 14px;
+      background: transparent;
+      border: none;
+      border-left: 1px solid var(--border);
+      color: var(--text-muted);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: color 0.15s, background 0.15s;
+      flex-shrink: 0;
+    }
+
+    .btn-paste:hover {
+      color: var(--text);
+      background: rgba(255,255,255,0.05);
+    }
+
+    .btn-paste:active { background: rgba(255,255,255,0.1); }
+
+    .btn-paste svg { display: block; }
+
+    .btn-fetch {
+      padding: 14px 20px;
+      background: var(--btn-bg);
+      color: var(--btn-text);
+      border: none;
+      border-radius: var(--radius);
+      font-size: 0.875rem;
+      font-family: 'Syne', sans-serif;
+      font-weight: 800;
+      cursor: pointer;
+      white-space: nowrap;
+      letter-spacing: -0.01em;
+      transition: opacity 0.15s, transform 0.1s;
+      flex-shrink: 0;
+    }
+
+    .btn-fetch:hover { opacity: 0.85; }
+    .btn-fetch:active { transform: scale(0.97); }
+    .btn-fetch:disabled { opacity: 0.35; cursor: not-allowed; transform: none; }
+
+    /* ── STATUS ── */
+    .status {
+      width: 100%;
+      max-width: 640px;
+      padding: 0 20px;
+      margin-top: 12px;
+      display: none;
+    }
+
+    .status-inner {
+      padding: 12px 14px;
+      border-radius: var(--radius);
+      font-size: 0.8rem;
+      line-height: 1.5;
+    }
+
+    .status.loading { display: block; }
+    .status.loading .status-inner {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--text-dim);
+    }
+
+    .status.error { display: block; }
+    .status.error .status-inner {
+      background: rgba(255,59,59,0.08);
+      border: 1px solid rgba(255,59,59,0.3);
+      color: var(--danger);
+    }
+
+    /* ── DIVIDER ── */
+    .divider {
+      width: calc(100% - 40px);
+      max-width: 640px;
+      height: 1px;
+      background: var(--border);
+      margin: 28px 0;
+      display: none;
+    }
+
+    .divider.show { display: block; }
+
+    /* ── RESULTS ── */
+    .results {
+      width: 100%;
+      max-width: 900px;
+      padding: 0 20px;
+      display: none;
+    }
+
+    .results.show { display: block; }
+
+    .results-header {
+      max-width: 640px;
+      margin: 0 auto 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .results-title {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .btn-dl-all {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 9px 16px;
+      background: var(--btn-bg);
+      color: var(--btn-text);
+      border: none;
+      border-radius: 9px;
+      font-size: 0.8rem;
+      font-family: 'Syne', sans-serif;
+      font-weight: 800;
+      cursor: pointer;
+      transition: opacity 0.15s;
+      letter-spacing: -0.01em;
+    }
+
+    .btn-dl-all:hover { opacity: 0.82; }
+
+    /* ── MEDIA GRID ── */
+    .media-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(min(100%, 240px), 1fr));
+      gap: 12px;
+    }
+
+    .media-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      transition: border-color 0.2s;
+    }
+
+    .media-card:hover { border-color: #444; }
+
+    .media-thumb {
+      position: relative;
+      aspect-ratio: 1;
+      background: var(--surface2);
+      overflow: hidden;
+    }
+
+    .media-thumb img,
+    .media-thumb video {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    .media-badge {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      padding: 3px 8px;
+      background: rgba(0,0,0,0.85);
+      border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 20px;
+      font-size: 0.68rem;
+      font-weight: 700;
+      color: var(--text);
+      letter-spacing: 0.05em;
+    }
+
+    .media-footer {
+      padding: 11px 13px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      border-top: 1px solid var(--border);
+    }
+
+    .media-index {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+
+    .btn-dl {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      padding: 7px 13px;
+      background: var(--btn-bg);
+      color: var(--btn-text);
+      border: none;
+      border-radius: 8px;
+      font-size: 0.75rem;
+      font-family: 'Syne', sans-serif;
+      font-weight: 800;
+      cursor: pointer;
+      transition: opacity 0.15s;
+      letter-spacing: -0.01em;
+    }
+
+    .btn-dl:hover { opacity: 0.8; }
+
+    .btn-dl.done {
+      background: var(--success);
+      color: #000;
+    }
+
+    /* ── SINGLE MEDIA ── */
+    .single-media {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .single-media img,
+    .single-media video {
+      max-width: 480px;
+      width: 100%;
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+    }
+
+    .single-media video { max-height: 560px; }
+
+    /* ── MODAL ── */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.92);
+      z-index: 1000;
+      align-items: flex-end;
+      justify-content: center;
+      padding: 0;
+    }
+
+    @media (min-width: 480px) {
+      .modal-overlay { align-items: center; padding: 20px; }
+    }
+
+    .modal-overlay.show { display: flex; }
+
+    .modal {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 20px 20px 0 0;
+      padding: 24px 20px;
+      width: 100%;
+      max-width: 560px;
+      max-height: 90vh;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    @media (min-width: 480px) {
+      .modal { border-radius: 16px; padding: 28px; }
+    }
+
+    .modal-handle {
+      width: 36px;
+      height: 4px;
+      background: var(--border);
+      border-radius: 2px;
+      margin: 0 auto 20px;
+    }
+
+    @media (min-width: 480px) { .modal-handle { display: none; } }
+
+    .modal h2 {
+      font-family: 'Syne', sans-serif;
+      font-weight: 800;
+      font-size: 1.1rem;
+      margin-bottom: 8px;
+      letter-spacing: -0.02em;
+    }
+
+    .modal p {
+      color: var(--text-muted);
+      font-size: 0.78rem;
+      line-height: 1.7;
+      margin-bottom: 16px;
+    }
+
+    .steps-mini {
+      list-style: none;
+      margin-bottom: 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .steps-mini li {
+      color: var(--text-dim);
+      font-size: 0.78rem;
+      line-height: 1.6;
+      padding-left: 22px;
+      position: relative;
+    }
+
+    .steps-mini li::before {
+      content: attr(data-n);
+      position: absolute;
+      left: 0;
+      color: var(--text);
+      font-weight: 700;
+    }
+
+    .steps-mini li strong { color: var(--text); }
+
+    textarea {
+      width: 100%;
+      min-height: 80px;
+      background: var(--bg);
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--text);
+      font-size: 0.75rem;
+      padding: 12px;
+      resize: vertical;
+      outline: none;
+      font-family: 'Space Mono', monospace;
+      line-height: 1.5;
+      transition: border-color 0.2s;
+    }
+
+    textarea:focus { border-color: var(--border-active); }
+    textarea::placeholder { color: var(--text-muted); }
+
+    .modal-actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 14px;
+    }
+
+    .btn-save {
+      flex: 1;
+      padding: 13px;
+      background: var(--btn-bg);
+      color: var(--btn-text);
+      border: none;
+      border-radius: var(--radius);
+      font-size: 0.9rem;
+      font-family: 'Syne', sans-serif;
+      font-weight: 800;
+      cursor: pointer;
+      transition: opacity 0.15s;
+      letter-spacing: -0.02em;
+    }
+
+    .btn-save:hover { opacity: 0.85; }
+
+    .btn-cancel {
+      padding: 13px 18px;
+      background: transparent;
+      color: var(--text-muted);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      font-size: 0.9rem;
+      font-family: 'Space Mono', monospace;
+      cursor: pointer;
+      transition: background 0.15s, color 0.15s;
+    }
+
+    .btn-cancel:hover { background: var(--surface2); color: var(--text); }
+
+    /* ── MOBILE TWEAKS ── */
+    @media (max-width: 480px) {
+      .header { padding-top: 28px; }
+      .btn-fetch { padding: 14px 16px; font-size: 0.8rem; }
+      input[type="text"] { font-size: 0.8rem; }
+      .media-grid { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+    }
+
+    @media (max-width: 360px) {
+      .media-grid { grid-template-columns: 1fr; }
+    }
+
+    /* ── TOAST ── */
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%) translateY(80px);
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 10px 18px;
+      border-radius: 100px;
+      font-size: 0.78rem;
+      z-index: 2000;
+      transition: transform 0.25s cubic-bezier(0.34,1.56,0.64,1), opacity 0.2s;
+      opacity: 0;
+      white-space: nowrap;
+    }
+
+    .toast.show {
+      transform: translateX(-50%) translateY(0);
+      opacity: 1;
+    }
+  </style>
+</head>
+<body>
+
+<!-- MODAL -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <h2>Настройка куки</h2>
+    <p>Куки нужны чтобы сервер мог авторизоваться в Instagram. Без них Instagram блокирует запросы.</p>
+    <ul class="steps-mini">
+      <li data-n="1">Открой <strong>instagram.com</strong> в Chrome</li>
+      <li data-n="2">Нажми <strong>F12</strong> → вкладка <strong>Network</strong></li>
+      <li data-n="3">Обнови страницу (<strong>F5</strong>)</li>
+      <li data-n="4">Кликни на любой запрос к <strong>instagram.com</strong></li>
+      <li data-n="5">Справа найди <strong>Request Headers → Cookie</strong></li>
+      <li data-n="6">Скопируй всю строку и вставь сюда:</li>
+    </ul>
+    <textarea id="cookieInput" placeholder="sessionid=...; csrftoken=...; ds_user_id=..."></textarea>
+    <div class="modal-actions">
+      <button class="btn-save" onclick="saveCookie()">Сохранить</button>
+      <button class="btn-cancel" onclick="closeModal()">Отмена</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="logo-mark">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="2" y="2" width="20" height="20" rx="5" ry="5"/>
+      <circle cx="12" cy="12" r="4"/>
+      <circle cx="17.5" cy="6.5" r="1" fill="white" stroke="none"/>
+    </svg>
+  </div>
+  <h1>ZHANDEV SAVER</h1>
+  <p class="tagline">Скачивай фото и видео из Instagram</p>
+
+  <div class="cookie-banner" id="cookieBanner" style="margin: 0 auto 20px;">
+    <span id="cookieStatus">⚠ Куки не настроены</span>
+    <button class="btn-setup" onclick="openModal()" id="cookieBtn">Добавить</button>
+  </div>
+
+  <!-- SEARCH -->
+  <div class="search-area" style="padding: 0;">
+    <div class="input-row">
+      <div class="input-group">
+        <input type="text" id="urlInput" placeholder="instagram.com/p/..." autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+        <button class="btn-paste" onclick="pasteFromClipboard()" title="Вставить из буфера">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="9" y="2" width="10" height="4" rx="1"/>
+            <path d="M9 4H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-2"/>
+          </svg>
+        </button>
+      </div>
+      <button class="btn-fetch" id="fetchBtn" onclick="fetchMedia()">Найти</button>
+    </div>
+  </div>
+
+  <div class="status" id="status">
+    <div class="status-inner" id="statusInner"></div>
+  </div>
+</div>
+
+<div class="divider" id="divider"></div>
+<div class="results" id="results"></div>
+
+<script>
+  const DL_ICON = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v10M7 15l5 5 5-5"/><path d="M5 20h14"/></svg>`;
+
+  // ── TOAST ──
+  function showToast(msg, duration = 2000) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), duration);
+  }
+
+  // ── PASTE ──
+  async function pasteFromClipboard() {
+    try {
+      const text = await navigator.clipboard.readText();
+      if (text) {
+        document.getElementById('urlInput').value = text.trim();
+        showToast('Ссылка вставлена');
+      } else {
+        showToast('Буфер пуст');
+      }
+    } catch {
+      showToast('Нет доступа к буферу — вставьте вручную');
+    }
+  }
+
+  // ── COOKIE STATUS ──
+  async function checkCookieStatus() {
+    try {
+      const res = await fetch('/api/status');
+      const data = await res.json();
+      const banner = document.getElementById('cookieBanner');
+      const statusEl = document.getElementById('cookieStatus');
+      const btn = document.getElementById('cookieBtn');
+      if (data.hasCookie) {
+        banner.className = 'cookie-banner ok';
+        statusEl.textContent = '✓ Куки активны';
+        btn.textContent = 'Обновить';
+      }
+    } catch {}
+  }
+
+  function openModal() { document.getElementById('modalOverlay').className = 'modal-overlay show'; }
+  function closeModal() { document.getElementById('modalOverlay').className = 'modal-overlay'; }
+
+  document.getElementById('modalOverlay').addEventListener('click', e => {
+    if (e.target.id === 'modalOverlay') closeModal();
+  });
+
+  async function saveCookie() {
+    const cookie = document.getElementById('cookieInput').value.trim();
+    if (!cookie) { showToast('Вставь куки!'); return; }
+    const res = await fetch('/api/cookie', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ cookie }) });
+    const data = await res.json();
+    if (data.success) { closeModal(); checkCookieStatus(); showToast('✓ Куки сохранены'); }
+    else showToast('Ошибка: ' + data.error);
+  }
+
+  function showStatus(msg, type) {
+    const el = document.getElementById('status');
+    const inner = document.getElementById('statusInner');
+    inner.textContent = msg;
+    el.className = 'status ' + type;
+  }
+
+  function hideStatus() { document.getElementById('status').className = 'status'; }
+
+  async function fetchMedia() {
+    const url = document.getElementById('urlInput').value.trim();
+    const btn = document.getElementById('fetchBtn');
+    const results = document.getElementById('results');
+    const divider = document.getElementById('divider');
+    results.className = 'results';
+    results.innerHTML = '';
+    divider.className = 'divider';
+
+    if (!url) { showStatus('Вставьте ссылку на пост', 'error'); return; }
+
+    btn.disabled = true;
+    btn.textContent = '...';
+    showStatus('Получаем медиафайлы...', 'loading');
+
+    try {
+      const res = await fetch('/api/fetch', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ url }) });
+      const data = await res.json();
+      if (!data.success) { showStatus('❌ ' + data.error, 'error'); return; }
+      hideStatus();
+      renderResults(data.media, data.shortcode);
+    } catch { showStatus('Ошибка соединения с сервером', 'error'); }
+    finally { btn.disabled = false; btn.textContent = 'Найти'; }
+  }
+
+  function download(mediaUrl, filename) {
+    const a = document.createElement('a');
+    a.href = `/proxy?url=${encodeURIComponent(mediaUrl)}`;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  }
+
+  function renderResults(media, shortcode) {
+    const results = document.getElementById('results');
+    const divider = document.getElementById('divider');
+    results.innerHTML = '';
+
+    if (media.length === 1) {
+      const item = media[0];
+      const ext = item.type === 'video' ? 'mp4' : 'jpg';
+      const wrap = document.createElement('div');
+      wrap.className = 'single-media';
+      if (item.type === 'video') {
+        const v = document.createElement('video');
+        v.src = item.url;
+        v.controls = true;
+        v.playsinline = true;
+        wrap.appendChild(v);
+      } else {
+        const img = document.createElement('img');
+        img.src = `/proxy?url=${encodeURIComponent(item.url)}`;
+        img.alt = 'photo';
+        wrap.appendChild(img);
+      }
+      const dlBtn = document.createElement('button');
+      dlBtn.className = 'btn-dl';
+      dlBtn.innerHTML = `${DL_ICON} Скачать ${item.type === 'video' ? 'видео' : 'фото'}`;
+      dlBtn.onclick = () => {
+        download(item.url, `instagram_${shortcode}.${ext}`);
+        dlBtn.className = 'btn-dl done';
+        dlBtn.textContent = '✓ Загружается';
+        setTimeout(() => { dlBtn.className = 'btn-dl'; dlBtn.innerHTML = `${DL_ICON} Скачать`; }, 3000);
+      };
+      wrap.appendChild(dlBtn);
+      results.appendChild(wrap);
+    } else {
+      const header = document.createElement('div');
+      header.className = 'results-header';
+      const title = document.createElement('span');
+      title.className = 'results-title';
+      title.textContent = `${media.length} файлов`;
+      const dlAll = document.createElement('button');
+      dlAll.className = 'btn-dl-all';
+      dlAll.innerHTML = `${DL_ICON} Скачать все`;
+      dlAll.onclick = () => media.forEach((item, i) =>
+        setTimeout(() => download(item.url, `instagram_${shortcode}_${i+1}.${item.type==='video'?'mp4':'jpg'}`), i * 700)
+      );
+      header.appendChild(title);
+      header.appendChild(dlAll);
+      results.appendChild(header);
+
+      const grid = document.createElement('div');
+      grid.className = 'media-grid';
+      media.forEach((item, i) => {
+        const ext = item.type === 'video' ? 'mp4' : 'jpg';
+        const card = document.createElement('div');
+        card.className = 'media-card';
+
+        const thumbWrap = document.createElement('div');
+        thumbWrap.className = 'media-thumb';
+
+        if (item.type === 'video') {
+          const v = document.createElement('video');
+          v.src = item.url;
+          v.muted = true;
+          v.loop = true;
+          v.playsinline = true;
+          v.addEventListener('mouseenter', () => v.play());
+          v.addEventListener('mouseleave', () => { v.pause(); v.currentTime = 0; });
+          // tap to play on mobile
+          v.addEventListener('click', () => v.paused ? v.play() : v.pause());
+          thumbWrap.appendChild(v);
+        } else {
+          const img = document.createElement('img');
+          img.src = `/proxy?url=${encodeURIComponent(item.thumb || item.url)}`;
+          img.loading = 'lazy';
+          img.alt = `Фото ${i+1}`;
+          thumbWrap.appendChild(img);
+        }
+
+        const badge = document.createElement('span');
+        badge.className = 'media-badge';
+        badge.textContent = item.type === 'video' ? '▶ ВИДЕО' : 'ФОТО';
+        thumbWrap.appendChild(badge);
+
+        const footer = document.createElement('div');
+        footer.className = 'media-footer';
+        const idx = document.createElement('span');
+        idx.className = 'media-index';
+        idx.textContent = `${i+1} / ${media.length}`;
+        const dlBtn = document.createElement('button');
+        dlBtn.className = 'btn-dl';
+        dlBtn.innerHTML = `${DL_ICON} Скачать`;
+        dlBtn.onclick = () => {
+          download(item.url, `instagram_${shortcode}_${i+1}.${ext}`);
+          dlBtn.className = 'btn-dl done';
+          dlBtn.textContent = '✓';
+          setTimeout(() => { dlBtn.className = 'btn-dl'; dlBtn.innerHTML = `${DL_ICON} Скачать`; }, 3000);
+        };
+        footer.appendChild(idx);
+        footer.appendChild(dlBtn);
+        card.appendChild(thumbWrap);
+        card.appendChild(footer);
+        grid.appendChild(card);
+      });
+      results.appendChild(grid);
+    }
+
+    divider.className = 'divider show';
+    results.className = 'results show';
+    results.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  document.getElementById('urlInput').addEventListener('keydown', e => { if (e.key === 'Enter') fetchMedia(); });
+  checkCookieStatus();
+</script>
+</body>
+</html>
