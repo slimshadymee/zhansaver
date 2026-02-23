@@ -121,6 +121,8 @@
     .cover-upload-area input[type="file"] { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
     .cover-upload-area .upload-text { font-size: 0.78rem; color: var(--text-muted); }
     .cover-preview { width: 100%; height: 140px; object-fit: cover; border-radius: 8px; display: none; }
+    .cover-tab { flex: 1; padding: 8px; background: transparent; border: 1.5px solid var(--border); border-radius: 8px; color: var(--text-muted); font-family: 'Space Mono', monospace; font-size: 0.72rem; cursor: pointer; transition: all 0.15s; }
+    .cover-tab.active { background: var(--btn-bg); color: var(--btn-text); border-color: var(--btn-bg); }
 
     /* ── RELEASE PAGE ── */
     .release-page-inner { width: 100%; max-width: 640px; padding: 28px 20px 0; }
@@ -190,10 +192,20 @@
 
     <div class="release-form-field">
       <label class="release-form-label">Обложка</label>
-      <div class="cover-upload-area" id="coverUploadArea">
-        <input type="file" id="coverFileInput" accept="image/*" onchange="handleCoverUpload(event)"/>
-        <img class="cover-preview" id="coverPreview" alt="cover"/>
-        <div class="upload-text" id="uploadText">📁 Нажми чтобы загрузить обложку</div>
+      <div style="display:flex;gap:6px;margin-bottom:8px;">
+        <button type="button" class="cover-tab active" id="coverTabFile" onclick="switchCoverTab('file')">📁 Файл</button>
+        <button type="button" class="cover-tab" id="coverTabUrl" onclick="switchCoverTab('url')">🔗 Ссылка</button>
+      </div>
+      <div id="coverFileSection">
+        <div class="cover-upload-area" id="coverUploadArea">
+          <input type="file" id="coverFileInput" accept="image/*" onchange="handleCoverUpload(event)"/>
+          <img class="cover-preview" id="coverPreview" alt="cover"/>
+          <div class="upload-text" id="uploadText">Нажми чтобы выбрать файл</div>
+        </div>
+      </div>
+      <div id="coverUrlSection" style="display:none">
+        <input type="text" id="coverUrlInput" placeholder="https://..." oninput="handleCoverUrl(this.value)" style="width:100%;padding:12px 14px;background:var(--bg);border:1.5px solid var(--border);border-radius:var(--radius);color:var(--text);font-size:0.85rem;font-family:Space Mono,monospace;outline:none;"/>
+        <img class="cover-preview" id="coverUrlPreview" alt="cover" style="margin-top:8px;width:100%;height:140px;object-fit:cover;border-radius:8px;display:none;"/>
       </div>
     </div>
 
@@ -470,10 +482,35 @@
     document.getElementById('coverPreview').style.display = 'none';
     document.getElementById('uploadText').style.display = 'block';
     document.getElementById('coverFileInput').value = '';
+    document.getElementById('coverUrlInput').value = '';
+    document.getElementById('coverUrlPreview').style.display = 'none';
     document.getElementById('releaseArtist').value = '';
     document.getElementById('releaseTitle').value = '';
     document.getElementById('releaseDate').value = '';
+    switchCoverTab('file');
     document.getElementById('releaseModalOverlay').classList.add('show');
+  }
+
+  function switchCoverTab(tab) {
+    document.getElementById('coverFileSection').style.display = tab === 'file' ? 'block' : 'none';
+    document.getElementById('coverUrlSection').style.display = tab === 'url' ? 'block' : 'none';
+    document.getElementById('coverTabFile').className = 'cover-tab' + (tab === 'file' ? ' active' : '');
+    document.getElementById('coverTabUrl').className = 'cover-tab' + (tab === 'url' ? ' active' : '');
+    if (tab === 'file') { coverBase64 = null; document.getElementById('coverUrlInput').value = ''; }
+    else { coverBase64 = null; document.getElementById('coverFileInput').value = ''; document.getElementById('coverPreview').style.display = 'none'; document.getElementById('uploadText').style.display = 'block'; }
+  }
+
+  function handleCoverUrl(val) {
+    const preview = document.getElementById('coverUrlPreview');
+    if (val.startsWith('http')) {
+      preview.src = val;
+      preview.style.display = 'block';
+      preview.onerror = () => { preview.style.display = 'none'; };
+      coverBase64 = val; // храним URL как есть
+    } else {
+      preview.style.display = 'none';
+      coverBase64 = null;
+    }
   }
   function closeReleaseModal() { document.getElementById('releaseModalOverlay').classList.remove('show'); }
   document.getElementById('releaseModalOverlay').addEventListener('click', e => { if (e.target.id === 'releaseModalOverlay') closeReleaseModal(); });
