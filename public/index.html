@@ -8,635 +8,290 @@
   <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@700;800&display=swap" rel="stylesheet">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
     :root {
-      --bg: #000;
-      --surface: #111;
-      --surface2: #1a1a1a;
-      --border: #2a2a2a;
-      --border-active: #fff;
-      --text: #fff;
-      --text-muted: #666;
-      --text-dim: #999;
-      --accent: #fff;
-      --btn-bg: #fff;
-      --btn-text: #000;
-      --danger: #ff3b3b;
-      --success: #3bff8a;
-      --radius: 12px;
+      --bg: #000; --surface: #111; --surface2: #1a1a1a; --border: #2a2a2a;
+      --border-active: #fff; --text: #fff; --text-muted: #666; --text-dim: #999;
+      --btn-bg: #fff; --btn-text: #000; --danger: #ff3b3b; --success: #3bff8a; --radius: 12px;
     }
-
     html { font-size: 16px; }
+    body { min-height: 100vh; background: var(--bg); font-family: 'Space Mono', monospace; color: var(--text); display: flex; flex-direction: column; align-items: center; -webkit-font-smoothing: antialiased; }
 
-    body {
-      min-height: 100vh;
-      background: var(--bg);
-      font-family: 'Space Mono', monospace;
-      color: var(--text);
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      padding-bottom: 60px;
-      -webkit-font-smoothing: antialiased;
+    /* ── NAVBAR ── */
+    .navbar {
+      width: 100%; max-width: 640px;
+      display: flex; align-items: center; justify-content: center;
+      gap: 4px; padding: 20px 20px 0;
     }
-
-    /* ── HEADER ── */
-    .header {
-      width: 100%;
-      max-width: 640px;
-      padding: 40px 20px 0;
-      text-align: center;
+    .nav-btn {
+      flex: 1; padding: 10px 0; background: transparent;
+      border: 1.5px solid var(--border); border-radius: 10px;
+      color: var(--text-muted); font-family: 'Syne', sans-serif; font-weight: 800;
+      font-size: 0.78rem; letter-spacing: 0.05em; text-transform: uppercase;
+      cursor: pointer; transition: all 0.18s;
     }
+    .nav-btn:hover { border-color: #444; color: var(--text); }
+    .nav-btn.active { background: var(--btn-bg); color: var(--btn-text); border-color: var(--btn-bg); }
 
-    .logo-mark {
-      display: inline-block;
-      width: 44px;
-      height: 44px;
-      border: 2px solid var(--text);
-      border-radius: 10px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      margin: 0 auto 16px;
-    }
+    /* ── PAGES ── */
+    .page { display: none; width: 100%; flex-direction: column; align-items: center; padding-bottom: 60px; }
+    .page.active { display: flex; }
 
+    /* ── INSTTIK PAGE ── */
+    .header { width: 100%; max-width: 640px; padding: 32px 20px 0; text-align: center; }
+    .logo-mark { width: 44px; height: 44px; border: 2px solid var(--text); border-radius: 10px; display: flex; align-items: center; justify-content: center; margin: 0 auto 16px; }
     .logo-mark svg { display: block; }
-
-    h1 {
-      font-family: 'Syne', sans-serif;
-      font-weight: 800;
-      font-size: clamp(1.6rem, 7vw, 2.2rem);
-      letter-spacing: -0.03em;
-      color: var(--text);
-      line-height: 1;
-      margin-bottom: 8px;
-    }
-
-    .tagline {
-      color: var(--text-muted);
-      font-size: 0.78rem;
-      letter-spacing: 0.05em;
-      text-transform: uppercase;
-      margin-bottom: 28px;
-    }
-
-    /* ── COOKIE BANNER ── */
-    .cookie-banner {
-      width: 100%;
-      max-width: 640px;
-      margin: 0 20px 16px;
-      padding: 12px 14px;
-      background: transparent;
-      border: 1px solid var(--danger);
-      border-radius: var(--radius);
-      font-size: 0.75rem;
-      color: var(--danger);
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 10px;
-    }
-
-    .cookie-banner.ok {
-      border-color: var(--success);
-      color: var(--success);
-    }
-
-    .btn-setup {
-      padding: 6px 12px;
-      background: transparent;
-      border: 1px solid currentColor;
-      color: inherit;
-      border-radius: 8px;
-      font-size: 0.72rem;
-      font-family: 'Space Mono', monospace;
-      font-weight: 700;
-      cursor: pointer;
-      white-space: nowrap;
-      transition: background 0.15s, color 0.15s;
-      letter-spacing: 0.02em;
-    }
-
-    .btn-setup:hover { background: rgba(255,255,255,0.08); }
-
-    /* ── SEARCH AREA ── */
-    .search-area {
-      width: 100%;
-      max-width: 640px;
-      padding: 0 20px;
-    }
-
-    .input-row {
-      display: flex;
-      gap: 8px;
-      width: 100%;
-    }
-
-    .input-group {
-      flex: 1;
-      display: flex;
-      background: var(--surface);
-      border: 1.5px solid var(--border);
-      border-radius: var(--radius);
-      overflow: hidden;
-      transition: border-color 0.2s;
-    }
-
-    .input-group:focus-within {
-      border-color: var(--border-active);
-    }
-
-    input[type="text"] {
-      flex: 1;
-      padding: 14px 14px;
-      background: transparent;
-      border: none;
-      color: var(--text);
-      font-size: 0.875rem;
-      font-family: 'Space Mono', monospace;
-      outline: none;
-      min-width: 0;
-    }
-
+    h1 { font-family: 'Syne', sans-serif; font-weight: 800; font-size: clamp(1.6rem, 7vw, 2.2rem); letter-spacing: -0.03em; color: var(--text); line-height: 1; margin-bottom: 8px; }
+    .tagline { color: var(--text-muted); font-size: 0.78rem; letter-spacing: 0.05em; text-transform: uppercase; margin-bottom: 28px; }
+    .site-disabled-banner { width: 100%; margin: 0 auto 16px; padding: 14px 16px; background: rgba(255,59,59,0.1); border: 1.5px solid var(--danger); border-radius: var(--radius); font-size: 0.82rem; color: var(--danger); text-align: center; display: none; }
+    .site-disabled-banner.show { display: block; }
+    .input-row { display: flex; gap: 8px; width: 100%; }
+    .input-group { flex: 1; display: flex; background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--radius); overflow: hidden; transition: border-color 0.2s; }
+    .input-group:focus-within { border-color: var(--border-active); }
+    input[type="text"] { flex: 1; padding: 14px; background: transparent; border: none; color: var(--text); font-size: 0.875rem; font-family: 'Space Mono', monospace; outline: none; min-width: 0; }
     input[type="text"]::placeholder { color: var(--text-muted); }
-
-    .btn-paste {
-      padding: 0 14px;
-      background: transparent;
-      border: none;
-      border-left: 1px solid var(--border);
-      color: var(--text-muted);
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      transition: color 0.15s, background 0.15s;
-      flex-shrink: 0;
-    }
-
-    .btn-paste:hover {
-      color: var(--text);
-      background: rgba(255,255,255,0.05);
-    }
-
-    .btn-paste:active { background: rgba(255,255,255,0.1); }
-
-    .btn-paste svg { display: block; }
-
-    .btn-fetch {
-      padding: 14px 20px;
-      background: var(--btn-bg);
-      color: var(--btn-text);
-      border: none;
-      border-radius: var(--radius);
-      font-size: 0.875rem;
-      font-family: 'Syne', sans-serif;
-      font-weight: 800;
-      cursor: pointer;
-      white-space: nowrap;
-      letter-spacing: -0.01em;
-      transition: opacity 0.15s, transform 0.1s;
-      flex-shrink: 0;
-    }
-
+    input[type="text"]:disabled { opacity: 0.4; cursor: not-allowed; }
+    .btn-paste { padding: 0 14px; background: transparent; border: none; border-left: 1px solid var(--border); color: var(--text-muted); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: color 0.15s, background 0.15s; flex-shrink: 0; }
+    .btn-paste:hover { color: var(--text); background: rgba(255,255,255,0.05); }
+    .btn-fetch { padding: 14px 20px; background: var(--btn-bg); color: var(--btn-text); border: none; border-radius: var(--radius); font-size: 0.875rem; font-family: 'Syne', sans-serif; font-weight: 800; cursor: pointer; white-space: nowrap; letter-spacing: -0.01em; transition: opacity 0.15s, transform 0.1s; flex-shrink: 0; }
     .btn-fetch:hover { opacity: 0.85; }
     .btn-fetch:active { transform: scale(0.97); }
     .btn-fetch:disabled { opacity: 0.35; cursor: not-allowed; transform: none; }
-
-    /* ── STATUS ── */
-    .status {
-      width: 100%;
-      max-width: 640px;
-      padding: 0 20px;
-      margin-top: 12px;
-      display: none;
-    }
-
-    .status-inner {
-      padding: 12px 14px;
-      border-radius: var(--radius);
-      font-size: 0.8rem;
-      line-height: 1.5;
-    }
-
+    .status { width: 100%; max-width: 640px; margin-top: 12px; display: none; }
+    .status-inner { padding: 12px 14px; border-radius: var(--radius); font-size: 0.8rem; line-height: 1.5; }
     .status.loading { display: block; }
-    .status.loading .status-inner {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      color: var(--text-dim);
-    }
-
+    .status.loading .status-inner { background: var(--surface); border: 1px solid var(--border); color: var(--text-dim); }
     .status.error { display: block; }
-    .status.error .status-inner {
-      background: rgba(255,59,59,0.08);
-      border: 1px solid rgba(255,59,59,0.3);
-      color: var(--danger);
-    }
-
-    /* ── DIVIDER ── */
-    .divider {
-      width: calc(100% - 40px);
-      max-width: 640px;
-      height: 1px;
-      background: var(--border);
-      margin: 28px 0;
-      display: none;
-    }
-
+    .status.error .status-inner { background: rgba(255,59,59,0.08); border: 1px solid rgba(255,59,59,0.3); color: var(--danger); }
+    .divider { width: calc(100% - 40px); max-width: 640px; height: 1px; background: var(--border); margin: 28px 0; display: none; }
     .divider.show { display: block; }
-
-    /* ── RESULTS ── */
-    .results {
-      width: 100%;
-      max-width: 900px;
-      padding: 0 20px;
-      display: none;
-    }
-
+    .results { width: 100%; max-width: 900px; padding: 0 20px; display: none; }
     .results.show { display: block; }
-
-    .results-header {
-      max-width: 640px;
-      margin: 0 auto 16px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 12px;
-      flex-wrap: wrap;
-    }
-
-    .results-title {
-      font-size: 0.78rem;
-      color: var(--text-muted);
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-    }
-
-    .btn-dl-all {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      padding: 9px 16px;
-      background: var(--btn-bg);
-      color: var(--btn-text);
-      border: none;
-      border-radius: 9px;
-      font-size: 0.8rem;
-      font-family: 'Syne', sans-serif;
-      font-weight: 800;
-      cursor: pointer;
-      transition: opacity 0.15s;
-      letter-spacing: -0.01em;
-    }
-
+    .results-header { max-width: 640px; margin: 0 auto 16px; display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+    .results-title { font-size: 0.78rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.08em; }
+    .btn-dl-all { display: flex; align-items: center; gap: 6px; padding: 9px 16px; background: var(--btn-bg); color: var(--btn-text); border: none; border-radius: 9px; font-size: 0.8rem; font-family: 'Syne', sans-serif; font-weight: 800; cursor: pointer; transition: opacity 0.15s; }
     .btn-dl-all:hover { opacity: 0.82; }
-
-    .btn-tg {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      padding: 9px 16px;
-      background: transparent;
-      color: var(--text);
-      border: 1px solid var(--border);
-      border-radius: 9px;
-      font-size: 0.8rem;
-      font-family: 'Syne', sans-serif;
-      font-weight: 800;
-      cursor: pointer;
-      transition: background 0.15s, border-color 0.15s;
-      letter-spacing: -0.01em;
-      text-decoration: none;
-      white-space: nowrap;
-    }
-
-    .btn-tg:hover { background: var(--surface2); border-color: #444; }
-
-    /* ── MEDIA GRID ── */
-    .media-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(min(100%, 240px), 1fr));
-      gap: 12px;
-    }
-
-    .media-card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      overflow: hidden;
-      transition: border-color 0.2s;
-    }
-
+    .media-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 240px), 1fr)); gap: 12px; }
+    .media-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; transition: border-color 0.2s; }
     .media-card:hover { border-color: #444; }
-
-    .media-thumb {
-      position: relative;
-      aspect-ratio: 1;
-      background: var(--surface2);
-      overflow: hidden;
-    }
-
-    .media-thumb img,
-    .media-thumb video {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      display: block;
-    }
-
-    .media-badge {
-      position: absolute;
-      top: 8px;
-      right: 8px;
-      padding: 3px 8px;
-      background: rgba(0,0,0,0.85);
-      border: 1px solid rgba(255,255,255,0.15);
-      border-radius: 20px;
-      font-size: 0.68rem;
-      font-weight: 700;
-      color: var(--text);
-      letter-spacing: 0.05em;
-    }
-
-    .media-footer {
-      padding: 11px 13px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 8px;
-      border-top: 1px solid var(--border);
-    }
-
-    .media-index {
-      font-size: 0.75rem;
-      color: var(--text-muted);
-    }
-
-    .btn-dl {
-      display: flex;
-      align-items: center;
-      gap: 5px;
-      padding: 7px 13px;
-      background: var(--btn-bg);
-      color: var(--btn-text);
-      border: none;
-      border-radius: 8px;
-      font-size: 0.75rem;
-      font-family: 'Syne', sans-serif;
-      font-weight: 800;
-      cursor: pointer;
-      transition: opacity 0.15s;
-      letter-spacing: -0.01em;
-    }
-
+    .media-thumb { position: relative; aspect-ratio: 1; background: var(--surface2); overflow: hidden; }
+    .media-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .media-badge { position: absolute; top: 8px; right: 8px; padding: 3px 8px; background: rgba(0,0,0,0.85); border: 1px solid rgba(255,255,255,0.15); border-radius: 20px; font-size: 0.68rem; font-weight: 700; color: var(--text); letter-spacing: 0.05em; }
+    .media-footer { padding: 11px 13px; display: flex; align-items: center; justify-content: space-between; gap: 8px; border-top: 1px solid var(--border); }
+    .media-index { font-size: 0.75rem; color: var(--text-muted); }
+    .btn-dl { display: flex; align-items: center; gap: 5px; padding: 7px 13px; background: var(--btn-bg); color: var(--btn-text); border: none; border-radius: 8px; font-size: 0.75rem; font-family: 'Syne', sans-serif; font-weight: 800; cursor: pointer; transition: opacity 0.15s; }
     .btn-dl:hover { opacity: 0.8; }
+    .btn-dl.done { background: var(--success); color: #000; }
+    .single-media { display: flex; flex-direction: column; align-items: center; gap: 16px; }
+    .single-media img { max-width: 480px; width: 100%; border-radius: var(--radius); border: 1px solid var(--border); }
+    /* Видео без контролов — просто постер */
+    .single-video { max-width: 480px; width: 100%; border-radius: var(--radius); border: 1px solid var(--border); overflow: hidden; background: #000; display: block; cursor: pointer; }
 
-    .btn-dl.done {
-      background: var(--success);
-      color: #000;
-    }
-
-    /* ── SINGLE MEDIA ── */
-    .single-media {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 16px;
-    }
-
-    .single-media img,
-    .single-media video {
-      max-width: 480px;
-      width: 100%;
-      border-radius: var(--radius);
-      border: 1px solid var(--border);
-    }
-
-    .single-media video { max-height: 560px; }
-
-    /* ── MODAL ── */
-    .modal-overlay {
-      display: none;
-      position: fixed;
-      inset: 0;
-      background: rgba(0,0,0,0.92);
-      z-index: 1000;
-      align-items: flex-end;
-      justify-content: center;
-      padding: 0;
-    }
-
-    @media (min-width: 480px) {
-      .modal-overlay { align-items: center; padding: 20px; }
-    }
-
+    /* ── МОДАЛКА КУКИ ── */
+    .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.92); z-index: 1000; align-items: flex-end; justify-content: center; }
+    @media (min-width: 480px) { .modal-overlay { align-items: center; padding: 20px; } }
     .modal-overlay.show { display: flex; }
-
-    .modal {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 20px 20px 0 0;
-      padding: 24px 20px;
-      width: 100%;
-      max-width: 560px;
-      max-height: 90vh;
-      overflow-y: auto;
-      -webkit-overflow-scrolling: touch;
-    }
-
-    @media (min-width: 480px) {
-      .modal { border-radius: 16px; padding: 28px; }
-    }
-
-    .modal-handle {
-      width: 36px;
-      height: 4px;
-      background: var(--border);
-      border-radius: 2px;
-      margin: 0 auto 20px;
-    }
-
+    .modal { background: var(--surface); border: 1px solid var(--border); border-radius: 20px 20px 0 0; padding: 24px 20px; width: 100%; max-width: 560px; max-height: 90vh; overflow-y: auto; }
+    @media (min-width: 480px) { .modal { border-radius: 16px; padding: 28px; } }
+    .modal-handle { width: 36px; height: 4px; background: var(--border); border-radius: 2px; margin: 0 auto 20px; }
     @media (min-width: 480px) { .modal-handle { display: none; } }
-
-    .modal h2 {
-      font-family: 'Syne', sans-serif;
-      font-weight: 800;
-      font-size: 1.1rem;
-      margin-bottom: 8px;
-      letter-spacing: -0.02em;
-    }
-
-    .modal p {
-      color: var(--text-muted);
-      font-size: 0.78rem;
-      line-height: 1.7;
-      margin-bottom: 16px;
-    }
-
-    .steps-mini {
-      list-style: none;
-      margin-bottom: 18px;
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-    }
-
-    .steps-mini li {
-      color: var(--text-dim);
-      font-size: 0.78rem;
-      line-height: 1.6;
-      padding-left: 22px;
-      position: relative;
-    }
-
-    .steps-mini li::before {
-      content: attr(data-n);
-      position: absolute;
-      left: 0;
-      color: var(--text);
-      font-weight: 700;
-    }
-
+    .modal h2 { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 1.1rem; margin-bottom: 8px; letter-spacing: -0.02em; }
+    .modal p { color: var(--text-muted); font-size: 0.78rem; line-height: 1.7; margin-bottom: 16px; }
+    .steps-mini { list-style: none; margin-bottom: 18px; display: flex; flex-direction: column; gap: 6px; }
+    .steps-mini li { color: var(--text-dim); font-size: 0.78rem; line-height: 1.6; padding-left: 22px; position: relative; }
+    .steps-mini li::before { content: attr(data-n); position: absolute; left: 0; color: var(--text); font-weight: 700; }
     .steps-mini li strong { color: var(--text); }
-
-    textarea {
-      width: 100%;
-      min-height: 80px;
-      background: var(--bg);
-      border: 1.5px solid var(--border);
-      border-radius: var(--radius);
-      color: var(--text);
-      font-size: 0.75rem;
-      padding: 12px;
-      resize: vertical;
-      outline: none;
-      font-family: 'Space Mono', monospace;
-      line-height: 1.5;
-      transition: border-color 0.2s;
-    }
-
+    textarea { width: 100%; min-height: 80px; background: var(--bg); border: 1.5px solid var(--border); border-radius: var(--radius); color: var(--text); font-size: 0.75rem; padding: 12px; resize: vertical; outline: none; font-family: 'Space Mono', monospace; line-height: 1.5; transition: border-color 0.2s; }
     textarea:focus { border-color: var(--border-active); }
     textarea::placeholder { color: var(--text-muted); }
-
-    .modal-actions {
-      display: flex;
-      gap: 8px;
-      margin-top: 14px;
-    }
-
-    .btn-save {
-      flex: 1;
-      padding: 13px;
-      background: var(--btn-bg);
-      color: var(--btn-text);
-      border: none;
-      border-radius: var(--radius);
-      font-size: 0.9rem;
-      font-family: 'Syne', sans-serif;
-      font-weight: 800;
-      cursor: pointer;
-      transition: opacity 0.15s;
-      letter-spacing: -0.02em;
-    }
-
+    .modal-actions { display: flex; gap: 8px; margin-top: 14px; }
+    .btn-save { flex: 1; padding: 13px; background: var(--btn-bg); color: var(--btn-text); border: none; border-radius: var(--radius); font-size: 0.9rem; font-family: 'Syne', sans-serif; font-weight: 800; cursor: pointer; transition: opacity 0.15s; }
     .btn-save:hover { opacity: 0.85; }
-
-    .btn-cancel {
-      padding: 13px 18px;
-      background: transparent;
-      color: var(--text-muted);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      font-size: 0.9rem;
-      font-family: 'Space Mono', monospace;
-      cursor: pointer;
-      transition: background 0.15s, color 0.15s;
-    }
-
+    .btn-cancel { padding: 13px 18px; background: transparent; color: var(--text-muted); border: 1px solid var(--border); border-radius: var(--radius); font-size: 0.9rem; font-family: 'Space Mono', monospace; cursor: pointer; transition: background 0.15s, color 0.15s; }
     .btn-cancel:hover { background: var(--surface2); color: var(--text); }
 
-    /* ── MOBILE TWEAKS ── */
+    /* ── МОДАЛКА ДОБАВИТЬ РЕЛИЗ ── */
+    .release-form-label { font-size: 0.72rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 6px; display: block; }
+    .release-form-field { margin-bottom: 14px; }
+    .release-form-field input[type="text"],
+    .release-form-field input[type="date"] { width: 100%; padding: 12px 14px; background: var(--bg); border: 1.5px solid var(--border); border-radius: var(--radius); color: var(--text); font-size: 0.85rem; font-family: 'Space Mono', monospace; outline: none; transition: border-color 0.2s; }
+    .release-form-field input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(1); }
+    .release-form-field input:focus { border-color: var(--border-active); }
+    .cover-upload-area { border: 1.5px dashed var(--border); border-radius: var(--radius); padding: 20px; text-align: center; cursor: pointer; transition: border-color 0.2s; position: relative; overflow: hidden; }
+    .cover-upload-area:hover { border-color: #555; }
+    .cover-upload-area input[type="file"] { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
+    .cover-upload-area .upload-text { font-size: 0.78rem; color: var(--text-muted); }
+    .cover-preview { width: 100%; height: 140px; object-fit: cover; border-radius: 8px; display: none; }
+
+    /* ── RELEASE PAGE ── */
+    .release-page-inner { width: 100%; max-width: 640px; padding: 28px 20px 0; }
+    .release-page-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; }
+    .release-page-title { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 1.4rem; letter-spacing: -0.03em; }
+    .btn-add-release { display: flex; align-items: center; gap: 6px; padding: 10px 18px; background: var(--btn-bg); color: var(--btn-text); border: none; border-radius: 10px; font-family: 'Syne', sans-serif; font-weight: 800; font-size: 0.82rem; cursor: pointer; transition: opacity 0.15s; }
+    .btn-add-release:hover { opacity: 0.85; }
+    .releases-list { display: flex; flex-direction: column; gap: 12px; }
+    .release-card { display: flex; align-items: center; gap: 14px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; padding: 12px 14px; position: relative; transition: border-color 0.2s; }
+    .release-card:hover { border-color: #444; }
+    .release-card.released { border-color: rgba(59,255,138,0.25); }
+    .release-cover { width: 56px; height: 56px; border-radius: 8px; object-fit: cover; background: var(--surface2); flex-shrink: 0; }
+    .release-cover-placeholder { width: 56px; height: 56px; border-radius: 8px; background: var(--surface2); flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 1.4rem; }
+    .release-info { flex: 1; min-width: 0; }
+    .release-title-text { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 0.95rem; letter-spacing: -0.02em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .release-artist-text { font-size: 0.75rem; color: var(--text-muted); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .release-right { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; flex-shrink: 0; }
+    .release-date-badge { font-size: 0.68rem; color: var(--text-dim); font-family: 'Space Mono', monospace; white-space: nowrap; }
+    .release-status { font-size: 0.65rem; font-weight: 700; padding: 2px 8px; border-radius: 20px; letter-spacing: 0.04em; text-transform: uppercase; }
+    .release-status.out { background: rgba(59,255,138,0.12); color: var(--success); }
+    .release-status.upcoming { background: rgba(255,255,255,0.07); color: var(--text-dim); }
+    .btn-delete-release { background: transparent; border: none; color: var(--text-muted); cursor: pointer; padding: 4px; border-radius: 6px; transition: color 0.15s, background 0.15s; flex-shrink: 0; }
+    .btn-delete-release:hover { color: var(--danger); background: rgba(255,59,59,0.1); }
+    .releases-empty { text-align: center; padding: 60px 20px; color: var(--text-muted); font-size: 0.82rem; line-height: 1.7; }
+
+    /* ── ADMIN MSG OVERLAY ── */
+    .admin-msg-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.97); z-index: 9999; align-items: center; justify-content: center; padding: 24px; }
+    .admin-msg-overlay.show { display: flex; }
+    .admin-msg-box { max-width: 560px; width: 100%; border: 1.5px solid var(--danger); border-radius: 20px; padding: 40px 32px; text-align: center; background: #0a0a0a; animation: fadeIn 0.3s ease; }
+    @keyframes fadeIn { from { opacity: 0; transform: scale(0.96); } to { opacity: 1; transform: scale(1); } }
+    .admin-msg-icon { font-size: 2.4rem; margin-bottom: 16px; }
+    .admin-msg-title { font-family: 'Syne', sans-serif; font-weight: 800; font-size: clamp(1.3rem, 5vw, 1.8rem); letter-spacing: -0.03em; color: #fff; margin-bottom: 14px; }
+    .admin-msg-body { font-size: 0.9rem; color: var(--text-dim); line-height: 1.7; }
+
+    /* ── TOAST ── */
+    .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(80px); background: var(--surface); border: 1px solid var(--border); color: var(--text); padding: 10px 18px; border-radius: 100px; font-size: 0.78rem; z-index: 2000; transition: transform 0.25s cubic-bezier(0.34,1.56,0.64,1), opacity 0.2s; opacity: 0; white-space: nowrap; }
+    .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+
     @media (max-width: 480px) {
-      .header { padding-top: 28px; }
+      .header { padding-top: 20px; }
       .btn-fetch { padding: 14px 16px; font-size: 0.8rem; }
       input[type="text"] { font-size: 0.8rem; }
       .media-grid { grid-template-columns: repeat(2, 1fr); gap: 8px; }
     }
+    @media (max-width: 360px) { .media-grid { grid-template-columns: 1fr; } }
 
-    @media (max-width: 360px) {
-      .media-grid { grid-template-columns: 1fr; }
-    }
+    /* ── STORIES ── */
+    .stories-strip { width: 100%; max-width: 640px; padding: 16px 20px 0; overflow-x: auto; scrollbar-width: none; }
+    .stories-strip::-webkit-scrollbar { display: none; }
+    .stories-inner { display: flex; gap: 14px; }
+    .story-bubble { display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; }
+    .story-ring { width: 60px; height: 60px; border-radius: 50%; padding: 2.5px;
+      background: linear-gradient(135deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888);
+      transition: transform 0.15s; }
+    .story-ring:active { transform: scale(0.93); }
+    .story-ring.seen { background: #333; }
+    .story-avatar { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; border: 2.5px solid #000; display: block; background: var(--surface2); }
+    .story-name { font-size: 0.62rem; color: var(--text-muted); text-align: center; max-width: 64px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
-    /* ── TOAST ── */
-    .toast {
-      position: fixed;
-      bottom: 24px;
-      left: 50%;
-      transform: translateX(-50%) translateY(80px);
-      background: var(--surface);
-      border: 1px solid var(--border);
-      color: var(--text);
-      padding: 10px 18px;
-      border-radius: 100px;
-      font-size: 0.78rem;
-      z-index: 2000;
-      transition: transform 0.25s cubic-bezier(0.34,1.56,0.64,1), opacity 0.2s;
-      opacity: 0;
-      white-space: nowrap;
-    }
-
-    .toast.show {
-      transform: translateX(-50%) translateY(0);
-      opacity: 1;
-    }
+    /* ── STORY VIEWER ── */
+    .story-viewer { display: none; position: fixed; inset: 0; background: #000; z-index: 5000; flex-direction: column; }
+    .story-viewer.open { display: flex; }
+    .story-progress-bar { display: flex; gap: 3px; padding: 10px 10px 0; position: absolute; top: 0; left: 0; right: 0; z-index: 10; }
+    .story-seg { flex: 1; height: 2.5px; background: rgba(255,255,255,0.3); border-radius: 2px; overflow: hidden; }
+    .story-seg-fill { height: 100%; width: 0%; background: #fff; transition: none; }
+    .story-seg-fill.running { transition: width linear; }
+    .story-media-wrap { flex: 1; display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden; }
+    .story-media-wrap img, .story-media-wrap video { max-width: 100%; max-height: 100%; object-fit: contain; display: block; }
+    .story-header { position: absolute; top: 22px; left: 0; right: 0; padding: 0 14px; display: flex; align-items: center; gap: 10px; z-index: 10; }
+    .story-header-avatar { width: 34px; height: 34px; border-radius: 50%; object-fit: cover; border: 1.5px solid rgba(255,255,255,0.5); }
+    .story-header-name { font-size: 0.82rem; font-weight: 700; color: #fff; text-shadow: 0 1px 4px rgba(0,0,0,0.5); flex: 1; }
+    .story-close { background: none; border: none; color: #fff; cursor: pointer; padding: 4px; opacity: 0.85; }
+    .story-tap-left { position: absolute; left: 0; top: 0; width: 35%; height: 100%; z-index: 9; cursor: pointer; }
+    .story-tap-right { position: absolute; right: 0; top: 0; width: 35%; height: 100%; z-index: 9; cursor: pointer; }
   </style>
 </head>
 <body>
 
-<!-- MODAL -->
-<div class="modal-overlay" id="modalOverlay">
+<!-- Полноэкранное сообщение от администратора -->
+<div class="admin-msg-overlay" id="adminMsgOverlay">
+  <div class="admin-msg-box">
+    <div class="admin-msg-icon">📢</div>
+    <div class="admin-msg-title" id="adminMsgTitle">Внимание</div>
+    <div class="admin-msg-body" id="adminMsgBody"></div>
+  </div>
+</div>
+
+
+</div>
+
+<!-- Модалка добавить релиз -->
+<div class="modal-overlay" id="releaseModalOverlay">
   <div class="modal">
     <div class="modal-handle"></div>
-    <h2>Настройка куки</h2>
-    <p>Куки нужны чтобы сервер мог авторизоваться в Instagram. Без них Instagram блокирует запросы.</p>
-    <ul class="steps-mini">
-      <li data-n="1">Открой <strong>instagram.com</strong> в Chrome</li>
-      <li data-n="2">Нажми <strong>F12</strong> → вкладка <strong>Network</strong></li>
-      <li data-n="3">Обнови страницу (<strong>F5</strong>)</li>
-      <li data-n="4">Кликни на любой запрос к <strong>instagram.com</strong></li>
-      <li data-n="5">Справа найди <strong>Request Headers → Cookie</strong></li>
-      <li data-n="6">Скопируй всю строку и вставь сюда:</li>
-    </ul>
-    <textarea id="cookieInput" placeholder="sessionid=...; csrftoken=...; ds_user_id=..."></textarea>
+    <h2>Добавить релиз</h2>
+
+    <div class="release-form-field">
+      <label class="release-form-label">Обложка</label>
+      <div class="cover-upload-area" id="coverUploadArea">
+        <input type="file" id="coverFileInput" accept="image/*" onchange="handleCoverUpload(event)"/>
+        <img class="cover-preview" id="coverPreview" alt="cover"/>
+        <div class="upload-text" id="uploadText">📁 Нажми чтобы загрузить обложку</div>
+      </div>
+    </div>
+
+    <div class="release-form-field">
+      <label class="release-form-label">Имя артиста</label>
+      <input type="text" id="releaseArtist" placeholder="Например: Travis Scott"/>
+    </div>
+
+    <div class="release-form-field">
+      <label class="release-form-label">Название</label>
+      <input type="text" id="releaseTitle" placeholder="Например: UTOPIA"/>
+    </div>
+
+    <div class="release-form-field">
+      <label class="release-form-label">Дата выхода</label>
+      <input type="date" id="releaseDate"/>
+    </div>
+
     <div class="modal-actions">
-      <button class="btn-save" onclick="saveCookie()">Сохранить</button>
-      <button class="btn-cancel" onclick="closeModal()">Отмена</button>
+      <button class="btn-save" onclick="addRelease()">Добавить</button>
+      <button class="btn-cancel" onclick="closeReleaseModal()">Отмена</button>
     </div>
   </div>
 </div>
 
-<!-- TOAST -->
 <div class="toast" id="toast"></div>
 
-<!-- HEADER -->
-<div class="header">
-  <div class="logo-mark">
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-      <rect x="2" y="2" width="20" height="20" rx="5" ry="5"/>
-      <circle cx="12" cy="12" r="4"/>
-      <circle cx="17.5" cy="6.5" r="1" fill="white" stroke="none"/>
-    </svg>
-  </div>
-  <h1>ZHANSAVER</h1>
-  <p class="tagline">Скачивай фото и видео из Instagram</p>
+<!-- NAVBAR -->
+<nav class="navbar">
+  <button class="nav-btn active" id="navInsttik" onclick="switchPage('insttik')">INSTTIK</button>
+  <button class="nav-btn" id="navRelease" onclick="switchPage('release')">RELEASE</button>
+</nav>
 
-  <div class="cookie-banner" id="cookieBanner" style="margin: 0 auto 20px;">
-    <span id="cookieStatus">⚠ Куки не настроены</span>
-    <button class="btn-setup" onclick="openModal()" id="cookieBtn">Добавить</button>
+<!-- STORY VIEWER -->
+<div class="story-viewer" id="storyViewer">
+  <div class="story-progress-bar" id="storyProgressBar"></div>
+  <div class="story-header" id="storyHeader">
+    <img class="story-header-avatar" id="storyHeaderAvatar" src="" alt=""/>
+    <span class="story-header-name" id="storyHeaderName"></span>
+    <button class="story-close" onclick="closeStoryViewer()">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
   </div>
+  <div class="story-media-wrap" id="storyMediaWrap">
+    <div class="story-tap-left" onclick="storyPrev()"></div>
+    <div class="story-tap-right" onclick="storyNext()"></div>
+  </div>
+</div>
 
-  <!-- SEARCH -->
-  <div class="search-area" style="padding: 0;">
+<!-- PAGE: INSTTIK -->
+<div class="page active" id="pageInsttik">
+  <!-- STORIES STRIP -->
+  <div class="stories-strip" id="storiesStrip" style="display:none">
+    <div class="stories-inner" id="storiesInner"></div>
+  </div>
+  <div class="header">
+    <div class="logo-mark">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="2" y="2" width="20" height="20" rx="5" ry="5"/>
+        <circle cx="12" cy="12" r="4"/>
+        <circle cx="17.5" cy="6.5" r="1" fill="white" stroke="none"/>
+      </svg>
+    </div>
+    <h1>ZHANSAVER</h1>
+    <p class="tagline">Instagram</p>
+
+    <div class="site-disabled-banner" id="siteDisabledBanner">
+      🔴 Сайт временно не работает. Приём ссылок отключён.
+    </div>
     <div class="input-row">
       <div class="input-group">
         <input type="text" id="urlInput" placeholder="instagram.com/p/..." autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
@@ -649,115 +304,122 @@
       </div>
       <button class="btn-fetch" id="fetchBtn" onclick="fetchMedia()">Найти</button>
     </div>
+
+    <div class="status" id="status">
+      <div class="status-inner" id="statusInner"></div>
+    </div>
   </div>
 
-  <div class="status" id="status">
-    <div class="status-inner" id="statusInner"></div>
+  <div class="divider" id="divider"></div>
+  <div class="results" id="results"></div>
+</div>
+
+<!-- PAGE: RELEASE -->
+<div class="page" id="pageRelease">
+  <div class="release-page-inner">
+    <div class="release-page-header">
+      <div class="release-page-title">Релизы</div>
+      <button class="btn-add-release" onclick="openReleaseModal()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Добавить
+      </button>
+    </div>
+    <div class="releases-list" id="releasesList">
+      <div class="releases-empty">Нет релизов.<br>Нажми «Добавить» чтобы создать первый.</div>
+    </div>
   </div>
 </div>
 
-<div class="divider" id="divider"></div>
-<div class="results" id="results"></div>
-
 <script>
   const DL_ICON = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v10M7 15l5 5 5-5"/><path d="M5 20h14"/></svg>`;
+  let siteEnabled = true;
+  let coverBase64 = null;
 
-  // ── TOAST ──
+  // ── Навигация ──────────────────────────────────────────────────────────────
+  function switchPage(page) {
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById('page' + page.charAt(0).toUpperCase() + page.slice(1)).classList.add('active');
+    document.getElementById('nav' + page.charAt(0).toUpperCase() + page.slice(1)).classList.add('active');
+    if (page === 'release') loadReleases();
+  }
+
+  // ── Toast ──────────────────────────────────────────────────────────────────
   function showToast(msg, duration = 2000) {
     const t = document.getElementById('toast');
-    t.textContent = msg;
-    t.classList.add('show');
+    t.textContent = msg; t.classList.add('show');
     setTimeout(() => t.classList.remove('show'), duration);
   }
 
-  // ── PASTE ──
+  // ── Clipboard ─────────────────────────────────────────────────────────────
   async function pasteFromClipboard() {
     try {
       const text = await navigator.clipboard.readText();
-      if (text) {
-        document.getElementById('urlInput').value = text.trim();
-        showToast('Ссылка вставлена');
-      } else {
-        showToast('Буфер пуст');
-      }
-    } catch {
-      showToast('Нет доступа к буферу — вставьте вручную');
-    }
+      if (text) { document.getElementById('urlInput').value = text.trim(); showToast('Ссылка вставлена'); }
+      else showToast('Буфер пуст');
+    } catch { showToast('Нет доступа к буферу — вставьте вручную'); }
   }
 
-  // ── COOKIE STATUS ──
-  async function checkCookieStatus() {
+  // ── Статус сайта ───────────────────────────────────────────────────────────
+  async function checkSiteStatus() {
     try {
       const res = await fetch('/api/status');
       const data = await res.json();
-      const banner = document.getElementById('cookieBanner');
-      const statusEl = document.getElementById('cookieStatus');
-      const btn = document.getElementById('cookieBtn');
-      if (data.hasCookie) {
-        banner.className = 'cookie-banner ok';
-        statusEl.textContent = '✓ Куки активны';
-        btn.textContent = 'Обновить';
+      siteEnabled = data.siteEnabled !== false;
+      if (!siteEnabled) {
+        document.getElementById('siteDisabledBanner').classList.add('show');
+        document.getElementById('fetchBtn').disabled = true;
+        document.getElementById('urlInput').disabled = true;
+      } else {
+        document.getElementById('siteDisabledBanner').classList.remove('show');
+        document.getElementById('fetchBtn').disabled = false;
+        document.getElementById('urlInput').disabled = false;
+      }
+      if (data.siteMessage?.active && data.siteMessage.title) {
+        document.getElementById('adminMsgTitle').textContent = data.siteMessage.title;
+        document.getElementById('adminMsgBody').textContent = data.siteMessage.body || '';
+        document.getElementById('adminMsgOverlay').classList.add('show');
+      } else {
+        document.getElementById('adminMsgOverlay').classList.remove('show');
       }
     } catch {}
   }
-
-  function openModal() { document.getElementById('modalOverlay').className = 'modal-overlay show'; }
-  function closeModal() { document.getElementById('modalOverlay').className = 'modal-overlay'; }
-
-  document.getElementById('modalOverlay').addEventListener('click', e => {
-    if (e.target.id === 'modalOverlay') closeModal();
-  });
-
-  async function saveCookie() {
-    const cookie = document.getElementById('cookieInput').value.trim();
-    if (!cookie) { showToast('Вставь куки!'); return; }
-    const res = await fetch('/api/cookie', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ cookie }) });
-    const data = await res.json();
-    if (data.success) { closeModal(); checkCookieStatus(); showToast('✓ Куки сохранены'); }
-    else showToast('Ошибка: ' + data.error);
-  }
-
+  // ── Статус поиска ─────────────────────────────────────────────────────────
   function showStatus(msg, type) {
-    const el = document.getElementById('status');
-    const inner = document.getElementById('statusInner');
-    inner.textContent = msg;
-    el.className = 'status ' + type;
+    document.getElementById('statusInner').textContent = msg;
+    document.getElementById('status').className = 'status ' + type;
   }
-
   function hideStatus() { document.getElementById('status').className = 'status'; }
 
+  // ── Fetch медиа ───────────────────────────────────────────────────────────
   async function fetchMedia() {
+    if (!siteEnabled) { showStatus('❌ Сайт временно не работает.', 'error'); return; }
     const url = document.getElementById('urlInput').value.trim();
     const btn = document.getElementById('fetchBtn');
     const results = document.getElementById('results');
     const divider = document.getElementById('divider');
-    results.className = 'results';
-    results.innerHTML = '';
+    results.className = 'results'; results.innerHTML = '';
     divider.className = 'divider';
-
     if (!url) { showStatus('Вставьте ссылку на пост', 'error'); return; }
-
-    btn.disabled = true;
-    btn.textContent = '...';
+    btn.disabled = true; btn.textContent = '...';
     showStatus('Получаем медиафайлы...', 'loading');
-
     try {
       const res = await fetch('/api/fetch', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ url }) });
       const data = await res.json();
-      if (!data.success) { showStatus('❌ ' + data.error, 'error'); return; }
+      if (!data.success) {
+        showStatus('❌ ' + (data.siteDisabled ? 'Сайт временно не работает.' : data.error), 'error');
+        return;
+      }
       hideStatus();
       renderResults(data.media, data.shortcode);
     } catch { showStatus('Ошибка соединения с сервером', 'error'); }
-    finally { btn.disabled = false; btn.textContent = 'Найти'; }
+    finally { btn.disabled = !siteEnabled; btn.textContent = 'Найти'; }
   }
-
   function download(mediaUrl, filename) {
     const a = document.createElement('a');
-    a.href = `/proxy?url=${encodeURIComponent(mediaUrl)}`;
+    a.href = `/proxy?url=${encodeURIComponent(mediaUrl)}&dl=1`;
     a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
   }
 
   function renderResults(media, shortcode) {
@@ -770,162 +432,74 @@
       const ext = item.type === 'video' ? 'mp4' : 'jpg';
       const wrap = document.createElement('div');
       wrap.className = 'single-media';
+
       if (item.type === 'video') {
         const v = document.createElement('video');
-        v.src = item.url;
-        v.controls = true;
+        v.className = 'single-video';
+        v.src = `/proxy?url=${encodeURIComponent(item.url)}`;
         v.playsinline = true;
+        v.preload = 'auto';
+        v.setAttribute('webkit-playsinline', '');
+        v.style.maxHeight = '70vh';
+        v.onclick = () => v.paused ? v.play() : v.pause();
         wrap.appendChild(v);
       } else {
         const img = document.createElement('img');
-        img.src = `/proxy?url=${encodeURIComponent(item.url)}`;
-        img.alt = 'photo';
+        img.src = `/proxy?url=${encodeURIComponent(item.url)}`; img.alt = 'photo';
         wrap.appendChild(img);
       }
+
       const dlBtn = document.createElement('button');
       dlBtn.className = 'btn-dl';
       dlBtn.innerHTML = `${DL_ICON} Скачать ${item.type === 'video' ? 'видео' : 'фото'}`;
       dlBtn.onclick = () => {
-        download(item.url, `instagram_${shortcode}.${ext}`);
-        dlBtn.className = 'btn-dl done';
-        dlBtn.textContent = '✓ Загружается';
+        download(item.url, `media_${shortcode}.${ext}`);
+        dlBtn.className = 'btn-dl done'; dlBtn.textContent = '✓ Загружается';
         setTimeout(() => { dlBtn.className = 'btn-dl'; dlBtn.innerHTML = `${DL_ICON} Скачать`; }, 3000);
       };
-
-      const shareBtn = document.createElement('button');
-      shareBtn.className = 'btn-tg';
-      shareBtn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.894 8.221-1.97 9.28c-.145.658-.537.818-1.084.508l-3-2.21-1.447 1.394c-.16.16-.295.295-.605.295l.213-3.053 5.56-5.023c.242-.213-.054-.333-.373-.12L7.17 13.5l-2.95-.924c-.64-.204-.654-.64.136-.954l11.5-4.432c.534-.194 1.003.131.838.931z"/></svg> Поделиться`;
-      shareBtn.onclick = async () => {
-        if (!navigator.share) { showToast('Поделиться доступно только на мобильном'); return; }
-        shareBtn.disabled = true;
-        shareBtn.style.opacity = '0.5';
-        showToast('Загружаем файл...');
-        try {
-          const res = await fetch(`/proxy?url=${encodeURIComponent(item.url)}`);
-          const blob = await res.blob();
-          const file = new File([blob], `instagram_${shortcode}.${ext}`, { type: blob.type });
-          if (navigator.canShare && navigator.canShare({ files: [file] })) {
-            await navigator.share({ files: [file], title: 'Instagram медиа' });
-          } else {
-            showToast('Браузер не поддерживает отправку файлов');
-          }
-        } catch (e) {
-          if (e.name !== 'AbortError') showToast('Ошибка: ' + e.message);
-        } finally {
-          shareBtn.disabled = false;
-          shareBtn.style.opacity = '1';
-        }
-      };
-
-      const btnRow = document.createElement('div');
-      btnRow.style.cssText = 'display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:center;';
-      btnRow.appendChild(dlBtn);
-      btnRow.appendChild(shareBtn);
-      wrap.appendChild(btnRow);
+      wrap.appendChild(dlBtn);
       results.appendChild(wrap);
     } else {
-      const header = document.createElement('div');
-      header.className = 'results-header';
-      const title = document.createElement('span');
-      title.className = 'results-title';
-      title.textContent = `${media.length} файлов`;
-      const dlAll = document.createElement('button');
-      dlAll.className = 'btn-dl-all';
+      const header = document.createElement('div'); header.className = 'results-header';
+      const title = document.createElement('span'); title.className = 'results-title'; title.textContent = `${media.length} файлов`;
+      const dlAll = document.createElement('button'); dlAll.className = 'btn-dl-all';
       dlAll.innerHTML = `${DL_ICON} Скачать все`;
       dlAll.onclick = () => media.forEach((item, i) =>
-        setTimeout(() => download(item.url, `instagram_${shortcode}_${i+1}.${item.type==='video'?'mp4':'jpg'}`), i * 700)
+        setTimeout(() => download(item.url, `media_${shortcode}_${i+1}.${item.type==='video'?'mp4':'jpg'}`), i * 700)
       );
+      header.appendChild(title); header.appendChild(dlAll); results.appendChild(header);
 
-      const tgBtn = document.createElement('button');
-      tgBtn.className = 'btn-tg';
-      tgBtn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.894 8.221-1.97 9.28c-.145.658-.537.818-1.084.508l-3-2.21-1.447 1.394c-.16.16-.295.295-.605.295l.213-3.053 5.56-5.023c.242-.213-.054-.333-.373-.12L7.17 13.5l-2.95-.924c-.64-.204-.654-.64.136-.954l11.5-4.432c.534-.194 1.003.131.838.931z"/></svg> Поделиться`;
-      tgBtn.onclick = async () => {
-        if (!navigator.share) { showToast('Поделиться доступно только на мобильном'); return; }
-        tgBtn.disabled = true;
-        tgBtn.style.opacity = '0.5';
-        showToast('Загружаем файлы...');
-        try {
-          const files = await Promise.all(media.map(async (item, i) => {
-            const ext = item.type === 'video' ? 'mp4' : 'jpg';
-            const res = await fetch(`/proxy?url=${encodeURIComponent(item.url)}`);
-            const blob = await res.blob();
-            return new File([blob], `instagram_${shortcode}_${i+1}.${ext}`, { type: blob.type });
-          }));
-          if (navigator.canShare && navigator.canShare({ files })) {
-            await navigator.share({ files, title: 'Instagram медиа' });
-          } else {
-            // fallback — шарим только первый файл
-            await navigator.share({ files: [files[0]], title: 'Instagram медиа' });
-          }
-        } catch (e) {
-          if (e.name !== 'AbortError') showToast('Ошибка: ' + e.message);
-        } finally {
-          tgBtn.disabled = false;
-          tgBtn.style.opacity = '1';
-        }
-      };
-
-      const btnGroup = document.createElement('div');
-      btnGroup.style.cssText = 'display:flex;gap:8px;align-items:center;flex-wrap:wrap;';
-      btnGroup.appendChild(dlAll);
-      btnGroup.appendChild(tgBtn);
-
-      header.appendChild(title);
-      header.appendChild(btnGroup);
-      results.appendChild(header);
-
-      const grid = document.createElement('div');
-      grid.className = 'media-grid';
+      const grid = document.createElement('div'); grid.className = 'media-grid';
       media.forEach((item, i) => {
         const ext = item.type === 'video' ? 'mp4' : 'jpg';
-        const card = document.createElement('div');
-        card.className = 'media-card';
+        const card = document.createElement('div'); card.className = 'media-card';
+        const thumbWrap = document.createElement('div'); thumbWrap.className = 'media-thumb';
 
-        const thumbWrap = document.createElement('div');
-        thumbWrap.className = 'media-thumb';
-
+        // Всегда показываем картинку (thumb или postер), без видео-элемента
+        const img = document.createElement('img');
         if (item.type === 'video') {
-          const v = document.createElement('video');
-          v.src = item.url;
-          v.muted = true;
-          v.loop = true;
-          v.playsinline = true;
-          v.addEventListener('mouseenter', () => v.play());
-          v.addEventListener('mouseleave', () => { v.pause(); v.currentTime = 0; });
-          // tap to play on mobile
-          v.addEventListener('click', () => v.paused ? v.play() : v.pause());
-          thumbWrap.appendChild(v);
+          img.src = item.thumb ? `/proxy?url=${encodeURIComponent(item.thumb)}` : '';
         } else {
-          const img = document.createElement('img');
-          img.src = `/proxy?url=${encodeURIComponent(item.thumb || item.url)}`;
-          img.loading = 'lazy';
-          img.alt = `Фото ${i+1}`;
-          thumbWrap.appendChild(img);
+          img.src = `/proxy?url=${encodeURIComponent(item.url)}`;
         }
+        img.loading = 'lazy'; img.alt = `${item.type === 'video' ? 'Видео' : 'Фото'} ${i+1}`;
+        thumbWrap.appendChild(img);
 
-        const badge = document.createElement('span');
-        badge.className = 'media-badge';
+        const badge = document.createElement('span'); badge.className = 'media-badge';
         badge.textContent = item.type === 'video' ? '▶ ВИДЕО' : 'ФОТО';
         thumbWrap.appendChild(badge);
 
-        const footer = document.createElement('div');
-        footer.className = 'media-footer';
-        const idx = document.createElement('span');
-        idx.className = 'media-index';
-        idx.textContent = `${i+1} / ${media.length}`;
-        const dlBtn = document.createElement('button');
-        dlBtn.className = 'btn-dl';
+        const footer = document.createElement('div'); footer.className = 'media-footer';
+        const idx = document.createElement('span'); idx.className = 'media-index'; idx.textContent = `${i+1} / ${media.length}`;
+        const dlBtn = document.createElement('button'); dlBtn.className = 'btn-dl';
         dlBtn.innerHTML = `${DL_ICON} Скачать`;
         dlBtn.onclick = () => {
-          download(item.url, `instagram_${shortcode}_${i+1}.${ext}`);
-          dlBtn.className = 'btn-dl done';
-          dlBtn.textContent = '✓';
+          download(item.url, `media_${shortcode}_${i+1}.${ext}`);
+          dlBtn.className = 'btn-dl done'; dlBtn.textContent = '✓';
           setTimeout(() => { dlBtn.className = 'btn-dl'; dlBtn.innerHTML = `${DL_ICON} Скачать`; }, 3000);
         };
-        footer.appendChild(idx);
-        footer.appendChild(dlBtn);
-        card.appendChild(thumbWrap);
-        card.appendChild(footer);
+        footer.appendChild(idx); footer.appendChild(dlBtn);
+        card.appendChild(thumbWrap); card.appendChild(footer);
         grid.appendChild(card);
       });
       results.appendChild(grid);
@@ -937,7 +511,304 @@
   }
 
   document.getElementById('urlInput').addEventListener('keydown', e => { if (e.key === 'Enter') fetchMedia(); });
-  checkCookieStatus();
+
+  // ── RELEASE PAGE ──────────────────────────────────────────────────────────
+  function openReleaseModal() {
+    coverBase64 = null;
+    document.getElementById('coverPreview').style.display = 'none';
+    document.getElementById('uploadText').style.display = 'block';
+    document.getElementById('coverFileInput').value = '';
+    document.getElementById('releaseArtist').value = '';
+    document.getElementById('releaseTitle').value = '';
+    document.getElementById('releaseDate').value = '';
+    document.getElementById('releaseModalOverlay').classList.add('show');
+  }
+  function closeReleaseModal() { document.getElementById('releaseModalOverlay').classList.remove('show'); }
+  document.getElementById('releaseModalOverlay').addEventListener('click', e => { if (e.target.id === 'releaseModalOverlay') closeReleaseModal(); });
+
+  function handleCoverUpload(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      coverBase64 = e.target.result;
+      const preview = document.getElementById('coverPreview');
+      preview.src = coverBase64;
+      preview.style.display = 'block';
+      document.getElementById('uploadText').style.display = 'none';
+    };
+    reader.readAsDataURL(file);
+  }
+
+  async function addRelease() {
+    const artist = document.getElementById('releaseArtist').value.trim();
+    const title = document.getElementById('releaseTitle').value.trim();
+    const releaseDate = document.getElementById('releaseDate').value;
+    if (!artist || !title || !releaseDate) { showToast('Заполни все поля!'); return; }
+
+    const res = await fetch('/api/releases', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ artist, title, releaseDate, cover: coverBase64 })
+    });
+    const data = await res.json();
+    if (data.success) {
+      closeReleaseModal();
+      loadReleases();
+      showToast('✓ Релиз добавлен!');
+    } else {
+      showToast('Ошибка: ' + data.error);
+    }
+  }
+
+  async function loadReleases() {
+    try {
+      const res = await fetch('/api/releases');
+      const releases = await res.json();
+      renderReleases(releases);
+    } catch { showToast('Ошибка загрузки релизов'); }
+  }
+
+  function renderReleases(releases) {
+    const list = document.getElementById('releasesList');
+    if (!releases.length) {
+      list.innerHTML = '<div class="releases-empty">Нет релизов.<br>Нажми «Добавить» чтобы создать первый.</div>';
+      return;
+    }
+    const today = new Date().toISOString().split('T')[0];
+    list.innerHTML = '';
+    releases.forEach(r => {
+      const isReleased = r.releaseDate <= today;
+      const card = document.createElement('div');
+      card.className = 'release-card' + (isReleased ? ' released' : '');
+
+      // Обложка
+      if (r.cover) {
+        const img = document.createElement('img');
+        img.className = 'release-cover'; img.src = r.cover; img.alt = r.title;
+        card.appendChild(img);
+      } else {
+        const ph = document.createElement('div');
+        ph.className = 'release-cover-placeholder'; ph.textContent = '🎵';
+        card.appendChild(ph);
+      }
+
+      // Инфо
+      const info = document.createElement('div'); info.className = 'release-info';
+      const titleEl = document.createElement('div'); titleEl.className = 'release-title-text'; titleEl.textContent = r.title;
+      const artistEl = document.createElement('div'); artistEl.className = 'release-artist-text'; artistEl.textContent = r.artist;
+      info.appendChild(titleEl); info.appendChild(artistEl);
+      card.appendChild(info);
+
+      // Правый блок
+      const right = document.createElement('div'); right.className = 'release-right';
+      const dateBadge = document.createElement('div'); dateBadge.className = 'release-date-badge';
+      dateBadge.textContent = formatDate(r.releaseDate);
+      const statusBadge = document.createElement('div');
+      statusBadge.className = 'release-status ' + (isReleased ? 'out' : 'upcoming');
+      statusBadge.textContent = isReleased ? '✓ Вышел' : 'Скоро';
+      right.appendChild(dateBadge); right.appendChild(statusBadge);
+      card.appendChild(right);
+
+      // Кнопка удалить
+      const delBtn = document.createElement('button'); delBtn.className = 'btn-delete-release';
+      delBtn.innerHTML = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="3,6 5,6 21,6"/><path d="M19,6l-1,14a2,2,0,0,1-2,2H8a2,2,0,0,1-2-2L5,6"/><path d="M10,11v6"/><path d="M14,11v6"/></svg>`;
+      delBtn.title = 'Удалить';
+      delBtn.onclick = () => deleteRelease(r.id);
+      card.appendChild(delBtn);
+
+      list.appendChild(card);
+    });
+  }
+
+  async function deleteRelease(id) {
+    await fetch(`/api/releases/${id}`, { method: 'DELETE' });
+    loadReleases();
+    showToast('Удалено');
+  }
+
+  function formatDate(dateStr) {
+    if (!dateStr) return '';
+    const [y, m, d] = dateStr.split('-');
+    const months = ['янв','фев','мар','апр','май','июн','июл','авг','сен','окт','ноя','дек'];
+    return `${parseInt(d)} ${months[parseInt(m)-1]} ${y}`;
+  }
+
+  // Инициализация
+  checkSiteStatus();
+  setInterval(checkSiteStatus, 30000);
+  loadStories();
+
+  // ── STORIES ────────────────────────────────────────────────────────────────
+  let storyData = [];       // [{username, avatar, stories:[]}]
+  let storyUserIdx = 0;     // текущий пользователь
+  let storyItemIdx = 0;     // текущая история
+  let storyTimer = null;
+  let seenUsers = new Set();
+
+  async function loadStories() {
+    try {
+      const res = await fetch('/api/stories');
+      const data = await res.json();
+      storyData = data.filter(u => u.stories.length > 0);
+      renderStoriesStrip();
+    } catch {}
+  }
+
+  function renderStoriesStrip() {
+    const strip = document.getElementById('storiesStrip');
+    const inner = document.getElementById('storiesInner');
+    if (!storyData.length) { strip.style.display = 'none'; return; }
+    strip.style.display = 'block';
+    inner.innerHTML = '';
+    storyData.forEach((user, idx) => {
+      const bubble = document.createElement('div');
+      bubble.className = 'story-bubble';
+      const ring = document.createElement('div');
+      ring.className = 'story-ring' + (seenUsers.has(user.username) ? ' seen' : '');
+      ring.id = 'story-ring-' + idx;
+      const img = document.createElement('img');
+      img.className = 'story-avatar';
+      img.src = user.avatar ? `/proxy?url=${encodeURIComponent(user.avatar)}` : '';
+      img.onerror = () => { img.style.background = '#333'; };
+      ring.appendChild(img);
+      const name = document.createElement('div');
+      name.className = 'story-name';
+      name.textContent = user.username;
+      bubble.appendChild(ring);
+      bubble.appendChild(name);
+      bubble.onclick = () => openStoryViewer(idx);
+      inner.appendChild(bubble);
+    });
+  }
+
+  function openStoryViewer(userIdx) {
+    storyUserIdx = userIdx;
+    storyItemIdx = 0;
+    document.getElementById('storyViewer').classList.add('open');
+    document.body.style.overflow = 'hidden';
+    showStory();
+  }
+
+  function closeStoryViewer() {
+    document.getElementById('storyViewer').classList.remove('open');
+    document.body.style.overflow = '';
+    stopStoryTimer();
+    const wrap = document.getElementById('storyMediaWrap');
+    // убираем медиа
+    wrap.querySelectorAll('img.story-img, video.story-vid').forEach(el => el.remove());
+  }
+
+  function showStory() {
+    const user = storyData[storyUserIdx];
+    if (!user) { closeStoryViewer(); return; }
+    const story = user.stories[storyItemIdx];
+    if (!story) { nextUser(); return; }
+
+    // Отмечаем как просмотренный
+    seenUsers.add(user.username);
+    const ring = document.getElementById('story-ring-' + storyUserIdx);
+    if (ring) ring.className = 'story-ring seen';
+
+    // Шапка
+    document.getElementById('storyHeaderAvatar').src = user.avatar ? `/proxy?url=${encodeURIComponent(user.avatar)}` : '';
+    document.getElementById('storyHeaderName').textContent = user.username;
+
+    // Прогресс бар
+    const bar = document.getElementById('storyProgressBar');
+    bar.innerHTML = '';
+    user.stories.forEach((_, i) => {
+      const seg = document.createElement('div'); seg.className = 'story-seg';
+      const fill = document.createElement('div'); fill.className = 'story-seg-fill';
+      if (i < storyItemIdx) fill.style.width = '100%';
+      seg.appendChild(fill); bar.appendChild(seg);
+    });
+
+    // Медиа
+    const wrap = document.getElementById('storyMediaWrap');
+    wrap.querySelectorAll('img.story-img, video.story-vid').forEach(el => el.remove());
+
+    const duration = (story.duration || 5) * 1000;
+
+    if (story.type === 'video') {
+      const v = document.createElement('video');
+      v.className = 'story-vid';
+      v.src = `/proxy?url=${encodeURIComponent(story.url)}`;
+      v.autoplay = true; v.playsinline = true; v.muted = false;
+      v.style.maxHeight = '100vh';
+      wrap.insertBefore(v, wrap.firstChild);
+      startStoryTimer(v.duration ? v.duration * 1000 : duration);
+      v.onloadedmetadata = () => { startStoryTimer(v.duration * 1000); };
+      v.onended = () => storyNext();
+    } else {
+      const img = document.createElement('img');
+      img.className = 'story-img';
+      img.src = `/proxy?url=${encodeURIComponent(story.url)}`;
+      wrap.insertBefore(img, wrap.firstChild);
+      startStoryTimer(duration);
+    }
+  }
+
+  function startStoryTimer(ms) {
+    stopStoryTimer();
+    const bar = document.getElementById('storyProgressBar');
+    const fills = bar.querySelectorAll('.story-seg-fill');
+    const fill = fills[storyItemIdx];
+    if (fill) {
+      fill.style.transition = 'none';
+      fill.style.width = '0%';
+      requestAnimationFrame(() => {
+        fill.classList.add('running');
+        fill.style.transition = `width ${ms}ms linear`;
+        fill.style.width = '100%';
+      });
+    }
+    storyTimer = setTimeout(() => storyNext(), ms);
+  }
+
+  function stopStoryTimer() {
+    if (storyTimer) { clearTimeout(storyTimer); storyTimer = null; }
+  }
+
+  function storyNext() {
+    stopStoryTimer();
+    const user = storyData[storyUserIdx];
+    if (storyItemIdx < user.stories.length - 1) {
+      storyItemIdx++;
+      showStory();
+    } else {
+      nextUser();
+    }
+  }
+
+  function storyPrev() {
+    stopStoryTimer();
+    if (storyItemIdx > 0) {
+      storyItemIdx--;
+      showStory();
+    } else if (storyUserIdx > 0) {
+      storyUserIdx--;
+      storyItemIdx = storyData[storyUserIdx].stories.length - 1;
+      showStory();
+    }
+  }
+
+  function nextUser() {
+    if (storyUserIdx < storyData.length - 1) {
+      storyUserIdx++;
+      storyItemIdx = 0;
+      showStory();
+    } else {
+      closeStoryViewer();
+    }
+  }
+
+  // Закрытие по Escape
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') closeStoryViewer();
+    if (e.key === 'ArrowRight') storyNext();
+    if (e.key === 'ArrowLeft') storyPrev();
+  });
 </script>
 </body>
 </html>
