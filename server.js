@@ -6,132 +6,238 @@ const fs = require('fs');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// ─── Конфиг ──────────────────────────────────────────────────────────────────
+function loadConfig() {
+  try { return JSON.parse(fs.readFileSync(path.join(__dirname, 'config.json'), 'utf8')); }
+  catch { return {}; }
+}
+function saveConfig(data) {
+  const merged = { ...loadConfig(), ...data };
+  fs.writeFileSync(path.join(__dirname, 'config.json'), JSON.stringify(merged, null, 2));
+}
+
+// ─── Релизы ──────────────────────────────────────────────────────────────────
+const RELEASES_FILE = path.join(__dirname, 'releases.json');
+function loadReleases() {
+  try { return JSON.parse(fs.readFileSync(RELEASES_FILE, 'utf8')); }
+  catch { return []; }
+}
+function saveReleases(releases) {
+  fs.writeFileSync(RELEASES_FILE, JSON.stringify(releases, null, 2));
+}
+
 // ─── Telegram Bot ─────────────────────────────────────────────────────────────
 const TG_TOKEN = process.env.TG_TOKEN || '8252644018:AAGOkyp67N0Myv0o-_LWfSpieGtYba6if0w';
 const TG_API = `https://api.telegram.org/bot${TG_TOKEN}`;
-
 let lastUpdateId = 0;
+const awaitingCookie = new Set();
+const awaitingMessage = new Set();
 
-// Отправить текст в Telegram
-async function tgSend(chatId, text) {
-  await axios.post(`${TG_API}/sendMessage`, { chat_id: chatId, text });
+async function tgSend(chatId, text, opts = {}) {
+  await axios.post(`${TG_API}/sendMessage`, { chat_id: chatId, text, ...opts });
 }
 
-// Отправить фото в Telegram по URL
 async function tgSendPhoto(chatId, url) {
-  const response = await axios.get(url, {
-    headers: { ...getHeaders(), 'Accept': 'image/*, */*' },
-    responseType: 'arraybuffer',
-    timeout: 60000,
-  });
-  const buffer = Buffer.from(response.data);
+  const response = await axios.get(url, { headers: { ...getHeaders(), 'Accept': 'image/*, */*' }, responseType: 'arraybuffer', timeout: 60000 });
   const FormData = require('form-data');
   const form = new FormData();
   form.append('chat_id', String(chatId));
-  form.append('photo', buffer, { filename: 'photo.jpg', contentType: 'image/jpeg' });
+  form.append('photo', Buffer.from(response.data), { filename: 'photo.jpg', contentType: 'image/jpeg' });
   await axios.post(`${TG_API}/sendPhoto`, form, { headers: form.getHeaders(), timeout: 60000 });
 }
 
-// Отправить видео в Telegram по URL
 async function tgSendVideo(chatId, url) {
-  const response = await axios.get(url, {
-    headers: { ...getHeaders(), 'Accept': 'video/*, */*' },
-    responseType: 'arraybuffer',
-    timeout: 120000,
-  });
-  const buffer = Buffer.from(response.data);
+  const response = await axios.get(url, { headers: { ...getHeaders(), 'Accept': 'video/*, */*' }, responseType: 'arraybuffer', timeout: 120000 });
   const FormData = require('form-data');
   const form = new FormData();
   form.append('chat_id', String(chatId));
-  form.append('video', buffer, { filename: 'video.mp4', contentType: 'video/mp4' });
+  form.append('video', Buffer.from(response.data), { filename: 'video.mp4', contentType: 'video/mp4' });
   await axios.post(`${TG_API}/sendVideo`, form, { headers: form.getHeaders(), timeout: 120000 });
 }
 
-// Отправить медиагруппу (несколько фото/видео)
 async function tgSendMediaGroup(chatId, mediaItems) {
   const FormData = require('form-data');
-
-  // Telegram mediaGroup поддерживает до 10 файлов
   const chunks = [];
-  for (let i = 0; i < mediaItems.length; i += 10) {
-    chunks.push(mediaItems.slice(i, i + 10));
-  }
-
+  for (let i = 0; i < mediaItems.length; i += 10) chunks.push(mediaItems.slice(i, i + 10));
   for (const chunk of chunks) {
     const form = new FormData();
     const mediaJson = [];
-
     for (let i = 0; i < chunk.length; i++) {
       const item = chunk[i];
-      const response = await axios.get(item.url, {
-        headers: { ...getHeaders(), 'Accept': '*/*' },
-        responseType: 'arraybuffer',
-        timeout: 120000,
-      });
-      const buffer = Buffer.from(response.data);
+      const response = await axios.get(item.url, { headers: { ...getHeaders(), 'Accept': '*/*' }, responseType: 'arraybuffer', timeout: 120000 });
       const fieldName = `file${i}`;
       const ext = item.type === 'video' ? 'mp4' : 'jpg';
       const ct = item.type === 'video' ? 'video/mp4' : 'image/jpeg';
-      form.append(fieldName, buffer, { filename: `media_${i+1}.${ext}`, contentType: ct });
+      form.append(fieldName, Buffer.from(response.data), { filename: `media_${i+1}.${ext}`, contentType: ct });
       mediaJson.push({ type: item.type === 'video' ? 'video' : 'photo', media: `attach://${fieldName}` });
     }
-
     form.append('chat_id', String(chatId));
     form.append('media', JSON.stringify(mediaJson));
     await axios.post(`${TG_API}/sendMediaGroup`, form, { headers: form.getHeaders(), timeout: 180000 });
   }
 }
 
-// Получить медиа из Instagram и отправить в Telegram
-async function handleTgMessage(chatId, text) {
-  const shortcode = getShortcode(text);
-  if (!shortcode) {
-    await tgSend(chatId, '❌ Не вижу ссылку на Instagram. Отправь ссылку вида:\nhttps://www.instagram.com/p/ABC123/');
-    return;
-  }
+function isAdmin(username) {
+  if (!username) return false;
+  const config = loadConfig();
+  const adminUser = (config.adminUsername || '').replace('@', '').toLowerCase();
+  return adminUser && username.toLowerCase() === adminUser;
+}
 
-  await tgSend(chatId, '⏳ Скачиваю...');
-
-  const errors = [];
-  const methods = [
-    { name: 'API ?__a=1', fn: () => tryApiA1(shortcode) },
-    { name: 'GraphQL v2', fn: () => tryGraphQL2(shortcode) },
-    { name: 'GraphQL v1', fn: () => tryGraphQL(shortcode) },
-    { name: 'HTML Parser', fn: () => tryHtmlParse(shortcode) },
-  ];
-
-  let media = null;
-  for (const method of methods) {
-    try {
-      const result = await method.fn();
-      if (result?.length > 0) { media = result; break; }
-    } catch (err) {
-      errors.push(`${method.name}: ${err.message}`);
-    }
-  }
-
-  if (!media) {
-    await tgSend(chatId, '❌ Не удалось получить медиа. Возможно пост приватный или куки устарели.');
-    return;
-  }
-
+async function checkCookieValid() {
   try {
-    if (media.length === 1) {
-      if (media[0].type === 'video') {
-        await tgSendVideo(chatId, media[0].url);
-      } else {
-        await tgSendPhoto(chatId, media[0].url);
-      }
-    } else {
-      await tgSendMediaGroup(chatId, media);
+    const res = await axios.get('https://www.instagram.com/api/v1/accounts/current_user/?edit=true', { headers: getHeaders(), timeout: 10000 });
+    return res.status === 200;
+  } catch { return false; }
+}
+
+// ─── Проверка дат релизов и уведомление в TG ─────────────────────────────────
+async function checkReleaseDates() {
+  const config = loadConfig();
+  const adminChatId = config.adminChatId;
+
+  const releases = loadReleases();
+  const today = new Date().toISOString().split('T')[0];
+
+  // Дата "вчера" — через 1 день после релиза удаляем
+  const yesterday = new Date();
+  yesterday.setDate(yesterday.getDate() - 1);
+  const yesterdayStr = yesterday.toISOString().split('T')[0];
+
+  let changed = false;
+  const remaining = [];
+
+  for (const release of releases) {
+    // Удаляем если прошёл 1 день после релиза
+    if (release.releaseDate <= yesterdayStr) {
+      console.log(`[Releases] Удаляем "${release.title}" (${release.releaseDate})`);
+      changed = true;
+      continue; // не добавляем в remaining
     }
-    await tgSend(chatId, `✅ Готово! Отправил ${media.length} файл(ов).`);
-  } catch (err) {
-    await tgSend(chatId, '❌ Ошибка при отправке файлов: ' + err.message);
+
+    // Уведомляем в день релиза
+    if (release.releaseDate === today && !release.notified && adminChatId) {
+      release.notified = true;
+      changed = true;
+      try {
+        await tgSend(adminChatId,
+          `🎵 Релиз вышел сегодня!\n\n` +
+          `👤 Артист: ${release.artist}\n` +
+          `💿 Название: ${release.title}\n` +
+          `📅 Дата: ${release.releaseDate}\n\n` +
+          `Трек уже должен быть на площадках!`
+        );
+      } catch (e) { console.error('[TG] Release notify error:', e.message); }
+    }
+
+    remaining.push(release);
+  }
+
+  if (changed) saveReleases(remaining);
+}
+
+// ─── Обработчик сообщений Telegram ───────────────────────────────────────────
+async function handleTgMessage(msg) {
+  const chatId = msg.chat.id;
+  const text = (msg.text || '').trim();
+  const username = (msg.from?.username || '').toLowerCase();
+
+  // Сохраняем chatId админа для уведомлений
+  if (isAdmin(username)) {
+    const config = loadConfig();
+    if (config.adminChatId !== chatId) saveConfig({ adminChatId: chatId });
+  }
+
+  // Ожидание куки
+  if (awaitingCookie.has(chatId)) {
+    awaitingCookie.delete(chatId);
+    if (text.length < 20) { await tgSend(chatId, '❌ Не похоже на куки. Отправь /start и попробуй снова.'); return; }
+    saveConfig({ cookie: text });
+    await tgSend(chatId, '✅ Куки сохранены! Проверяю...');
+    const valid = await checkCookieValid();
+    await tgSend(chatId, valid
+      ? '✅ Куки рабочие!\n\n/onsite — включить сайт\n/offsite — выключить сайт\n/message — сообщение\n/unmessage — убрать'
+      : '⚠️ Куки сохранены, но Instagram не принял. Возможно устарели.'
+    );
+    return;
+  }
+
+  // Ожидание текста /message
+  if (awaitingMessage.has(chatId)) {
+    awaitingMessage.delete(chatId);
+    const parts = text.split('|');
+    const title = parts[0]?.trim() || 'Внимание';
+    const body = parts[1]?.trim() || text;
+    saveConfig({ siteMessage: { active: true, title, body } });
+    await tgSend(chatId, `✅ Сообщение установлено!\n\n📌 ${title}\n📝 ${body}\n\nУбрать — /unmessage`);
+    return;
+  }
+
+  // /start
+  if (text === '/start') {
+    if (!isAdmin(username)) return;
+    await tgSend(chatId, '🔐 Добро пожаловать! Проверяю куки...');
+    const hasCookie = !!getCookie();
+    if (!hasCookie) {
+      await tgSend(chatId, '⚠️ Куки не найдены! Отправь строку куки от Instagram:');
+      awaitingCookie.add(chatId);
+      return;
+    }
+    const valid = await checkCookieValid();
+    const config = loadConfig();
+    const releases = loadReleases();
+    await tgSend(chatId,
+      `✅ Панель управления ZHANSAVER\n\n` +
+      `🍪 Куки: ${valid ? '✅ Рабочие' : '❌ Не работают'}\n` +
+      `🌐 Сайт: ${config.siteEnabled !== false ? '✅ Включён' : '🔴 Выключен'}\n` +
+      `📢 Сообщение: ${config.siteMessage?.active ? '✅ Активно' : '—'}\n` +
+      `🎵 Релизов: ${releases.length}\n\n` +
+      `/onsite — включить сайт\n` +
+      `/offsite — выключить сайт\n` +
+      `/message — показать сообщение\n` +
+      `/unmessage — убрать сообщение\n` +
+      `/cookie — обновить куки`
+    );
+    return;
+  }
+
+  // Не админ — игнорируем
+  if (!isAdmin(username)) return;
+
+  if (text === '/onsite') {
+    if (loadConfig().siteEnabled !== false) { await tgSend(chatId, 'ℹ️ Сайт уже включён.'); return; }
+    saveConfig({ siteEnabled: true });
+    await tgSend(chatId, '✅ Сайт включён!');
+    return;
+  }
+
+  if (text === '/offsite') {
+    if (loadConfig().siteEnabled === false) { await tgSend(chatId, 'ℹ️ Сайт уже выключен.'); return; }
+    saveConfig({ siteEnabled: false });
+    await tgSend(chatId, '🔴 Сайт выключен.');
+    return;
+  }
+
+  if (text === '/message') {
+    await tgSend(chatId, '📢 Введи заголовок и текст через |\n\nПример:\nВнимание!|Сайт на техобслуживании.\n\nОтправь:');
+    awaitingMessage.add(chatId);
+    return;
+  }
+
+  if (text === '/unmessage') {
+    if (!loadConfig().siteMessage?.active) { await tgSend(chatId, 'ℹ️ Сообщение и так не активно.'); return; }
+    saveConfig({ siteMessage: { active: false, title: '', body: '' } });
+    await tgSend(chatId, '✅ Сообщение убрано.');
+    return;
+  }
+
+  if (text === '/cookie') {
+    await tgSend(chatId, '🍪 Отправь новую строку куки от Instagram:');
+    awaitingCookie.add(chatId);
+    return;
   }
 }
 
-// Long polling — получаем обновления от Telegram
 async function pollTelegram() {
   while (true) {
     try {
@@ -139,62 +245,43 @@ async function pollTelegram() {
         params: { offset: lastUpdateId + 1, timeout: 30, allowed_updates: ['message'] },
         timeout: 35000,
       });
-      const updates = res.data.result || [];
-      for (const update of updates) {
+      for (const update of (res.data.result || [])) {
         lastUpdateId = update.update_id;
         const msg = update.message;
         if (!msg || !msg.text) continue;
-        const chatId = msg.chat.id;
-        const text = msg.text.trim();
-
-        // Обрабатываем в фоне чтобы не блокировать polling
-        handleTgMessage(chatId, text).catch(e => console.error('[TG] Error:', e.message));
+        handleTgMessage(msg).catch(e => console.error('[TG] Error:', e.message));
       }
     } catch (err) {
-      if (!err.message.includes('timeout')) {
-        console.error('[TG] Poll error:', err.message);
-      }
+      if (!err.message.includes('timeout')) console.error('[TG] Poll error:', err.message);
       await new Promise(r => setTimeout(r, 3000));
     }
   }
 }
 
-app.use(express.json());
+app.use(express.json({ limit: '10mb' }));
 app.use(express.static(path.join(__dirname, 'public')));
 
-// ─── Загрузка куки из config.json ───────────────────────────────────────────
+// ─── Куки / заголовки ────────────────────────────────────────────────────────
 function getCookie() {
+  try { const c = process.env.COOKIE || ''; if (c.length > 10) return c; } catch {}
   try {
-    const cookie = process.env.COOKIE || '';
-    if (cookie.length > 10) return cookie;
-  } catch {}
-  try {
-    const config = JSON.parse(fs.readFileSync(path.join(__dirname, 'config.json'), 'utf8'));
-    const cookie = config.cookie || '';
-    if (cookie === 'ВСТАВЬ_СЮДА_КУКИ_ИЗ_INSTAGRAM' || cookie.length < 10) return null;
-    return cookie;
-  } catch {
-    return null;
-  }
+    const c = loadConfig().cookie || '';
+    if (c === 'ВСТАВЬ_СЮДА_КУКИ_ИЗ_INSTAGRAM' || c.length < 10) return null;
+    return c;
+  } catch { return null; }
 }
 
 function getHeaders() {
   const cookie = getCookie();
-  const headers = {
+  const h = {
     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
-    'Accept': '*/*',
-    'Accept-Language': 'en-US,en;q=0.9',
-    'Accept-Encoding': 'gzip, deflate, br',
-    'X-IG-App-ID': '936619743392459',
-    'X-Requested-With': 'XMLHttpRequest',
-    'Referer': 'https://www.instagram.com/',
-    'Origin': 'https://www.instagram.com',
-    'Sec-Fetch-Site': 'same-origin',
-    'Sec-Fetch-Mode': 'cors',
-    'Sec-Fetch-Dest': 'empty',
+    'Accept': '*/*', 'Accept-Language': 'en-US,en;q=0.9', 'Accept-Encoding': 'gzip, deflate, br',
+    'X-IG-App-ID': '936619743392459', 'X-Requested-With': 'XMLHttpRequest',
+    'Referer': 'https://www.instagram.com/', 'Origin': 'https://www.instagram.com',
+    'Sec-Fetch-Site': 'same-origin', 'Sec-Fetch-Mode': 'cors', 'Sec-Fetch-Dest': 'empty',
   };
-  if (cookie) headers['Cookie'] = cookie;
-  return headers;
+  if (cookie) h['Cookie'] = cookie;
+  return h;
 }
 
 function getShortcode(url) {
@@ -202,10 +289,10 @@ function getShortcode(url) {
   return m ? m[1] : null;
 }
 
+// ─── Instagram ────────────────────────────────────────────────────────────────
 function extractMedia(item) {
   const results = [];
   if (!item) return results;
-
   if (item.edge_sidecar_to_children) {
     for (const edge of item.edge_sidecar_to_children.edges || []) {
       const node = edge.node;
@@ -217,26 +304,23 @@ function extractMedia(item) {
   } else if (item.display_url) {
     results.push({ url: item.display_url, type: 'image' });
   }
-
-  if (item.image_versions2?.candidates?.length > 0 && results.length === 0) {
+  if (item.image_versions2?.candidates?.length > 0 && results.length === 0)
     results.push({ url: item.image_versions2.candidates[0].url, type: 'image' });
-  }
-
   return results;
 }
 
 function findMediaInJson(obj, results, depth = 0) {
   if (depth > 20 || !obj || typeof obj !== 'object') return;
-
-  if (typeof obj.display_url === 'string' && obj.display_url.startsWith('http')) {
-    const u = obj.display_url;
-    if (!results.find(r => r.url === u)) results.push({ url: u, type: 'image' });
-  }
   if (typeof obj.video_url === 'string' && obj.video_url.startsWith('http')) {
     const u = obj.video_url;
-    if (!results.find(r => r.url === u)) results.push({ url: u, type: 'video', thumb: obj.display_url });
+    if (!results.find(r => r.url === u)) {
+      results.push({ url: u, type: 'video', thumb: obj.display_url });
+      if (obj.display_url) { const idx = results.findIndex(r => r.url === obj.display_url && r.type === 'image'); if (idx !== -1) results.splice(idx, 1); }
+    }
+  } else if (typeof obj.display_url === 'string' && obj.display_url.startsWith('http')) {
+    const u = obj.display_url;
+    if (!results.find(r => r.url === u) && !results.find(r => r.thumb === u)) results.push({ url: u, type: 'image' });
   }
-
   for (const key of Object.keys(obj)) {
     const val = obj[key];
     if (Array.isArray(val)) val.forEach(i => findMediaInJson(i, results, depth + 1));
@@ -244,10 +328,8 @@ function findMediaInJson(obj, results, depth = 0) {
   }
 }
 
-// ─── Метод 1: API ?__a=1 ────────────────────────────────────────────────────
 async function tryApiA1(shortcode) {
-  const url = `https://www.instagram.com/p/${shortcode}/?__a=1&__d=dis`;
-  const res = await axios.get(url, { headers: getHeaders(), timeout: 10000 });
+  const res = await axios.get(`https://www.instagram.com/p/${shortcode}/?__a=1&__d=dis`, { headers: getHeaders(), timeout: 10000 });
   const item = res.data?.items?.[0] || res.data?.graphql?.shortcode_media;
   if (!item) throw new Error('Empty response');
   const media = extractMedia(item);
@@ -255,11 +337,9 @@ async function tryApiA1(shortcode) {
   return media;
 }
 
-// ─── Метод 2: GraphQL query ──────────────────────────────────────────────────
 async function tryGraphQL(shortcode) {
   const variables = JSON.stringify({ shortcode });
-  const url = `https://www.instagram.com/graphql/query/?query_hash=b3055c01b4b222b8a47dc12b090e4e64&variables=${encodeURIComponent(variables)}`;
-  const res = await axios.get(url, { headers: getHeaders(), timeout: 10000 });
+  const res = await axios.get(`https://www.instagram.com/graphql/query/?query_hash=b3055c01b4b222b8a47dc12b090e4e64&variables=${encodeURIComponent(variables)}`, { headers: getHeaders(), timeout: 10000 });
   const item = res.data?.data?.shortcode_media;
   if (!item) throw new Error('No shortcode_media');
   const media = extractMedia(item);
@@ -267,156 +347,233 @@ async function tryGraphQL(shortcode) {
   return media;
 }
 
-// ─── Метод 3: Новый GraphQL endpoint ─────────────────────────────────────────
 async function tryGraphQL2(shortcode) {
-  const headers = getHeaders();
   const cookie = getCookie() || '';
-  const csrfMatch = cookie.match(/csrftoken=([^;]+)/);
-  const csrf = csrfMatch ? csrfMatch[1] : 'missing';
-
-  const res = await axios.post(
-    'https://www.instagram.com/graphql/query',
-    new URLSearchParams({
-      doc_id: '8845758582119845',
-      variables: JSON.stringify({ shortcode, fetch_comment_count: 0 })
-    }),
-    {
-      headers: {
-        ...headers,
-        'Content-Type': 'application/x-www-form-urlencoded',
-        'X-CSRFToken': csrf,
-      },
-      timeout: 10000,
-    }
+  const csrf = (cookie.match(/csrftoken=([^;]+)/) || [])[1] || 'missing';
+  const res = await axios.post('https://www.instagram.com/graphql/query',
+    new URLSearchParams({ doc_id: '8845758582119845', variables: JSON.stringify({ shortcode, fetch_comment_count: 0 }) }),
+    { headers: { ...getHeaders(), 'Content-Type': 'application/x-www-form-urlencoded', 'X-CSRFToken': csrf }, timeout: 10000 }
   );
-
   const media = [];
   findMediaInJson(res.data, media);
   if (!media.length) throw new Error('No media found');
   return media;
 }
 
-// ─── Метод 4: HTML парсинг ───────────────────────────────────────────────────
 async function tryHtmlParse(shortcode) {
-  const headers = {
-    ...getHeaders(),
-    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-    'Sec-Fetch-Mode': 'navigate',
-    'Sec-Fetch-Dest': 'document',
-  };
-  const res = await axios.get(`https://www.instagram.com/p/${shortcode}/`, { headers, timeout: 12000 });
+  const res = await axios.get(`https://www.instagram.com/p/${shortcode}/`, {
+    headers: { ...getHeaders(), 'Accept': 'text/html,application/xhtml+xml,*/*;q=0.8', 'Sec-Fetch-Mode': 'navigate', 'Sec-Fetch-Dest': 'document' },
+    timeout: 12000,
+  });
   const html = res.data;
-  const media = [];
-
+  const videoUrls = new Set();
+  for (const m of html.matchAll(/property="og:video(?::url)?"\s+content="([^"]+)"/g)) videoUrls.add(m[1].replace(/&amp;/g, '&'));
+  const imageUrls = [];
   for (const m of html.matchAll(/property="og:image"\s+content="([^"]+)"/g)) {
     const u = m[1].replace(/&amp;/g, '&');
-    if (!media.find(r => r.url === u)) media.push({ url: u, type: 'image' });
+    if (videoUrls.size === 0) imageUrls.push(u);
   }
-  for (const m of html.matchAll(/property="og:video(?::url)?"\s+content="([^"]+)"/g)) {
-    const u = m[1].replace(/&amp;/g, '&');
-    if (!media.find(r => r.url === u)) media.push({ url: u, type: 'video' });
-  }
-  for (const m of html.matchAll(/<script type="application\/json"[^>]*>([\s\S]*?)<\/script>/g)) {
-    try { findMediaInJson(JSON.parse(m[1]), media); } catch {}
-  }
-  const addDataMatch = html.match(/window\.__additionalDataLoaded\s*\([^,]+,\s*({.+?})\s*\);/s);
-  if (addDataMatch) {
-    try { findMediaInJson(JSON.parse(addDataMatch[1]), media); } catch {}
-  }
-
+  const media = [];
+  for (const u of videoUrls) if (!media.find(r => r.url === u)) media.push({ url: u, type: 'video' });
+  for (const u of imageUrls) if (!media.find(r => r.url === u)) media.push({ url: u, type: 'image' });
+  for (const m of html.matchAll(/<script type="application\/json"[^>]*>([\s\S]*?)<\/script>/g)) { try { findMediaInJson(JSON.parse(m[1]), media); } catch {} }
+  const addData = html.match(/window\.__additionalDataLoaded\s*\([^,]+,\s*({.+?})\s*\);/s);
+  if (addData) { try { findMediaInJson(JSON.parse(addData[1]), media); } catch {} }
   if (!media.length) throw new Error('No media in HTML');
   return media;
 }
 
-// ─── Прокси для скачивания ────────────────────────────────────────────────────
+// ─── API Routes ───────────────────────────────────────────────────────────────
+
+app.get('/api/status', (req, res) => {
+  const config = loadConfig();
+  res.json({ hasCookie: !!getCookie(), siteEnabled: config.siteEnabled !== false, siteMessage: config.siteMessage || { active: false } });
+});
+
 app.get('/proxy', async (req, res) => {
-  const { url } = req.query;
+  const { url, dl } = req.query;
   if (!url) return res.status(400).send('No URL');
+  if (!url.startsWith('http://') && !url.startsWith('https://')) {
+    return res.status(400).send('Invalid URL');
+  }
+
+  const headers = {
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
+    'Accept': '*/*',
+    'Referer': 'https://www.instagram.com/',
+  };
+
+  if (req.headers.range) headers['Range'] = req.headers.range;
+
   try {
     const response = await axios.get(url, {
-      headers: { ...getHeaders(), 'Accept': 'image/*, video/*, */*' },
+      headers,
       responseType: 'stream',
       timeout: 60000,
+      maxRedirects: 5,
     });
-    const ct = response.headers['content-type'] || 'image/jpeg';
-    const ext = ct.includes('video') ? 'mp4' : 'jpg';
+
+    const ct = response.headers['content-type'] || 'application/octet-stream';
+    const isVideo = ct.includes('video') || url.includes('.mp4');
+    const ext = isVideo ? 'mp4' : (ct.includes('webp') ? 'webp' : 'jpg');
+
+    res.status(response.status === 206 ? 206 : 200);
     res.setHeader('Content-Type', ct);
-    res.setHeader('Content-Disposition', `attachment; filename="instagram_${Date.now()}.${ext}"`);
+    res.setHeader('Accept-Ranges', 'bytes');
     if (response.headers['content-length']) res.setHeader('Content-Length', response.headers['content-length']);
+    if (response.headers['content-range']) res.setHeader('Content-Range', response.headers['content-range']);
+    if (dl === '1') {
+      res.setHeader('Content-Disposition', `attachment; filename="media_${Date.now()}.${ext}"`);
+    } else {
+      res.setHeader('Content-Disposition', 'inline');
+    }
     response.data.pipe(res);
   } catch (err) {
+    console.error('[Proxy] Error for URL:', url.substring(0, 80), '-', err.message);
     res.status(500).send(err.message);
   }
 });
 
-// ─── Статус куки ──────────────────────────────────────────────────────────────
-app.get('/api/status', (req, res) => {
-  res.json({ hasCookie: !!getCookie() });
-});
 
-// ─── Сохранить куки ───────────────────────────────────────────────────────────
 app.post('/api/cookie', (req, res) => {
   const { cookie } = req.body;
   if (!cookie || cookie.length < 10) return res.status(400).json({ error: 'Пустые куки' });
-  try {
-    fs.writeFileSync(path.join(__dirname, 'config.json'), JSON.stringify({ cookie }, null, 2));
-    res.json({ success: true });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
+  try { saveConfig({ cookie }); res.json({ success: true }); }
+  catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// ─── Главный endpoint ─────────────────────────────────────────────────────────
 app.post('/api/fetch', async (req, res) => {
+  const config = loadConfig();
+  if (config.siteEnabled === false) return res.status(503).json({ error: '🔴 Сайт временно не работает.', siteDisabled: true });
+
   const { url } = req.body;
   if (!url) return res.status(400).json({ error: 'Укажи ссылку' });
 
+  // Instagram
   const shortcode = getShortcode(url);
   if (!shortcode) return res.status(400).json({ error: 'Неверная ссылка Instagram' });
 
   const hasCookie = !!getCookie();
   const errors = [];
-
   const methods = [
     { name: 'API ?__a=1', fn: () => tryApiA1(shortcode) },
     { name: 'GraphQL v2', fn: () => tryGraphQL2(shortcode) },
     { name: 'GraphQL v1', fn: () => tryGraphQL(shortcode) },
     { name: 'HTML Parser', fn: () => tryHtmlParse(shortcode) },
   ];
-
   for (const method of methods) {
     try {
       console.log(`[${shortcode}] Trying: ${method.name}`);
       const media = await method.fn();
-      if (media?.length > 0) {
-        console.log(`[${shortcode}] ✅ Success via ${method.name}: ${media.length} items`);
-        return res.json({ success: true, media, shortcode });
-      }
-    } catch (err) {
-      console.log(`[${shortcode}] ❌ ${method.name}: ${err.message}`);
-      errors.push(`${method.name}: ${err.message}`);
+      if (media?.length > 0) { console.log(`[${shortcode}] ✅ ${method.name}: ${media.length} items`); return res.json({ success: true, media, shortcode }); }
+    } catch (err) { console.log(`[${shortcode}] ❌ ${method.name}: ${err.message}`); errors.push(`${method.name}: ${err.message}`); }
+  }
+  res.status(404).json({ error: hasCookie ? 'Не удалось получить медиа. Пост приватный или куки устарели.' : 'Не удалось получить медиа. Добавь куки Instagram.', details: errors, hasCookie });
+});
+
+// ─── Stories ──────────────────────────────────────────────────────────────────
+// Кэш сторис чтобы не долбить Instagram каждый раз
+let storiesCache = { data: null, ts: 0 };
+const STORIES_TTL = 5 * 60 * 1000; // 5 минут
+
+async function fetchStoriesForUser(username) {
+  // Шаг 1: получаем user_id по username
+  const profileRes = await axios.get(`https://www.instagram.com/api/v1/users/web_profile_info/?username=${username}`, {
+    headers: { ...getHeaders(), 'X-IG-App-ID': '936619743392459' },
+    timeout: 10000,
+  });
+  const userId = profileRes.data?.data?.user?.id;
+  if (!userId) throw new Error(`User not found: ${username}`);
+
+  const avatar = profileRes.data?.data?.user?.profile_pic_url;
+
+  // Шаг 2: получаем stories по user_id
+  const storiesRes = await axios.get(`https://www.instagram.com/api/v1/feed/reels_media/?reel_ids=${userId}`, {
+    headers: { ...getHeaders(), 'X-IG-App-ID': '936619743392459' },
+    timeout: 10000,
+  });
+
+  const reel = storiesRes.data?.reels_media?.[0] || storiesRes.data?.reels?.[userId];
+  if (!reel || !reel.items?.length) return { username, avatar, stories: [] };
+
+  const stories = reel.items.map(item => {
+    if (item.video_versions?.length) {
+      return {
+        type: 'video',
+        url: item.video_versions[0].url,
+        thumb: item.image_versions2?.candidates?.[0]?.url || null,
+        duration: item.video_duration || 5,
+        taken_at: item.taken_at,
+      };
+    }
+    return {
+      type: 'image',
+      url: item.image_versions2?.candidates?.[0]?.url || null,
+      thumb: item.image_versions2?.candidates?.[0]?.url || null,
+      duration: 5,
+      taken_at: item.taken_at,
+    };
+  }).filter(s => s.url);
+
+  return { username, avatar, stories };
+}
+
+app.get('/api/stories', async (req, res) => {
+  // Отдаём кэш если свежий
+  if (storiesCache.data && Date.now() - storiesCache.ts < STORIES_TTL) {
+    return res.json(storiesCache.data);
+  }
+
+  const config = loadConfig();
+  const profiles = config.storyProfiles || [];
+  if (!profiles.length) return res.json([]);
+  if (!getCookie()) return res.json([]);
+
+  const results = [];
+  for (const username of profiles) {
+    try {
+      const data = await fetchStoriesForUser(username.replace('@', ''));
+      if (data.stories.length > 0) results.push(data);
+    } catch (e) {
+      console.error(`[Stories] Error for ${username}:`, e.message);
     }
   }
 
-  res.status(404).json({
-    error: hasCookie
-      ? 'Не удалось получить медиа. Возможно пост приватный или куки устарели.'
-      : 'Не удалось получить медиа. Добавь куки Instagram для стабильной работы.',
-    details: errors,
-    hasCookie,
-  });
+  storiesCache = { data: results, ts: Date.now() };
+  res.json(results);
+});
+
+// Релизы
+app.get('/api/releases', (req, res) => res.json(loadReleases()));
+
+app.post('/api/releases', (req, res) => {
+  const { artist, title, releaseDate, cover } = req.body;
+  if (!artist || !title || !releaseDate) return res.status(400).json({ error: 'Заполни все поля' });
+  const releases = loadReleases();
+  const release = { id: Date.now(), artist, title, releaseDate, cover: cover || null, notified: false, createdAt: new Date().toISOString() };
+  releases.unshift(release);
+  saveReleases(releases);
+  res.json({ success: true, release });
+});
+
+app.delete('/api/releases/:id', (req, res) => {
+  const id = Number(req.params.id);
+  saveReleases(loadReleases().filter(r => r.id !== id));
+  res.json({ success: true });
 });
 
 // ─── Запуск ───────────────────────────────────────────────────────────────────
 app.listen(PORT, () => {
-  console.log(`\n✅ InstaLoader запущен: http://localhost:${PORT}`);
-  if (!getCookie()) {
-    console.log(`⚠️  Куки не настроены.\n`);
-  } else {
-    console.log(`🍪 Куки загружены!\n`);
-  }
+  console.log(`\n✅ ZHANSAVER запущен: http://localhost:${PORT}`);
+  console.log(getCookie() ? '🍪 Куки загружены!' : '⚠️  Куки не настроены.');
+  const config = loadConfig();
+  console.log(config.adminUsername ? `👤 Admin: @${config.adminUsername}` : '⚠️  adminUsername не задан.');
+  if (!fs.existsSync(RELEASES_FILE)) saveReleases([]);
 });
 
-// Запускаем Telegram бота
-pollTelegram().then(() => {}).catch(console.error);
-console.log(`🤖 Telegram бот запущен!`);
+pollTelegram().catch(console.error);
+console.log('🤖 Telegram бот запущен!');
+
+// Проверяем релизы каждый час
+setInterval(checkReleaseDates, 60 * 60 * 1000);
+setTimeout(checkReleaseDates, 5000);
