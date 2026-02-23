@@ -472,29 +472,52 @@ app.post('/api/fetch', async (req, res) => {
 });
 
 // ─── Stories ──────────────────────────────────────────────────────────────────
-// Кэш сторис чтобы не долбить Instagram каждый раз
 let storiesCache = { data: null, ts: 0 };
-const STORIES_TTL = 5 * 60 * 1000; // 5 минут
+const STORIES_TTL = 15 * 60 * 1000; // 15 минут — меньше запросов к Instagram
+
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+function getStoryHeaders() {
+  const cookie = getCookie() || '';
+  const csrf = (cookie.match(/csrftoken=([^;]+)/) || [])[1] || '';
+  return {
+    'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1',
+    'Accept': '*/*',
+    'Accept-Language': 'en-US,en;q=0.9',
+    'Accept-Encoding': 'gzip, deflate, br',
+    'X-IG-App-ID': '936619743392459',
+    'X-ASBD-ID': '198387',
+    'X-IG-WWW-Claim': '0',
+    'X-Requested-With': 'XMLHttpRequest',
+    'Referer': 'https://www.instagram.com/',
+    'Origin': 'https://www.instagram.com',
+    'Cookie': cookie,
+    ...(csrf ? { 'X-CSRFToken': csrf } : {}),
+  };
+}
 
 async function fetchStoriesForUser(username) {
-  // Шаг 1: получаем user_id по username
-  const profileRes = await axios.get(`https://www.instagram.com/api/v1/users/web_profile_info/?username=${username}`, {
-    headers: { ...getHeaders(), 'X-IG-App-ID': '936619743392459' },
-    timeout: 10000,
-  });
-  const userId = profileRes.data?.data?.user?.id;
+  // Шаг 1: user_id по username
+  const profileRes = await axios.get(
+    `https://www.instagram.com/api/v1/users/web_profile_info/?username=${username}`,
+    { headers: getStoryHeaders(), timeout: 12000 }
+  );
+  const user = profileRes.data?.data?.user;
+  const userId = user?.id;
   if (!userId) throw new Error(`User not found: ${username}`);
+  const avatar = user?.profile_pic_url;
 
-  const avatar = profileRes.data?.data?.user?.profile_pic_url;
+  await sleep(800 + Math.random() * 600); // задержка между запросами
 
-  // Шаг 2: получаем stories по user_id
-  const storiesRes = await axios.get(`https://www.instagram.com/api/v1/feed/reels_media/?reel_ids=${userId}`, {
-    headers: { ...getHeaders(), 'X-IG-App-ID': '936619743392459' },
-    timeout: 10000,
-  });
+  // Шаг 2: stories
+  const storiesRes = await axios.get(
+    `https://www.instagram.com/api/v1/feed/reels_media/?reel_ids=${userId}`,
+    { headers: getStoryHeaders(), timeout: 12000 }
+  );
 
-  const reel = storiesRes.data?.reels_media?.[0] || storiesRes.data?.reels?.[userId];
-  if (!reel || !reel.items?.length) return { username, avatar, stories: [] };
+  const reels = storiesRes.data?.reels_media || [];
+  const reel = reels[0] || storiesRes.data?.reels?.[userId];
+  if (!reel?.items?.length) return { username, avatar, stories: [] };
 
   const stories = reel.items.map(item => {
     if (item.video_versions?.length) {
@@ -503,7 +526,6 @@ async function fetchStoriesForUser(username) {
         url: item.video_versions[0].url,
         thumb: item.image_versions2?.candidates?.[0]?.url || null,
         duration: item.video_duration || 5,
-        taken_at: item.taken_at,
       };
     }
     return {
@@ -511,7 +533,6 @@ async function fetchStoriesForUser(username) {
       url: item.image_versions2?.candidates?.[0]?.url || null,
       thumb: item.image_versions2?.candidates?.[0]?.url || null,
       duration: 5,
-      taken_at: item.taken_at,
     };
   }).filter(s => s.url);
 
@@ -519,7 +540,6 @@ async function fetchStoriesForUser(username) {
 }
 
 app.get('/api/stories', async (req, res) => {
-  // Отдаём кэш если свежий
   if (storiesCache.data && Date.now() - storiesCache.ts < STORIES_TTL) {
     return res.json(storiesCache.data);
   }
@@ -534,8 +554,13 @@ app.get('/api/stories', async (req, res) => {
     try {
       const data = await fetchStoriesForUser(username.replace('@', ''));
       if (data.stories.length > 0) results.push(data);
+      await sleep(1000 + Math.random() * 1000); // пауза между профилями
     } catch (e) {
       console.error(`[Stories] Error for ${username}:`, e.message);
+      if (e.response?.status === 429) {
+        console.log('[Stories] Rate limited, waiting 30s...');
+        await sleep(30000);
+      }
     }
   }
 
