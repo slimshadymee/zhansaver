@@ -184,11 +184,12 @@
 
 </div>
 
-<!-- Модалка добавить релиз -->
+<!-- Модалка добавить/редактировать релиз -->
 <div class="modal-overlay" id="releaseModalOverlay">
   <div class="modal">
     <div class="modal-handle"></div>
-    <h2>Добавить релиз</h2>
+    <h2 id="modalTitle">Добавить релиз</h2>
+    <input type="hidden" id="editReleaseId"/>
 
     <div class="release-form-field">
       <label class="release-form-label">Обложка</label>
@@ -220,15 +221,20 @@
     </div>
 
     <div class="release-form-field">
-      <label class="release-form-label">Дата выхода</label>
-      <div style="display:flex;gap:8px;">
+      <label class="release-form-label">Дата и время выхода</label>
+      <div style="display:flex;gap:8px;margin-bottom:8px;">
         <input type="date" id="releaseDate" style="flex:1"/>
         <input type="time" id="releaseTime" value="00:00" style="width:100px;padding:12px 10px;background:var(--bg);border:1.5px solid var(--border);border-radius:var(--radius);color:var(--text);font-size:0.85rem;font-family:Space Mono,monospace;outline:none;"/>
+      </div>
+      <div style="display:flex;gap:6px;">
+        <button type="button" class="cover-tab" id="tzUTC" onclick="selectTZ('UTC')">UTC</button>
+        <button type="button" class="cover-tab active" id="tzKST" onclick="selectTZ('KST')">🇰🇷 KST +9</button>
+        <button type="button" class="cover-tab" id="tzMSK" onclick="selectTZ('MSK')">🇷🇺 MSK +3</button>
       </div>
     </div>
 
     <div class="modal-actions">
-      <button class="btn-save" onclick="addRelease()">Добавить</button>
+      <button class="btn-save" id="modalSaveBtn" onclick="saveRelease()">Добавить</button>
       <button class="btn-cancel" onclick="closeReleaseModal()">Отмена</button>
     </div>
   </div>
@@ -481,8 +487,20 @@
   document.getElementById('urlInput').addEventListener('keydown', e => { if (e.key === 'Enter') fetchMedia(); });
 
   // ── RELEASE PAGE ──────────────────────────────────────────────────────────
+  let selectedTZ = 'KST';
+
+  function selectTZ(tz) {
+    selectedTZ = tz;
+    ['UTC','KST','MSK'].forEach(t => {
+      document.getElementById('tz' + t).classList.toggle('active', t === tz);
+    });
+  }
+
   function openReleaseModal() {
     coverBase64 = null;
+    document.getElementById('editReleaseId').value = '';
+    document.getElementById('modalTitle').textContent = 'Добавить релиз';
+    document.getElementById('modalSaveBtn').textContent = 'Добавить';
     document.getElementById('coverPreview').style.display = 'none';
     document.getElementById('uploadText').style.display = 'block';
     document.getElementById('coverFileInput').value = '';
@@ -492,7 +510,35 @@
     document.getElementById('releaseTitle').value = '';
     document.getElementById('releaseDate').value = '';
     document.getElementById('releaseTime').value = '00:00';
+    selectTZ('KST');
     switchCoverTab('file');
+    document.getElementById('releaseModalOverlay').classList.add('show');
+  }
+
+  function openEditModal(r) {
+    coverBase64 = r.cover || null;
+    document.getElementById('editReleaseId').value = r.id;
+    document.getElementById('modalTitle').textContent = 'Изменить релиз';
+    document.getElementById('modalSaveBtn').textContent = 'Сохранить';
+    document.getElementById('releaseArtist').value = r.artist || '';
+    document.getElementById('releaseTitle').value = r.title || '';
+    document.getElementById('releaseDate').value = r.releaseDate || '';
+    document.getElementById('releaseTime').value = r.releaseTime || '00:00';
+    selectTZ(r.timezone || 'KST');
+    // Обложка
+    if (r.cover && r.cover.startsWith('http')) {
+      switchCoverTab('url');
+      document.getElementById('coverUrlInput').value = r.cover;
+      const prev = document.getElementById('coverUrlPreview');
+      prev.src = r.cover; prev.style.display = 'block';
+    } else if (r.cover) {
+      switchCoverTab('file');
+      const prev = document.getElementById('coverPreview');
+      prev.src = r.cover; prev.style.display = 'block';
+      document.getElementById('uploadText').style.display = 'none';
+    } else {
+      switchCoverTab('file');
+    }
     document.getElementById('releaseModalOverlay').classList.add('show');
   }
 
@@ -534,23 +580,27 @@
     reader.readAsDataURL(file);
   }
 
-  async function addRelease() {
+  async function saveRelease() {
     const artist = document.getElementById('releaseArtist').value.trim();
     const title = document.getElementById('releaseTitle').value.trim();
     const releaseDate = document.getElementById('releaseDate').value;
     const releaseTime = document.getElementById('releaseTime').value || '00:00';
+    const timezone = selectedTZ;
+    const editId = document.getElementById('editReleaseId').value;
     if (!artist || !title || !releaseDate) { showToast('Заполни все поля!'); return; }
 
-    const res = await fetch('/api/releases', {
-      method: 'POST',
+    const body = { artist, title, releaseDate, releaseTime, timezone, cover: coverBase64 };
+    const isEdit = !!editId;
+    const res = await fetch(isEdit ? `/api/releases/${editId}` : '/api/releases', {
+      method: isEdit ? 'PUT' : 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ artist, title, releaseDate, releaseTime, cover: coverBase64 })
+      body: JSON.stringify(body)
     });
     const data = await res.json();
     if (data.success) {
       closeReleaseModal();
       loadReleases();
-      showToast('✓ Релиз добавлен!');
+      showToast(isEdit ? '✓ Релиз обновлён!' : '✓ Релиз добавлен!');
     } else {
       showToast('Ошибка: ' + data.error);
     }
@@ -572,9 +622,11 @@
     }
     list.innerHTML = '';
     releases.forEach(r => {
-      const now = new Date();
-      const releaseDateTime = new Date(r.releaseDate + 'T' + (r.releaseTime || '00:00') + ':00');
-      const isReleased = releaseDateTime <= now;
+      const TZOFF = { KST: 9, MSK: 3, UTC: 0 };
+      const offset = TZOFF[r.timezone] !== undefined ? TZOFF[r.timezone] : 0;
+      const dt = new Date(`${r.releaseDate}T${r.releaseTime || '00:00'}:00Z`);
+      dt.setHours(dt.getHours() - offset);
+      const isReleased = dt <= new Date();
       const card = document.createElement('div');
       card.className = 'release-card' + (isReleased ? ' released' : '');
 
@@ -599,7 +651,7 @@
       // Правый блок
       const right = document.createElement('div'); right.className = 'release-right';
       const dateBadge = document.createElement('div'); dateBadge.className = 'release-date-badge';
-      dateBadge.textContent = formatDate(r.releaseDate, r.releaseTime);
+      dateBadge.textContent = formatDate(r.releaseDate, r.releaseTime, r.timezone);
       const statusBadge = document.createElement('div');
       statusBadge.className = 'release-status ' + (isReleased ? 'out' : 'upcoming');
       statusBadge.textContent = isReleased ? '✓ Вышел' : 'Скоро';
@@ -607,11 +659,17 @@
       card.appendChild(right);
 
       // Кнопка удалить
+      // Кнопки действий
+      const actions = document.createElement('div'); actions.style.cssText = 'display:flex;flex-direction:column;gap:6px;margin-left:4px;';
+      const editBtn = document.createElement('button'); editBtn.className = 'btn-delete-release';
+      editBtn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>`;
+      editBtn.title = 'Изменить'; editBtn.style.opacity = '0.6';
+      editBtn.onclick = () => openEditModal(r);
       const delBtn = document.createElement('button'); delBtn.className = 'btn-delete-release';
       delBtn.innerHTML = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="3,6 5,6 21,6"/><path d="M19,6l-1,14a2,2,0,0,1-2,2H8a2,2,0,0,1-2-2L5,6"/><path d="M10,11v6"/><path d="M14,11v6"/></svg>`;
-      delBtn.title = 'Удалить';
-      delBtn.onclick = () => deleteRelease(r.id);
-      card.appendChild(delBtn);
+      delBtn.title = 'Удалить'; delBtn.onclick = () => deleteRelease(r.id);
+      actions.appendChild(editBtn); actions.appendChild(delBtn);
+      card.appendChild(actions);
 
       list.appendChild(card);
     });
@@ -623,12 +681,13 @@
     showToast('Удалено');
   }
 
-  function formatDate(dateStr, timeStr) {
+  function formatDate(dateStr, timeStr, tz) {
     if (!dateStr) return '';
     const [y, m, d] = dateStr.split('-');
     const months = ['янв','фев','мар','апр','май','июн','июл','авг','сен','окт','ноя','дек'];
-    const base = `${parseInt(d)} ${months[parseInt(m)-1]} ${y}`;
-    if (timeStr && timeStr !== '00:00') return base + ' · ' + timeStr;
+    let base = `${parseInt(d)} ${months[parseInt(m)-1]} ${y}`;
+    if (timeStr && timeStr !== '00:00') base += ` · ${timeStr}`;
+    if (tz && tz !== 'UTC') base += ` ${tz}`;
     return base;
   }
 
