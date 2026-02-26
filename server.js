@@ -571,11 +571,12 @@ app.listen(PORT, () => {
   const config = loadConfig();
   console.log(config.adminUsername ? `👤 Admin: @${config.adminUsername}` : '⚠️  adminUsername не задан.');
   if (!fs.existsSync(RELEASES_FILE)) saveReleases([]);
+
+  // Запускаем после того как сервер поднялся
+  pollTelegram().catch(console.error);
+  console.log('🤖 Telegram бот запущен!');
+
+  // Проверяем релизы каждый час
+  setInterval(checkReleaseDates, 60 * 60 * 1000);
+  setTimeout(checkReleaseDates, 5000);
 });
-
-pollTelegram().catch(console.error);
-console.log('🤖 Telegram бот запущен!');
-
-// Проверяем релизы каждый час
-setInterval(checkReleaseDates, 60 * 60 * 1000);
-setTimeout(checkReleaseDates, 5000);
