@@ -7,28 +7,46 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 // ─── Пути к файлам ───────────────────────────────────────────────────────────
-// config.json — всегда из папки проекта (GitHub)
+// config.json — из GitHub (read-only на Railway)
 const CONFIG_FILE = path.join(__dirname, 'config.json');
 
-// releases.json — Railway Volume (/app/data) или локально
+// releases.json и runtime.json — Railway Volume (/app/data) или локально
 const RELEASES_DIR = process.env.RAILWAY_ENVIRONMENT ? '/app/data' : __dirname;
 if (!fs.existsSync(RELEASES_DIR)) {
   try { fs.mkdirSync(RELEASES_DIR, { recursive: true }); } catch {}
 }
 const RELEASES_FILE = path.join(RELEASES_DIR, 'releases.json');
+// runtime.json — данные которые меняются в рантайме (adminChatId, cookie)
+const RUNTIME_FILE = path.join(RELEASES_DIR, 'runtime.json');
+
+function loadRuntime() {
+  try { return JSON.parse(fs.readFileSync(RUNTIME_FILE, 'utf8')); }
+  catch { return {}; }
+}
+function saveRuntime(data) {
+  try {
+    const merged = { ...loadRuntime(), ...data };
+    fs.writeFileSync(RUNTIME_FILE, JSON.stringify(merged, null, 2));
+  } catch (e) { console.error('[Runtime] Save error:', e.message); }
+}
 
 // ─── Конфиг ──────────────────────────────────────────────────────────────────
 function loadConfig() {
-  try { return JSON.parse(fs.readFileSync(CONFIG_FILE, 'utf8')); }
-  catch { return {}; }
+  try {
+    const base = JSON.parse(fs.readFileSync(CONFIG_FILE, 'utf8'));
+    const runtime = loadRuntime();
+    return { ...base, ...runtime }; // runtime перекрывает base
+  } catch { return loadRuntime(); }
 }
 function saveConfig(data) {
-  try {
-    const merged = { ...loadConfig(), ...data };
-    fs.writeFileSync(CONFIG_FILE, JSON.stringify(merged, null, 2));
-  } catch (e) {
-    console.error('[Config] Cannot write config.json (read-only on Railway):', e.message);
+  // Сохраняем только изменяемые данные в runtime (volume)
+  // cookie и adminChatId — в runtime.json
+  const runtimeKeys = ['adminChatId', 'cookie', 'siteEnabled', 'siteMessage'];
+  const runtimeData = {};
+  for (const key of runtimeKeys) {
+    if (key in data) runtimeData[key] = data[key];
   }
+  if (Object.keys(runtimeData).length > 0) saveRuntime(runtimeData);
 }
 
 // ─── Релизы ──────────────────────────────────────────────────────────────────
