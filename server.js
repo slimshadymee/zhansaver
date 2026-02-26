@@ -149,50 +149,50 @@ async function checkReleaseDates() {
   for (const release of releases) {
     const releaseUTC = getReleaseUTCDate(release);
 
+    // Удаляем если прошли сутки
     if (releaseUTC < deleteBefore) {
       console.log(`[Releases] Удаляем "${release.title}"`);
       changed = true;
       continue;
     }
 
+    // Уведомляем если время наступило
     if (releaseUTC <= now && !release.notified) {
+      const hoursSinceRelease = (now - releaseUTC) / (1000 * 60 * 60);
+      console.log(`[Releases] Помечаем как вышедший: ${release.title} (${hoursSinceRelease.toFixed(1)}ч)`);
       release.notified = true;
       release.notifiedAt = now.toISOString();
       changed = true;
-      // Не отправляем если релиз вышел давно (больше 2 часов назад) — значит сервер просто перезапустился
-      const hoursSinceRelease = (now - releaseUTC) / (1000 * 60 * 60);
+
       if (adminChatId && hoursSinceRelease < 2) {
         const tz = release.timezone || 'UTC';
-        const timeStr = release.releaseTime && release.releaseTime !== '00:00' ? ` в ${release.releaseTime} (${tz})` : '';
-        console.log(`[Releases] Уведомление: ${release.title} (${hoursSinceRelease.toFixed(1)}ч после релиза)`);
+        const timeStr = (release.releaseTime && release.releaseTime !== '00:00') ? ` в ${release.releaseTime} (${tz})` : '';
         try {
-          await tgSend(adminChatId,
-            `🎵 Релиз вышел!
-
-` +
-            `👤 Артист: ${release.artist}
-` +
-            `💿 Название: ${release.title}
-` +
-            `📅 Дата: ${release.releaseDate}${timeStr}
-
-` +
-            `Трек уже должен быть на площадках!`
-          );
-        } catch (e) { console.error('[TG] Release notify error:', e.message); }
+          const msg = '🎵 Релиз вышел!\n\n' +
+            `👤 Артист: ${release.artist}\n` +
+            `💿 Название: ${release.title}\n` +
+            `📅 Дата: ${release.releaseDate}${timeStr}\n\n` +
+            'Трек уже должен быть на площадках!';
+          await tgSend(adminChatId, msg);
+          console.log(`[Releases] Уведомление отправлено: ${release.title}`);
+        } catch (e) {
+          console.error('[TG] Release notify error:', e.message);
+        }
       } else if (!adminChatId) {
-        console.log('[Releases] adminChatId не задан!');
+        console.log('[Releases] adminChatId не задан — уведомление пропущено');
       } else {
-        console.log(`[Releases] Пропускаем уведомление — релиз вышел ${hoursSinceRelease.toFixed(1)}ч назад (перезапуск сервера)`);
+        console.log(`[Releases] Перезапуск сервера — уведомление не отправляем (${hoursSinceRelease.toFixed(1)}ч прошло)`);
       }
     }
 
     remaining.push(release);
   }
 
-  if (changed) saveReleases(remaining);
+  if (changed) {
+    console.log(`[Releases] Сохраняем изменения (${remaining.length} релизов)`);
+    saveReleases(remaining);
+  }
 }
-
 // ─── Обработчик сообщений Telegram ───────────────────────────────────────────
 async function handleTgMessage(msg) {
   const chatId = msg.chat.id;
