@@ -118,7 +118,7 @@ async function checkCookieValid() {
 
 // ─── Проверка дат релизов и уведомление в TG ─────────────────────────────────
 // Часовые пояса
-const TIMEZONES = { 'KST': 9, 'MSK': 3, 'UTC': 0 };
+const TIMEZONES = { 'KST': 9, 'MSK': 3, 'ALMT': 5, 'UTC': 0 };
 
 function getReleaseUTCDate(release) {
   const date = release.releaseDate || '';
@@ -521,7 +521,7 @@ app.post('/api/fetch', async (req, res) => {
 });
 
 // ─── Debug endpoint (только для админа) ─────────────────────────────────────
-app.get('/admin/files', (req, res) => {
+app.get('/admin/releases', (req, res) => {
   const { key } = req.query;
   const config = loadConfig();
   // Простая защита — нужно передать adminUsername как ключ
