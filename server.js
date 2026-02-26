@@ -6,40 +6,29 @@ const fs = require('fs');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// ─── Папка для данных (Railway Volume или локальная) ─────────────────────────
-// На Railway: добавь Volume с путём /app/data
-// Локально: данные хранятся рядом с server.js
-const DATA_DIR = process.env.RAILWAY_ENVIRONMENT
-  ? '/app/data'
-  : __dirname;
+// ─── Пути к файлам ───────────────────────────────────────────────────────────
+// config.json — всегда из папки проекта (GitHub)
+const CONFIG_FILE = path.join(__dirname, 'config.json');
 
-// Создаём папку если не существует
-if (!fs.existsSync(DATA_DIR)) {
-  try { fs.mkdirSync(DATA_DIR, { recursive: true }); } catch {}
+// releases.json — Railway Volume (/app/data) или локально
+const RELEASES_DIR = process.env.RAILWAY_ENVIRONMENT ? '/app/data' : __dirname;
+if (!fs.existsSync(RELEASES_DIR)) {
+  try { fs.mkdirSync(RELEASES_DIR, { recursive: true }); } catch {}
 }
-
-const CONFIG_FILE = path.join(DATA_DIR, 'config.json');
-const RELEASES_FILE = path.join(DATA_DIR, 'releases.json');
+const RELEASES_FILE = path.join(RELEASES_DIR, 'releases.json');
 
 // ─── Конфиг ──────────────────────────────────────────────────────────────────
 function loadConfig() {
   try { return JSON.parse(fs.readFileSync(CONFIG_FILE, 'utf8')); }
-  catch {
-    // Если на Railway и нет файла — копируем из исходного config.json
-    try {
-      const src = path.join(__dirname, 'config.json');
-      if (fs.existsSync(src) && CONFIG_FILE !== src) {
-        const data = JSON.parse(fs.readFileSync(src, 'utf8'));
-        fs.writeFileSync(CONFIG_FILE, JSON.stringify(data, null, 2));
-        return data;
-      }
-    } catch {}
-    return {};
-  }
+  catch { return {}; }
 }
 function saveConfig(data) {
-  const merged = { ...loadConfig(), ...data };
-  fs.writeFileSync(CONFIG_FILE, JSON.stringify(merged, null, 2));
+  try {
+    const merged = { ...loadConfig(), ...data };
+    fs.writeFileSync(CONFIG_FILE, JSON.stringify(merged, null, 2));
+  } catch (e) {
+    console.error('[Config] Cannot write config.json (read-only on Railway):', e.message);
+  }
 }
 
 // ─── Релизы ──────────────────────────────────────────────────────────────────
@@ -48,7 +37,12 @@ function loadReleases() {
   catch { return []; }
 }
 function saveReleases(releases) {
-  fs.writeFileSync(RELEASES_FILE, JSON.stringify(releases, null, 2));
+  try {
+    fs.writeFileSync(RELEASES_FILE, JSON.stringify(releases, null, 2));
+    console.log(`[Releases] Saved ${releases.length} releases to ${RELEASES_FILE}`);
+  } catch (e) {
+    console.error(`[Releases] SAVE ERROR: ${e.message} (path: ${RELEASES_FILE})`);
+  }
 }
 
 // ─── Telegram Bot ─────────────────────────────────────────────────────────────
@@ -125,9 +119,11 @@ function getReleaseUTCDate(release) {
   const time = release.releaseTime || '00:00';
   const tz = release.timezone || 'UTC';
   const offset = TIMEZONES[tz] !== undefined ? TIMEZONES[tz] : 0;
-  const dt = new Date(`${date}T${time}:00Z`);
-  dt.setHours(dt.getHours() - offset);
-  return dt;
+  // Локальное время минус смещение = UTC
+  // Например 18:00 KST (offset=9) => 18:00 - 9h = 09:00 UTC
+  const [h, m] = time.split(':').map(Number);
+  const utcMs = Date.parse(`${date}T00:00:00Z`) + (h * 60 + m - offset * 60) * 60000;
+  return new Date(utcMs);
 }
 
 async function checkReleaseDates() {
@@ -520,35 +516,19 @@ app.post('/api/fetch', async (req, res) => {
   res.status(404).json({ error: hasCookie ? 'Не удалось получить медиа. Пост приватный или куки устарели.' : 'Не удалось получить медиа. Добавь куки Instagram.', details: errors, hasCookie });
 });
 
-// ─── Debug endpoint (только для админа) ─────────────────────────────────────
+// ─── Debug endpoint ──────────────────────────────────────────────────────────
 app.get('/admin/releases', (req, res) => {
   const { key } = req.query;
   const config = loadConfig();
-  // Простая защита — нужно передать adminUsername как ключ
-  if (!key || key !== config.adminUsername) {
-    return res.status(403).send('Forbidden');
-  }
+  if (!key || key !== config.adminUsername) return res.status(403).send('Forbidden');
   try {
-    const files = fs.readdirSync(DATA_DIR);
-    let html = `<h2>📁 ${DATA_DIR}</h2><hr>`;
-    for (const file of files) {
-      const filePath = path.join(DATA_DIR, file);
-      const stat = fs.statSync(filePath);
-      const size = (stat.size / 1024).toFixed(1) + ' KB';
-      let content = '';
-      try {
-        const raw = fs.readFileSync(filePath, 'utf8');
-        // Для JSON — форматируем красиво
-        try { content = JSON.stringify(JSON.parse(raw), null, 2); }
-        catch { content = raw; }
-      } catch { content = '[binary]'; }
-      html += `<h3>📄 ${file} <small style="color:#888">(${size})</small></h3>`;
-      html += `<pre style="background:#111;color:#0f0;padding:12px;border-radius:8px;overflow:auto;max-height:400px;font-size:12px">${content.replace(/</g,'&lt;')}</pre>`;
-    }
-    res.send(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Files</title><style>body{background:#000;color:#fff;font-family:monospace;padding:20px}hr{border-color:#333}</style></head><body>${html}</body></html>`);
-  } catch (e) {
-    res.status(500).send('Error: ' + e.message);
-  }
+    const releases = loadReleases();
+    const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Releases</title>
+    <style>body{background:#000;color:#fff;font-family:monospace;padding:20px}hr{border-color:#333}pre{background:#111;color:#0f0;padding:12px;border-radius:8px;overflow:auto;font-size:12px}</style>
+    </head><body><h2>📄 releases.json (${releases.length})</h2><hr>
+    <pre>${JSON.stringify(releases, null, 2).replace(/</g,'&lt;')}</pre></body></html>`;
+    res.send(html);
+  } catch (e) { res.status(500).send('Error: ' + e.message); }
 });
 
 // Релизы
@@ -571,7 +551,9 @@ app.put('/api/releases/:id', (req, res) => {
   const releases = loadReleases();
   const idx = releases.findIndex(r => r.id === id);
   if (idx === -1) return res.status(404).json({ error: 'Не найден' });
-  releases[idx] = { ...releases[idx], artist, title, releaseDate, releaseTime: releaseTime || '00:00', timezone: timezone || 'UTC', cover: cover !== undefined ? cover : releases[idx].cover, notified: false };
+  // cover: null = не менять, строка = обновить
+  const newCover = (cover !== null && cover !== undefined) ? cover : releases[idx].cover;
+  releases[idx] = { ...releases[idx], artist, title, releaseDate, releaseTime: releaseTime || '00:00', timezone: timezone || 'UTC', cover: newCover, notified: false };
   saveReleases(releases);
   res.json({ success: true, release: releases[idx] });
 });
