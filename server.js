@@ -118,70 +118,67 @@ async function checkCookieValid() {
 }
 
 // ─── Проверка дат релизов и уведомление в TG ─────────────────────────────────
-// Часовые пояса
 const TIMEZONES = { 'KST': 9, 'MSK': 3, 'ALMT': 5, 'UTC': 0 };
 
 function getReleaseUTCDate(release) {
-  const date = release.releaseDate || '';
+  const date = release.releaseDate || '2000-01-01';
   const time = release.releaseTime || '00:00';
   const tz = release.timezone || 'UTC';
-  const offset = TIMEZONES[tz] !== undefined ? TIMEZONES[tz] : 0;
-  // Локальное время минус смещение = UTC
-  // Например 18:00 KST (offset=9) => 18:00 - 9h = 09:00 UTC
-  const [h, m] = time.split(':').map(Number);
-  const utcMs = Date.parse(`${date}T00:00:00Z`) + (h * 60 + m - offset * 60) * 60000;
-  return new Date(utcMs);
+  const offsetHours = TIMEZONES[tz] !== undefined ? TIMEZONES[tz] : 0;
+  // Парсим дату и время как локальное время зоны, конвертируем в UTC
+  const [y, mo, d] = date.split('-').map(Number);
+  const [h, mi] = time.split(':').map(Number);
+  // UTC = локальное - смещение
+  return new Date(Date.UTC(y, mo - 1, d, h - offsetHours, mi, 0));
 }
 
 async function checkReleaseDates() {
   const config = loadConfig();
   const adminChatId = config.adminChatId;
-  console.log(`[Releases] Checking... adminChatId=${adminChatId}, time=${new Date().toISOString()}`);
+  const now = new Date();
+  console.log(`[Releases] Checking at ${now.toISOString()}, adminChatId=${adminChatId}`);
 
   const releases = loadReleases();
-  const now = new Date();
-  const deleteBefore = new Date(now);
-  deleteBefore.setDate(deleteBefore.getDate() - 1);
+  if (!releases.length) { console.log('[Releases] Нет релизов'); return; }
 
   let changed = false;
   const remaining = [];
 
   for (const release of releases) {
     const releaseUTC = getReleaseUTCDate(release);
+    const msSinceRelease = now - releaseUTC;
+    console.log(`[Releases] "${release.title}": releaseUTC=${releaseUTC.toISOString()}, msSince=${Math.round(msSinceRelease/1000)}s, notified=${release.notified}`);
 
-    // Удаляем если прошли сутки
-    if (releaseUTC < deleteBefore) {
+    // Удаляем через сутки после выхода
+    if (msSinceRelease > 24 * 60 * 60 * 1000) {
       console.log(`[Releases] Удаляем "${release.title}"`);
       changed = true;
       continue;
     }
 
-    // Уведомляем если время наступило
-    if (releaseUTC <= now && !release.notified) {
-      const hoursSinceRelease = (now - releaseUTC) / (1000 * 60 * 60);
-      console.log(`[Releases] Помечаем как вышедший: ${release.title} (${hoursSinceRelease.toFixed(1)}ч)`);
+    // Уведомляем если вышел и ещё не уведомляли
+    if (msSinceRelease >= 0 && !release.notified) {
       release.notified = true;
       release.notifiedAt = now.toISOString();
       changed = true;
+      console.log(`[Releases] Ставим notified=true для "${release.title}"`);
 
-      if (adminChatId && hoursSinceRelease < 2) {
+      // Отправляем уведомление только если прошло меньше 2 часов (не перезапуск)
+      const hoursSince = msSinceRelease / (1000 * 60 * 60);
+      if (adminChatId && hoursSince < 2) {
         const tz = release.timezone || 'UTC';
         const timeStr = (release.releaseTime && release.releaseTime !== '00:00') ? ` в ${release.releaseTime} (${tz})` : '';
         try {
-          const msg = '🎵 Релиз вышел!\n\n' +
-            `👤 Артист: ${release.artist}\n` +
-            `💿 Название: ${release.title}\n` +
-            `📅 Дата: ${release.releaseDate}${timeStr}\n\n` +
-            'Трек уже должен быть на площадках!';
-          await tgSend(adminChatId, msg);
-          console.log(`[Releases] Уведомление отправлено: ${release.title}`);
+          const lines = ['\u{1F3B5} \u0420\u0435\u043B\u0438\u0437 \u0432\u044B\u0448\u0435\u043B!', `\u{1F464} \u0410\u0440\u0442\u0438\u0441\u0442: ${release.artist}`, `\u{1F4BF} \u041D\u0430\u0437\u0432\u0430\u043D\u0438\u0435: ${release.title}`, `\u{1F4C5} \u0414\u0430\u0442\u0430: ${release.releaseDate}${timeStr}`, '', '\u0422\u0440\u0435\u043A \u0443\u0436\u0435 \u0434\u043E\u043B\u0436\u0435\u043D \u0431\u044B\u0442\u044C \u043D\u0430 \u043F\u043B\u043E\u0449\u0430\u0434\u043A\u0430\u0445!'];
+          await tgSend(adminChatId, lines.join('\n'));
+          console.log(`[Releases] ✅ Уведомление отправлено: ${release.title}`);
         } catch (e) {
-          console.error('[TG] Release notify error:', e.message);
+          console.error('[TG] Notify error:', e.message);
         }
       } else if (!adminChatId) {
-        console.log('[Releases] adminChatId не задан — уведомление пропущено');
+        console.log('[Releases] ⚠️ adminChatId не задан');
       } else {
-        console.log(`[Releases] Перезапуск сервера — уведомление не отправляем (${hoursSinceRelease.toFixed(1)}ч прошло)`);
+        console.log(`[Releases] Пропуск уведомления — ${hoursSince.toFixed(1)}ч (перезапуск)`);
       }
     }
 
@@ -189,8 +186,8 @@ async function checkReleaseDates() {
   }
 
   if (changed) {
-    console.log(`[Releases] Сохраняем изменения (${remaining.length} релизов)`);
     saveReleases(remaining);
+    console.log(`[Releases] ✅ Сохранено. Релизов: ${remaining.length}`);
   }
 }
 // ─── Обработчик сообщений Telegram ───────────────────────────────────────────
