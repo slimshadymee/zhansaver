@@ -6,36 +6,21 @@ const fs = require('fs');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// ─── Папка для данных (Railway Volume или локальная) ─────────────────────────
-// На Railway: добавь Volume с путём /app/data
-// Локально: данные хранятся рядом с server.js
-const DATA_DIR = process.env.RAILWAY_ENVIRONMENT
-  ? '/app/data'
-  : __dirname;
+// ─── Пути к файлам ───────────────────────────────────────────────────────────
+// config.json — всегда рядом с кодом (из GitHub)
+const CONFIG_FILE = path.join(__dirname, 'config.json');
 
-// Создаём папку если не существует
-if (!fs.existsSync(DATA_DIR)) {
-  try { fs.mkdirSync(DATA_DIR, { recursive: true }); } catch {}
+// releases.json — в Railway Volume (/app/data) или локально
+const RELEASES_DIR = process.env.RAILWAY_ENVIRONMENT ? '/app/data' : __dirname;
+if (!fs.existsSync(RELEASES_DIR)) {
+  try { fs.mkdirSync(RELEASES_DIR, { recursive: true }); } catch {}
 }
-
-const CONFIG_FILE = path.join(DATA_DIR, 'config.json');
-const RELEASES_FILE = path.join(DATA_DIR, 'releases.json');
+const RELEASES_FILE = path.join(RELEASES_DIR, 'releases.json');
 
 // ─── Конфиг ──────────────────────────────────────────────────────────────────
 function loadConfig() {
   try { return JSON.parse(fs.readFileSync(CONFIG_FILE, 'utf8')); }
-  catch {
-    // Если на Railway и нет файла — копируем из исходного config.json
-    try {
-      const src = path.join(__dirname, 'config.json');
-      if (fs.existsSync(src) && CONFIG_FILE !== src) {
-        const data = JSON.parse(fs.readFileSync(src, 'utf8'));
-        fs.writeFileSync(CONFIG_FILE, JSON.stringify(data, null, 2));
-        return data;
-      }
-    } catch {}
-    return {};
-  }
+  catch { return {}; }
 }
 function saveConfig(data) {
   const merged = { ...loadConfig(), ...data };
@@ -503,36 +488,18 @@ app.post('/api/fetch', async (req, res) => {
 });
 
 // ─── Debug endpoint (только для админа) ─────────────────────────────────────
-app.get('/admin/files', (req, res) => {
+app.get('/admin/releases', (req, res) => {
   const { key } = req.query;
   const config = loadConfig();
-  // Простая защита — нужно передать adminUsername как ключ
-  if (!key || key !== config.adminUsername) {
-    return res.status(403).send('Forbidden');
-  }
+  if (!key || key !== config.adminUsername) return res.status(403).send('Forbidden');
   try {
-    const files = fs.readdirSync(DATA_DIR);
-    let html = `<h2>📁 ${DATA_DIR}</h2><hr>`;
-    for (const file of files) {
-      const filePath = path.join(DATA_DIR, file);
-      const stat = fs.statSync(filePath);
-      const size = (stat.size / 1024).toFixed(1) + ' KB';
-      let content = '';
-      try {
-        const raw = fs.readFileSync(filePath, 'utf8');
-        // Для JSON — форматируем красиво
-        try { content = JSON.stringify(JSON.parse(raw), null, 2); }
-        catch { content = raw; }
-      } catch { content = '[binary]'; }
-      html += `<h3>📄 ${file} <small style="color:#888">(${size})</small></h3>`;
-      html += `<pre style="background:#111;color:#0f0;padding:12px;border-radius:8px;overflow:auto;max-height:400px;font-size:12px">${content.replace(/</g,'&lt;')}</pre>`;
-    }
-    res.send(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Files</title><style>body{background:#000;color:#fff;font-family:monospace;padding:20px}hr{border-color:#333}</style></head><body>${html}</body></html>`);
-  } catch (e) {
-    res.status(500).send('Error: ' + e.message);
-  }
+    const raw = fs.readFileSync(RELEASES_FILE, 'utf8');
+    const releases = JSON.parse(raw);
+    let html = `<h2>📄 releases.json (${releases.length} записей)</h2><hr>`;
+    html += `<pre style="background:#111;color:#0f0;padding:12px;border-radius:8px;overflow:auto;font-size:12px">${JSON.stringify(releases, null, 2).replace(/</g,'&lt;')}</pre>`;
+    res.send(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Releases</title><style>body{background:#000;color:#fff;font-family:monospace;padding:20px}hr{border-color:#333}</style></head><body>${html}</body></html>`);
+  } catch (e) { res.status(500).send('Error: ' + e.message); }
 });
-
 // Релизы
 app.get('/api/releases', (req, res) => res.json(loadReleases()));
 
