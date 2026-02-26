@@ -157,11 +157,14 @@ async function checkReleaseDates() {
 
     if (releaseUTC <= now && !release.notified) {
       release.notified = true;
+      release.notifiedAt = now.toISOString();
       changed = true;
-      if (adminChatId) {
+      // Не отправляем если релиз вышел давно (больше 2 часов назад) — значит сервер просто перезапустился
+      const hoursSinceRelease = (now - releaseUTC) / (1000 * 60 * 60);
+      if (adminChatId && hoursSinceRelease < 2) {
         const tz = release.timezone || 'UTC';
         const timeStr = release.releaseTime && release.releaseTime !== '00:00' ? ` в ${release.releaseTime} (${tz})` : '';
-        console.log(`[Releases] Уведомление: ${release.title}`);
+        console.log(`[Releases] Уведомление: ${release.title} (${hoursSinceRelease.toFixed(1)}ч после релиза)`);
         try {
           await tgSend(adminChatId,
             `🎵 Релиз вышел!
@@ -177,8 +180,10 @@ async function checkReleaseDates() {
             `Трек уже должен быть на площадках!`
           );
         } catch (e) { console.error('[TG] Release notify error:', e.message); }
-      } else {
+      } else if (!adminChatId) {
         console.log('[Releases] adminChatId не задан!');
+      } else {
+        console.log(`[Releases] Пропускаем уведомление — релиз вышел ${hoursSinceRelease.toFixed(1)}ч назад (перезапуск сервера)`);
       }
     }
 
@@ -530,14 +535,23 @@ app.get('/admin/releases', (req, res) => {
   if (!key || key !== config.adminUsername) return res.status(403).send('Forbidden');
   try {
     const releases = loadReleases();
-    const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Releases</title>
-    <style>body{background:#000;color:#fff;font-family:monospace;padding:20px}hr{border-color:#333}pre{background:#111;color:#0f0;padding:12px;border-radius:8px;overflow:auto;font-size:12px}</style>
-    </head><body><h2>📄 releases.json (${releases.length})</h2><hr>
-    <pre>${JSON.stringify(releases, null, 2).replace(/</g,'&lt;')}</pre></body></html>`;
+    // Показываем все файлы в DATA_DIR
+    let files = {};
+    try {
+      const fileList = fs.readdirSync(DATA_DIR);
+      for (const f of fileList) {
+        try { files[f] = JSON.parse(fs.readFileSync(path.join(DATA_DIR, f), 'utf8')); }
+        catch { files[f] = '(не JSON)'; }
+      }
+    } catch {}
+    const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Admin</title>
+    <style>body{background:#000;color:#fff;font-family:monospace;padding:20px}hr{border-color:#333}pre{background:#111;color:#0f0;padding:12px;border-radius:8px;overflow:auto;font-size:12px}h2{color:#0f0}h3{color:#fff;margin-top:20px}</style></head><body>
+    <h2>📁 ${DATA_DIR}</h2><hr>
+    ${Object.entries(files).map(([name, data]) => `<h3>📄 ${name}</h3><pre>${JSON.stringify(data, null, 2).replace(/</g,'&lt;')}</pre>`).join('')}
+    </body></html>`;
     res.send(html);
   } catch (e) { res.status(500).send('Error: ' + e.message); }
 });
-
 // Релизы
 app.get('/api/releases', (req, res) => res.json(loadReleases()));
 
