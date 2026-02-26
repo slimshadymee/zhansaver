@@ -137,19 +137,25 @@ async function checkReleaseDates() {
     if (release.releaseDate <= yesterdayStr) {
       console.log(`[Releases] Удаляем "${release.title}" (${release.releaseDate})`);
       changed = true;
-      continue; // не добавляем в remaining
+      continue;
     }
 
-    // Уведомляем в день релиза
-    if (release.releaseDate === today && !release.notified && adminChatId) {
+    // Уведомляем когда наступило время релиза (с точностью до часа)
+    const releaseTime = release.releaseTime || '00:00';
+    const releaseDateTime = new Date(release.releaseDate + 'T' + releaseTime + ':00');
+    const nowTime = new Date();
+    const isReleaseTime = releaseDateTime <= nowTime;
+
+    if (isReleaseTime && !release.notified && adminChatId) {
       release.notified = true;
       changed = true;
       try {
+        const timeStr = release.releaseTime && release.releaseTime !== '00:00' ? ` в ${release.releaseTime}` : '';
         await tgSend(adminChatId,
           `🎵 Релиз вышел сегодня!\n\n` +
           `👤 Артист: ${release.artist}\n` +
           `💿 Название: ${release.title}\n` +
-          `📅 Дата: ${release.releaseDate}\n\n` +
+          `📅 Дата: ${release.releaseDate}${timeStr}\n\n` +
           `Трек уже должен быть на площадках!`
         );
       } catch (e) { console.error('[TG] Release notify error:', e.message); }
@@ -531,10 +537,10 @@ app.get('/admin/files', (req, res) => {
 app.get('/api/releases', (req, res) => res.json(loadReleases()));
 
 app.post('/api/releases', (req, res) => {
-  const { artist, title, releaseDate, cover } = req.body;
+  const { artist, title, releaseDate, releaseTime, cover } = req.body;
   if (!artist || !title || !releaseDate) return res.status(400).json({ error: 'Заполни все поля' });
   const releases = loadReleases();
-  const release = { id: Date.now(), artist, title, releaseDate, cover: cover || null, notified: false, createdAt: new Date().toISOString() };
+  const release = { id: Date.now(), artist, title, releaseDate, releaseTime: releaseTime || '00:00', cover: cover || null, notified: false, createdAt: new Date().toISOString() };
   releases.unshift(release);
   saveReleases(releases);
   res.json({ success: true, release });
