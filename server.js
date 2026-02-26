@@ -6,18 +6,43 @@ const fs = require('fs');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// ─── Папка для данных (Railway Volume или локальная) ─────────────────────────
+// На Railway: добавь Volume с путём /app/data
+// Локально: данные хранятся рядом с server.js
+const DATA_DIR = process.env.RAILWAY_ENVIRONMENT
+  ? '/app/data'
+  : __dirname;
+
+// Создаём папку если не существует
+if (!fs.existsSync(DATA_DIR)) {
+  try { fs.mkdirSync(DATA_DIR, { recursive: true }); } catch {}
+}
+
+const CONFIG_FILE = path.join(DATA_DIR, 'config.json');
+const RELEASES_FILE = path.join(DATA_DIR, 'releases.json');
+
 // ─── Конфиг ──────────────────────────────────────────────────────────────────
 function loadConfig() {
-  try { return JSON.parse(fs.readFileSync(path.join(__dirname, 'config.json'), 'utf8')); }
-  catch { return {}; }
+  try { return JSON.parse(fs.readFileSync(CONFIG_FILE, 'utf8')); }
+  catch {
+    // Если на Railway и нет файла — копируем из исходного config.json
+    try {
+      const src = path.join(__dirname, 'config.json');
+      if (fs.existsSync(src) && CONFIG_FILE !== src) {
+        const data = JSON.parse(fs.readFileSync(src, 'utf8'));
+        fs.writeFileSync(CONFIG_FILE, JSON.stringify(data, null, 2));
+        return data;
+      }
+    } catch {}
+    return {};
+  }
 }
 function saveConfig(data) {
   const merged = { ...loadConfig(), ...data };
-  fs.writeFileSync(path.join(__dirname, 'config.json'), JSON.stringify(merged, null, 2));
+  fs.writeFileSync(CONFIG_FILE, JSON.stringify(merged, null, 2));
 }
 
 // ─── Релизы ──────────────────────────────────────────────────────────────────
-const RELEASES_FILE = path.join(__dirname, 'releases.json');
 function loadReleases() {
   try { return JSON.parse(fs.readFileSync(RELEASES_FILE, 'utf8')); }
   catch { return []; }
