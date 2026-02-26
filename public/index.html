@@ -307,6 +307,7 @@
   const DL_ICON = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v10M7 15l5 5 5-5"/><path d="M5 20h14"/></svg>`;
   let siteEnabled = true;
   let coverBase64 = null;
+  let coverChanged = false;
 
   // ── Навигация ──────────────────────────────────────────────────────────────
   function switchPage(page) {
@@ -499,6 +500,7 @@
 
   function openReleaseModal() {
     coverBase64 = null;
+    coverChanged = false;
     document.getElementById('editReleaseId').value = '';
     document.getElementById('modalTitle').textContent = 'Добавить релиз';
     document.getElementById('modalSaveBtn').textContent = 'Добавить';
@@ -518,6 +520,7 @@
 
   function openEditModal(r) {
     coverBase64 = r.cover || null;
+    coverChanged = false;
     document.getElementById('editReleaseId').value = r.id;
     document.getElementById('modalTitle').textContent = 'Изменить релиз';
     document.getElementById('modalSaveBtn').textContent = 'Сохранить';
@@ -558,7 +561,8 @@
       preview.src = val;
       preview.style.display = 'block';
       preview.onerror = () => { preview.style.display = 'none'; };
-      coverBase64 = val; // храним URL как есть
+      coverBase64 = val;
+      coverChanged = true;
     } else {
       preview.style.display = 'none';
       coverBase64 = null;
@@ -573,6 +577,7 @@
     const reader = new FileReader();
     reader.onload = (e) => {
       coverBase64 = e.target.result;
+      coverChanged = true;
       const preview = document.getElementById('coverPreview');
       preview.src = coverBase64;
       preview.style.display = 'block';
@@ -590,8 +595,10 @@
     const editId = document.getElementById('editReleaseId').value;
     if (!artist || !title || !releaseDate) { showToast('Заполни все поля!'); return; }
 
-    const body = { artist, title, releaseDate, releaseTime, timezone, cover: coverBase64 };
     const isEdit = !!editId;
+    // При редактировании: если coverBase64 не менялся (остался как при открытии) — передаём null чтобы сервер оставил старую обложку
+    // coverChanged отслеживает был ли файл/url выбран заново
+    const body = { artist, title, releaseDate, releaseTime, timezone, cover: coverChanged ? coverBase64 : null };
     const res = await fetch(isEdit ? `/api/releases/${editId}` : '/api/releases', {
       method: isEdit ? 'PUT' : 'POST',
       headers: { 'Content-Type': 'application/json' },
