@@ -221,7 +221,10 @@
 
     <div class="release-form-field">
       <label class="release-form-label">Дата выхода</label>
-      <input type="date" id="releaseDate"/>
+      <div style="display:flex;gap:8px;">
+        <input type="date" id="releaseDate" style="flex:1"/>
+        <input type="time" id="releaseTime" value="00:00" style="width:100px;padding:12px 10px;background:var(--bg);border:1.5px solid var(--border);border-radius:var(--radius);color:var(--text);font-size:0.85rem;font-family:Space Mono,monospace;outline:none;"/>
+      </div>
     </div>
 
     <div class="modal-actions">
@@ -488,6 +491,7 @@
     document.getElementById('releaseArtist').value = '';
     document.getElementById('releaseTitle').value = '';
     document.getElementById('releaseDate').value = '';
+    document.getElementById('releaseTime').value = '00:00';
     switchCoverTab('file');
     document.getElementById('releaseModalOverlay').classList.add('show');
   }
@@ -534,12 +538,13 @@
     const artist = document.getElementById('releaseArtist').value.trim();
     const title = document.getElementById('releaseTitle').value.trim();
     const releaseDate = document.getElementById('releaseDate').value;
+    const releaseTime = document.getElementById('releaseTime').value || '00:00';
     if (!artist || !title || !releaseDate) { showToast('Заполни все поля!'); return; }
 
     const res = await fetch('/api/releases', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ artist, title, releaseDate, cover: coverBase64 })
+      body: JSON.stringify({ artist, title, releaseDate, releaseTime, cover: coverBase64 })
     });
     const data = await res.json();
     if (data.success) {
@@ -565,10 +570,11 @@
       list.innerHTML = '<div class="releases-empty">Нет релизов.<br>Нажми «Добавить» чтобы создать первый.</div>';
       return;
     }
-    const today = new Date().toISOString().split('T')[0];
     list.innerHTML = '';
     releases.forEach(r => {
-      const isReleased = r.releaseDate <= today;
+      const now = new Date();
+      const releaseDateTime = new Date(r.releaseDate + 'T' + (r.releaseTime || '00:00') + ':00');
+      const isReleased = releaseDateTime <= now;
       const card = document.createElement('div');
       card.className = 'release-card' + (isReleased ? ' released' : '');
 
@@ -593,7 +599,7 @@
       // Правый блок
       const right = document.createElement('div'); right.className = 'release-right';
       const dateBadge = document.createElement('div'); dateBadge.className = 'release-date-badge';
-      dateBadge.textContent = formatDate(r.releaseDate);
+      dateBadge.textContent = formatDate(r.releaseDate, r.releaseTime);
       const statusBadge = document.createElement('div');
       statusBadge.className = 'release-status ' + (isReleased ? 'out' : 'upcoming');
       statusBadge.textContent = isReleased ? '✓ Вышел' : 'Скоро';
@@ -617,11 +623,13 @@
     showToast('Удалено');
   }
 
-  function formatDate(dateStr) {
+  function formatDate(dateStr, timeStr) {
     if (!dateStr) return '';
     const [y, m, d] = dateStr.split('-');
     const months = ['янв','фев','мар','апр','май','июн','июл','авг','сен','окт','ноя','дек'];
-    return `${parseInt(d)} ${months[parseInt(m)-1]} ${y}`;
+    const base = `${parseInt(d)} ${months[parseInt(m)-1]} ${y}`;
+    if (timeStr && timeStr !== '00:00') return base + ' · ' + timeStr;
+    return base;
   }
 
   // Инициализация
