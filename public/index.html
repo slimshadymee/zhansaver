@@ -230,6 +230,7 @@
         <button type="button" class="cover-tab" id="tzUTC" onclick="selectTZ('UTC')">UTC</button>
         <button type="button" class="cover-tab active" id="tzKST" onclick="selectTZ('KST')">🇰🇷 KST +9</button>
         <button type="button" class="cover-tab" id="tzMSK" onclick="selectTZ('MSK')">🇷🇺 MSK +3</button>
+        <button type="button" class="cover-tab" id="tzALMT" onclick="selectTZ('ALMT')">🇰🇿 +5</button>
       </div>
     </div>
 
@@ -491,7 +492,7 @@
 
   function selectTZ(tz) {
     selectedTZ = tz;
-    ['UTC','KST','MSK'].forEach(t => {
+    ['UTC','KST','MSK','ALMT'].forEach(t => {
       document.getElementById('tz' + t).classList.toggle('active', t === tz);
     });
   }
@@ -622,7 +623,7 @@
     }
     list.innerHTML = '';
     releases.forEach(r => {
-      const TZOFF = { KST: 9, MSK: 3, UTC: 0 };
+      const TZOFF = { KST: 9, MSK: 3, ALMT: 5, UTC: 0 };
       const offset = TZOFF[r.timezone] !== undefined ? TZOFF[r.timezone] : 0;
       const dt = new Date(`${r.releaseDate}T${r.releaseTime || '00:00'}:00Z`);
       dt.setHours(dt.getHours() - offset);
