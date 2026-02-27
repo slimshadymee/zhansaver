@@ -1047,7 +1047,7 @@
 
     // Ghost
     const ghost = cardEl.cloneNode(true);
-    ghost.style.cssText = `position:fixed;z-index:9999;pointer-events:none;width:${rect.width}px;left:${rect.left}px;top:${rect.top}px;opacity:0.9;box-shadow:0 8px 30px rgba(0,0,0,0.5);transform:scale(1.02);transition:none;margin:0;`;
+    ghost.style.cssText = `position:absolute;z-index:9999;pointer-events:none;width:${rect.width}px;left:${rect.left}px;top:${rect.top + window.scrollY}px;opacity:0.9;box-shadow:0 8px 30px rgba(0,0,0,0.5);transform:scale(1.02);transition:none;margin:0;`;
     document.body.appendChild(ghost);
     cardEl.style.opacity = '0.3';
 
@@ -1067,21 +1067,19 @@
   function moveDrag(clientY) {
     if (!dragState) return;
     const { ghost, offsetY } = dragState;
-    ghost.style.top = (clientY - offsetY) + 'px';
+    // Позиция ghost = viewport + scroll
+    ghost.style.top = (window.scrollY + clientY - offsetY) + 'px';
+    ghost.style.position = 'absolute';
 
-    // Автоскролл у краёв экрана
-    const ZONE = 300, SPEED = 15;
+    // Автоскролл — большая зона (30% экрана)
+    const ZONE = Math.round(window.innerHeight * 0.30), SPEED = 15;
     clearInterval(autoScrollTimer);
     if (clientY < ZONE) {
-      autoScrollTimer = setInterval(() => {
-        window.scrollBy(0, -SPEED);
-        ghost.style.top = (parseFloat(ghost.style.top) - SPEED) + 'px';
-      }, 16);
+      const speed = Math.round(SPEED * (1 - clientY / ZONE));
+      autoScrollTimer = setInterval(() => { window.scrollBy(0, -speed); }, 16);
     } else if (clientY > window.innerHeight - ZONE) {
-      autoScrollTimer = setInterval(() => {
-        window.scrollBy(0, SPEED);
-        ghost.style.top = (parseFloat(ghost.style.top) + SPEED) + 'px';
-      }, 16);
+      const speed = Math.round(SPEED * (1 - (window.innerHeight - clientY) / ZONE));
+      autoScrollTimer = setInterval(() => { window.scrollBy(0, speed); }, 16);
     }
 
     // Подсвечиваем карточку под пальцем
