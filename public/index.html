@@ -37,11 +37,11 @@
       gap: 4px; padding: 20px 20px 0;
     }
     .nav-btn {
-      flex: 1; padding: 10px 0; background: transparent;
+      flex: 1; min-width: 0; padding: 10px 4px; background: transparent;
       border: 1.5px solid var(--border); border-radius: 10px;
       color: var(--text-muted); font-family: 'Syne', sans-serif; font-weight: 800;
-      font-size: 0.78rem; letter-spacing: 0.05em; text-transform: uppercase;
-      cursor: pointer; transition: all 0.18s;
+      font-size: clamp(0.58rem, 2.2vw, 0.75rem); letter-spacing: 0.03em; text-transform: uppercase;
+      cursor: pointer; transition: all 0.18s; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
     }
     .nav-btn:hover { border-color: #444; color: var(--text); }
     .nav-btn.active { background: var(--btn-bg); color: var(--btn-text); border-color: var(--btn-bg); }
@@ -192,6 +192,9 @@
     .link-icon-btn:hover { background: var(--border); border-color: var(--text-muted); }
     .link-icon-btn svg { display: block; }
     .link-actions { display: flex; flex-direction: column; gap: 6px; flex-shrink: 0; border-left: 1px solid var(--border); padding-left: 10px; margin-left: 2px; }
+    .drag-handle { width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; cursor: grab; color: var(--text-dim); flex-shrink: 0; touch-action: none; border-radius: 6px; transition: background 0.15s; }
+    .drag-handle:hover { background: var(--surface2); color: var(--text-muted); }
+    .drag-handle:active { cursor: grabbing; }
     .links-empty { text-align: center; padding: 40px 20px; color: var(--text-muted); font-size: 0.82rem; line-height: 1.8; }
 
     .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(80px); background: var(--surface); border: 1px solid var(--border); color: var(--text); padding: 10px 18px; border-radius: 100px; font-size: 0.78rem; z-index: 2000; transition: transform 0.25s cubic-bezier(0.34,1.56,0.64,1), opacity 0.2s; opacity: 0; white-space: nowrap; }
@@ -338,7 +341,7 @@
 <div class="page" id="pageLinks">
   <div class="links-page-inner">
     <div class="links-page-header">
-      <div class="links-page-title">Карточки</div>
+      <div class="links-page-title">Links</div>
       <button class="btn-add-release" onclick="openLinkModal()">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
         Добавить
@@ -958,12 +961,6 @@
   };
 
   let linksData = [];
-  let dragSrcId = null;
-  let longPressTimer = null;
-  let isDragMode = false;
-  let dragGhost = null;
-  let dragCardEl = null;
-  let dragCardId = null;
 
   function renderLinks(links) {
     linksData = links || [];
@@ -981,8 +978,7 @@
       // Аватарка
       if (card.avatar) {
         const img = document.createElement('img');
-        img.className = 'link-avatar';
-        img.src = card.avatar; // всегда base64 или data URL
+        img.className = 'link-avatar'; img.src = card.avatar;
         img.onerror = () => img.replaceWith(makePlaceholder());
         el.appendChild(img);
       } else { el.appendChild(makePlaceholder()); }
@@ -1001,102 +997,111 @@
       if (card.spotify) icons.appendChild(makeLinkIcon('spotify', card.spotify));
       right.appendChild(icons); el.appendChild(right);
 
-      // Кнопки
+      // Ручка перетаскивания + кнопки
       const actions = document.createElement('div'); actions.className = 'link-actions';
+
+      const handle = document.createElement('div'); handle.className = 'drag-handle';
+      handle.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="5" r="1" fill="currentColor"/><circle cx="15" cy="5" r="1" fill="currentColor"/><circle cx="9" cy="12" r="1" fill="currentColor"/><circle cx="15" cy="12" r="1" fill="currentColor"/><circle cx="9" cy="19" r="1" fill="currentColor"/><circle cx="15" cy="19" r="1" fill="currentColor"/></svg>`;
+      handle.title = 'Перетащить';
+      actions.appendChild(handle);
+
       const editBtn = document.createElement('button'); editBtn.className = 'btn-delete-release';
       editBtn.style.opacity = '0.6';
       editBtn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>`;
       editBtn.onclick = (e) => { e.stopPropagation(); openEditLinkModal(card); };
+
       const delBtn = document.createElement('button'); delBtn.className = 'btn-delete-release';
       delBtn.innerHTML = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="3,6 5,6 21,6"/><path d="M19,6l-1,14a2,2,0,0,1-2,2H8a2,2,0,0,1-2-2L5,6"/><path d="M10,11v6"/><path d="M14,11v6"/></svg>`;
       delBtn.onclick = (e) => { e.stopPropagation(); deleteLink(card.id); };
+
       actions.appendChild(editBtn); actions.appendChild(delBtn);
       el.appendChild(actions);
 
-      // ── Drag & Drop (desktop) ──
-      el.draggable = false; // включаем только после long press
-      el.addEventListener('dragstart', e => {
-        if (!isDragMode) { e.preventDefault(); return; }
-        dragSrcId = card.id;
-        el.classList.add('dragging');
-        e.dataTransfer.effectAllowed = 'move';
-      });
-      el.addEventListener('dragend', () => { el.classList.remove('dragging'); isDragMode = false; el.draggable = false; });
-      el.addEventListener('dragover', e => { e.preventDefault(); el.classList.add('drag-over'); });
-      el.addEventListener('dragleave', () => el.classList.remove('drag-over'));
-      el.addEventListener('drop', e => {
-        e.preventDefault(); el.classList.remove('drag-over');
-        if (dragSrcId == null || dragSrcId === card.id) return;
-        const srcIdx = linksData.findIndex(l => l.id == dragSrcId);
-        const dstIdx = linksData.findIndex(l => l.id === card.id);
-        if (srcIdx === -1 || dstIdx === -1) return;
-        const [moved] = linksData.splice(srcIdx, 1);
-        linksData.splice(dstIdx, 0, moved);
-        saveLinkOrder();
-        renderLinks(linksData);
-      });
-
-      // ── Long press → drag ──
-      el.addEventListener('touchstart', e => {
-        clearTimeout(longPressTimer);
-        const touch = e.touches[0];
-        longPressTimer = setTimeout(() => {
-          isDragMode = true;
-          dragCardEl = el;
-          dragCardId = card.id;
-          if (navigator.vibrate) navigator.vibrate(50);
-          el.classList.add('long-press');
-          setTimeout(() => el.classList.remove('long-press'), 300);
-          // Создаём ghost
-          dragGhost = el.cloneNode(true);
-          dragGhost.style.cssText = `position:fixed;z-index:9999;pointer-events:none;opacity:0.85;width:${el.offsetWidth}px;transform:scale(1.03);box-shadow:0 8px 30px rgba(0,0,0,0.5);left:${el.getBoundingClientRect().left}px;top:${el.getBoundingClientRect().top}px;transition:none;`;
-          document.body.appendChild(dragGhost);
-          el.style.opacity = '0.3';
-        }, 500);
-      }, { passive: true });
-
-      el.addEventListener('touchmove', e => { clearTimeout(longPressTimer); }, { passive: true });
-      el.addEventListener('touchend', () => { clearTimeout(longPressTimer); });
+      // ── Drag через ручку ──
+      setupDragHandle(handle, el, card.id);
 
       list.appendChild(el);
     });
   }
 
-  // ── Global touch move/end for drag ──
-  document.addEventListener('touchmove', e => {
-    if (!isDragMode || !dragGhost) return;
-    e.preventDefault();
-    const touch = e.touches[0];
-    const x = touch.clientX, y = touch.clientY;
-    dragGhost.style.left = (x - dragGhost.offsetWidth / 2) + 'px';
-    dragGhost.style.top = (y - dragGhost.offsetHeight / 2) + 'px';
-    // Highlight target
-    const listEl = document.getElementById('linksList');
-    const cards = [...listEl.querySelectorAll('.link-card')];
-    cards.forEach(c => c.classList.remove('drag-over'));
-    const target = cards.find(c => {
-      const r = c.getBoundingClientRect();
-      return y >= r.top && y <= r.bottom && c !== dragCardEl;
+  // ── Drag & Drop логика ────────────────────────────────────────────────────────
+  let dragState = null;
+
+  function setupDragHandle(handle, cardEl, cardId) {
+    // Desktop
+    handle.addEventListener('mousedown', e => {
+      e.preventDefault();
+      startDrag(cardEl, cardId, e.clientY);
     });
-    if (target) target.classList.add('drag-over');
+
+    // Mobile
+    handle.addEventListener('touchstart', e => {
+      e.preventDefault();
+      startDrag(cardEl, cardId, e.touches[0].clientY);
+    }, { passive: false });
+  }
+
+  function startDrag(cardEl, cardId, startY) {
+    const list = document.getElementById('linksList');
+    const rect = cardEl.getBoundingClientRect();
+
+    // Ghost
+    const ghost = cardEl.cloneNode(true);
+    ghost.style.cssText = `position:fixed;z-index:9999;pointer-events:none;width:${rect.width}px;left:${rect.left}px;top:${rect.top}px;opacity:0.9;box-shadow:0 8px 30px rgba(0,0,0,0.5);transform:scale(1.02);transition:none;margin:0;`;
+    document.body.appendChild(ghost);
+    cardEl.style.opacity = '0.3';
+
+    dragState = { cardEl, cardId, ghost, offsetY: startY - rect.top };
+    if (navigator.vibrate) navigator.vibrate(40);
+  }
+
+  document.addEventListener('mousemove', e => moveDrag(e.clientY));
+  document.addEventListener('touchmove', e => {
+    if (!dragState) return;
+    e.preventDefault();
+    moveDrag(e.touches[0].clientY);
   }, { passive: false });
 
-  document.addEventListener('touchend', e => {
-    if (!isDragMode) return;
-    isDragMode = false;
-    if (dragGhost) { dragGhost.remove(); dragGhost = null; }
-    if (dragCardEl) { dragCardEl.style.opacity = ''; }
-    const listEl = document.getElementById('linksList');
-    const cards = [...listEl.querySelectorAll('.link-card')];
+  function moveDrag(clientY) {
+    if (!dragState) return;
+    const { ghost, offsetY } = dragState;
+    ghost.style.top = (clientY - offsetY) + 'px';
+
+    // Highlight card under finger
+    const list = document.getElementById('linksList');
+    const cards = [...list.querySelectorAll('.link-card')];
     cards.forEach(c => c.classList.remove('drag-over'));
-    const touch = e.changedTouches[0];
-    const y = touch.clientY;
     const target = cards.find(c => {
+      if (c === dragState.cardEl) return false;
       const r = c.getBoundingClientRect();
-      return y >= r.top && y <= r.bottom && c !== dragCardEl;
+      return clientY >= r.top && clientY <= r.bottom;
     });
-    if (target && dragCardId != null) {
-      const srcIdx = linksData.findIndex(l => l.id == dragCardId);
+    if (target) target.classList.add('drag-over');
+  }
+
+  document.addEventListener('mouseup', e => endDrag(e.clientY));
+  document.addEventListener('touchend', e => {
+    if (!dragState) return;
+    endDrag(e.changedTouches[0].clientY);
+  });
+
+  function endDrag(clientY) {
+    if (!dragState) return;
+    const { cardEl, cardId, ghost } = dragState;
+    ghost.remove();
+    cardEl.style.opacity = '';
+    const list = document.getElementById('linksList');
+    const cards = [...list.querySelectorAll('.link-card')];
+    cards.forEach(c => c.classList.remove('drag-over'));
+
+    const target = cards.find(c => {
+      if (c === cardEl) return false;
+      const r = c.getBoundingClientRect();
+      return clientY >= r.top && clientY <= r.bottom;
+    });
+
+    if (target) {
+      const srcIdx = linksData.findIndex(l => l.id == cardId);
       const dstIdx = linksData.findIndex(l => l.id == Number(target.dataset.id));
       if (srcIdx !== -1 && dstIdx !== -1) {
         const [moved] = linksData.splice(srcIdx, 1);
@@ -1105,8 +1110,8 @@
         renderLinks(linksData);
       }
     }
-    dragCardEl = null; dragCardId = null;
-  });
+    dragState = null;
+  }
 
   async function saveLinkOrder() {
     await fetch('/api/links/reorder', {
