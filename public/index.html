@@ -1070,7 +1070,7 @@
     ghost.style.top = (clientY - offsetY) + 'px';
 
     // Автоскролл у краёв экрана
-    const ZONE = 50, SPEED = 15;
+    const ZONE = 300, SPEED = 15;
     clearInterval(autoScrollTimer);
     if (clientY < ZONE) {
       autoScrollTimer = setInterval(() => {
