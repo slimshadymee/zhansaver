@@ -911,6 +911,9 @@
   let dragSrcId = null;
   let longPressTimer = null;
   let isDragMode = false;
+  let dragGhost = null;
+  let dragCardEl = null;
+  let dragCardId = null;
 
   function renderLinks(links) {
     linksData = links || [];
@@ -982,64 +985,77 @@
         renderLinks(linksData);
       });
 
-      // ── Long press (mobile + desktop) ──
-      el.addEventListener('pointerdown', () => {
+      // ── Long press → drag ──
+      el.addEventListener('touchstart', e => {
+        clearTimeout(longPressTimer);
+        const touch = e.touches[0];
         longPressTimer = setTimeout(() => {
           isDragMode = true;
-          el.draggable = true;
+          dragCardEl = el;
+          dragCardId = card.id;
+          if (navigator.vibrate) navigator.vibrate(50);
           el.classList.add('long-press');
-          if (navigator.vibrate) navigator.vibrate(40);
           setTimeout(() => el.classList.remove('long-press'), 300);
+          // Создаём ghost
+          dragGhost = el.cloneNode(true);
+          dragGhost.style.cssText = `position:fixed;z-index:9999;pointer-events:none;opacity:0.85;width:${el.offsetWidth}px;transform:scale(1.03);box-shadow:0 8px 30px rgba(0,0,0,0.5);left:${el.getBoundingClientRect().left}px;top:${el.getBoundingClientRect().top}px;transition:none;`;
+          document.body.appendChild(dragGhost);
+          el.style.opacity = '0.3';
         }, 500);
-      });
-      el.addEventListener('pointerup', () => { clearTimeout(longPressTimer); });
-      el.addEventListener('pointermove', () => { clearTimeout(longPressTimer); });
-
-      // ── Touch drag (mobile) ──
-      let touchStartY = 0, touchEl = null;
-      el.addEventListener('touchstart', e => {
-        touchStartY = e.touches[0].clientY;
-        touchEl = el;
       }, { passive: true });
-      el.addEventListener('touchmove', e => {
-        if (!isDragMode) return;
-        e.preventDefault();
-        const y = e.touches[0].clientY;
-        const list = document.getElementById('linksList');
-        const cards = [...list.querySelectorAll('.link-card')];
-        const target = cards.find(c => {
-          const r = c.getBoundingClientRect();
-          return y >= r.top && y <= r.bottom && c !== el;
-        });
-        cards.forEach(c => c.classList.remove('drag-over'));
-        if (target) target.classList.add('drag-over');
-      }, { passive: false });
-      el.addEventListener('touchend', e => {
-        if (!isDragMode) return;
-        isDragMode = false;
-        const y = e.changedTouches[0].clientY;
-        const listEl = document.getElementById('linksList');
-        const cards = [...listEl.querySelectorAll('.link-card')];
-        cards.forEach(c => c.classList.remove('drag-over'));
-        const target = cards.find(c => {
-          const r = c.getBoundingClientRect();
-          return y >= r.top && y <= r.bottom && c !== el;
-        });
-        if (target) {
-          const srcIdx = linksData.findIndex(l => l.id == card.id);
-          const dstIdx = linksData.findIndex(l => l.id == Number(target.dataset.id));
-          if (srcIdx !== -1 && dstIdx !== -1) {
-            const [moved] = linksData.splice(srcIdx, 1);
-            linksData.splice(dstIdx, 0, moved);
-            saveLinkOrder();
-            renderLinks(linksData);
-          }
-        }
-      });
+
+      el.addEventListener('touchmove', e => { clearTimeout(longPressTimer); }, { passive: true });
+      el.addEventListener('touchend', () => { clearTimeout(longPressTimer); });
 
       list.appendChild(el);
     });
   }
+
+  // ── Global touch move/end for drag ──
+  document.addEventListener('touchmove', e => {
+    if (!isDragMode || !dragGhost) return;
+    e.preventDefault();
+    const touch = e.touches[0];
+    const x = touch.clientX, y = touch.clientY;
+    dragGhost.style.left = (x - dragGhost.offsetWidth / 2) + 'px';
+    dragGhost.style.top = (y - dragGhost.offsetHeight / 2) + 'px';
+    // Highlight target
+    const listEl = document.getElementById('linksList');
+    const cards = [...listEl.querySelectorAll('.link-card')];
+    cards.forEach(c => c.classList.remove('drag-over'));
+    const target = cards.find(c => {
+      const r = c.getBoundingClientRect();
+      return y >= r.top && y <= r.bottom && c !== dragCardEl;
+    });
+    if (target) target.classList.add('drag-over');
+  }, { passive: false });
+
+  document.addEventListener('touchend', e => {
+    if (!isDragMode) return;
+    isDragMode = false;
+    if (dragGhost) { dragGhost.remove(); dragGhost = null; }
+    if (dragCardEl) { dragCardEl.style.opacity = ''; }
+    const listEl = document.getElementById('linksList');
+    const cards = [...listEl.querySelectorAll('.link-card')];
+    cards.forEach(c => c.classList.remove('drag-over'));
+    const touch = e.changedTouches[0];
+    const y = touch.clientY;
+    const target = cards.find(c => {
+      const r = c.getBoundingClientRect();
+      return y >= r.top && y <= r.bottom && c !== dragCardEl;
+    });
+    if (target && dragCardId != null) {
+      const srcIdx = linksData.findIndex(l => l.id == dragCardId);
+      const dstIdx = linksData.findIndex(l => l.id == Number(target.dataset.id));
+      if (srcIdx !== -1 && dstIdx !== -1) {
+        const [moved] = linksData.splice(srcIdx, 1);
+        linksData.splice(dstIdx, 0, moved);
+        saveLinkOrder();
+        renderLinks(linksData);
+      }
+    }
+    dragCardEl = null; dragCardId = null;
+  });
 
   async function saveLinkOrder() {
     await fetch('/api/links/reorder', {
