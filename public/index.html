@@ -177,8 +177,11 @@
     .links-page-inner { width: 100%; max-width: 640px; padding: 20px 20px 60px; }
     .links-page-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
     .links-page-title { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 1.3rem; letter-spacing: -0.03em; }
-    .link-card { display: flex; align-items: center; gap: 12px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px 14px; margin-bottom: 10px; transition: border-color 0.2s; }
+    .link-card { display: flex; align-items: center; gap: 12px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px 14px; margin-bottom: 10px; transition: border-color 0.2s, opacity 0.2s, transform 0.15s; user-select: none; }
     .link-card:hover { border-color: #444; }
+    .link-card.dragging { opacity: 0.4; transform: scale(0.98); border-color: var(--border-active); }
+    .link-card.drag-over { border-color: var(--border-active); border-style: dashed; }
+    .link-card.long-press { transform: scale(1.02); border-color: var(--border-active); box-shadow: 0 4px 20px rgba(255,255,255,0.1); }
     .link-avatar { width: 48px; height: 48px; border-radius: 50%; object-fit: cover; flex-shrink: 0; background: var(--surface2); }
     .link-avatar-placeholder { width: 48px; height: 48px; border-radius: 50%; background: var(--surface2); flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; }
     .link-info { flex: 1; min-width: 0; }
@@ -904,58 +907,145 @@
     spotify:   `<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2zm4.586 14.424a.622.622 0 01-.857.207c-2.348-1.435-5.304-1.76-8.785-.964a.622.622 0 11-.277-1.215c3.809-.87 7.076-.496 9.712 1.115.294.181.387.564.207.857zm1.224-2.722a.78.78 0 01-1.072.257c-2.687-1.652-6.785-2.131-9.965-1.166a.78.78 0 01-.973-.519.781.781 0 01.52-.973c3.632-1.102 8.147-.568 11.233 1.329a.78.78 0 01.257 1.072zm.105-2.835c-3.223-1.914-8.54-2.09-11.618-1.156a.935.935 0 11-.542-1.79c3.532-1.072 9.404-.865 13.115 1.338a.935.935 0 01-.955 1.608z"/></svg>`
   };
 
+  let linksData = [];
+  let dragSrcId = null;
+  let longPressTimer = null;
+  let isDragMode = false;
+
   function renderLinks(links) {
+    linksData = links || [];
     const list = document.getElementById('linksList');
-    if (!links) { loadLinks(); return; }
-    if (!links.length) {
+    if (!linksData.length) {
       list.innerHTML = '<div class="links-empty">Нет карточек.<br>Нажми «Добавить» чтобы создать первую.</div>';
       return;
     }
     list.innerHTML = '';
-    links.forEach(card => {
+    linksData.forEach(card => {
       const el = document.createElement('div');
       el.className = 'link-card';
+      el.dataset.id = card.id;
 
       // Аватарка
       if (card.avatar) {
         const img = document.createElement('img');
-        img.className = 'link-avatar';
-        img.src = card.avatar;
-        img.onerror = () => { img.replaceWith(makePlaceholder()); };
+        img.className = 'link-avatar'; img.src = card.avatar;
+        img.onerror = () => img.replaceWith(makePlaceholder());
         el.appendChild(img);
-      } else {
-        el.appendChild(makePlaceholder());
-      }
+      } else { el.appendChild(makePlaceholder()); }
 
-      // Имя артиста
+      // Имя
       const info = document.createElement('div'); info.className = 'link-info';
       const name = document.createElement('div'); name.className = 'link-name'; name.textContent = card.artist;
-      info.appendChild(name);
-      el.appendChild(info);
+      info.appendChild(name); el.appendChild(info);
 
       // Иконки справа
       const right = document.createElement('div'); right.className = 'link-right';
       const icons = document.createElement('div'); icons.className = 'link-icons';
-      if (card.instagram) icons.appendChild(makeLinkIcon('instagram', 'https://instagram.com/' + card.instagram));
+      if (card.instagram) icons.appendChild(makeLinkIcon('instagram', card.instagram.startsWith('http') ? card.instagram : 'https://instagram.com/' + card.instagram));
       if (card.tiktok) icons.appendChild(makeLinkIcon('tiktok', card.tiktok));
       if (card.youtube) icons.appendChild(makeLinkIcon('youtube', card.youtube));
       if (card.spotify) icons.appendChild(makeLinkIcon('spotify', card.spotify));
-      right.appendChild(icons);
-      el.appendChild(right);
+      right.appendChild(icons); el.appendChild(right);
 
-      // Кнопки редактировать/удалить
+      // Кнопки
       const actions = document.createElement('div'); actions.className = 'link-actions';
       const editBtn = document.createElement('button'); editBtn.className = 'btn-delete-release';
       editBtn.style.opacity = '0.6';
       editBtn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>`;
-      editBtn.onclick = () => openEditLinkModal(card);
+      editBtn.onclick = (e) => { e.stopPropagation(); openEditLinkModal(card); };
       const delBtn = document.createElement('button'); delBtn.className = 'btn-delete-release';
       delBtn.innerHTML = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="3,6 5,6 21,6"/><path d="M19,6l-1,14a2,2,0,0,1-2,2H8a2,2,0,0,1-2-2L5,6"/><path d="M10,11v6"/><path d="M14,11v6"/></svg>`;
-      delBtn.onclick = () => deleteLink(card.id);
+      delBtn.onclick = (e) => { e.stopPropagation(); deleteLink(card.id); };
       actions.appendChild(editBtn); actions.appendChild(delBtn);
       el.appendChild(actions);
 
+      // ── Drag & Drop (desktop) ──
+      el.draggable = false; // включаем только после long press
+      el.addEventListener('dragstart', e => {
+        if (!isDragMode) { e.preventDefault(); return; }
+        dragSrcId = card.id;
+        el.classList.add('dragging');
+        e.dataTransfer.effectAllowed = 'move';
+      });
+      el.addEventListener('dragend', () => { el.classList.remove('dragging'); isDragMode = false; el.draggable = false; });
+      el.addEventListener('dragover', e => { e.preventDefault(); el.classList.add('drag-over'); });
+      el.addEventListener('dragleave', () => el.classList.remove('drag-over'));
+      el.addEventListener('drop', e => {
+        e.preventDefault(); el.classList.remove('drag-over');
+        if (dragSrcId == null || dragSrcId === card.id) return;
+        const srcIdx = linksData.findIndex(l => l.id == dragSrcId);
+        const dstIdx = linksData.findIndex(l => l.id === card.id);
+        if (srcIdx === -1 || dstIdx === -1) return;
+        const [moved] = linksData.splice(srcIdx, 1);
+        linksData.splice(dstIdx, 0, moved);
+        saveLinkOrder();
+        renderLinks(linksData);
+      });
+
+      // ── Long press (mobile + desktop) ──
+      el.addEventListener('pointerdown', () => {
+        longPressTimer = setTimeout(() => {
+          isDragMode = true;
+          el.draggable = true;
+          el.classList.add('long-press');
+          if (navigator.vibrate) navigator.vibrate(40);
+          setTimeout(() => el.classList.remove('long-press'), 300);
+        }, 500);
+      });
+      el.addEventListener('pointerup', () => { clearTimeout(longPressTimer); });
+      el.addEventListener('pointermove', () => { clearTimeout(longPressTimer); });
+
+      // ── Touch drag (mobile) ──
+      let touchStartY = 0, touchEl = null;
+      el.addEventListener('touchstart', e => {
+        touchStartY = e.touches[0].clientY;
+        touchEl = el;
+      }, { passive: true });
+      el.addEventListener('touchmove', e => {
+        if (!isDragMode) return;
+        e.preventDefault();
+        const y = e.touches[0].clientY;
+        const list = document.getElementById('linksList');
+        const cards = [...list.querySelectorAll('.link-card')];
+        const target = cards.find(c => {
+          const r = c.getBoundingClientRect();
+          return y >= r.top && y <= r.bottom && c !== el;
+        });
+        cards.forEach(c => c.classList.remove('drag-over'));
+        if (target) target.classList.add('drag-over');
+      }, { passive: false });
+      el.addEventListener('touchend', e => {
+        if (!isDragMode) return;
+        isDragMode = false;
+        const y = e.changedTouches[0].clientY;
+        const listEl = document.getElementById('linksList');
+        const cards = [...listEl.querySelectorAll('.link-card')];
+        cards.forEach(c => c.classList.remove('drag-over'));
+        const target = cards.find(c => {
+          const r = c.getBoundingClientRect();
+          return y >= r.top && y <= r.bottom && c !== el;
+        });
+        if (target) {
+          const srcIdx = linksData.findIndex(l => l.id == card.id);
+          const dstIdx = linksData.findIndex(l => l.id == Number(target.dataset.id));
+          if (srcIdx !== -1 && dstIdx !== -1) {
+            const [moved] = linksData.splice(srcIdx, 1);
+            linksData.splice(dstIdx, 0, moved);
+            saveLinkOrder();
+            renderLinks(linksData);
+          }
+        }
+      });
+
       list.appendChild(el);
+    });
+  }
+
+  async function saveLinkOrder() {
+    await fetch('/api/links/reorder', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ids: linksData.map(l => l.id) })
     });
   }
 
