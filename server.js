@@ -5,6 +5,8 @@ const fs = require('fs');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // ─── Пути к файлам ───────────────────────────────────────────────────────────
 // Все данные в Railway Volume (/app/data) или локально рядом с кодом
@@ -324,7 +326,6 @@ async function pollTelegram() {
   }
 }
 
-app.use(express.json({ limit: '10mb' }));
 app.use(express.static(path.join(__dirname, 'public')));
 
 // ─── Куки / заголовки ────────────────────────────────────────────────────────
