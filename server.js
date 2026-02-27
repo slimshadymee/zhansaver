@@ -543,24 +543,87 @@ app.get('/admin/releases', (req, res) => {
   const config = loadConfig();
   if (!key || key !== config.adminUsername) return res.status(403).send('Forbidden');
   try {
-    const releases = loadReleases();
-    // Показываем все файлы в DATA_DIR
     let files = {};
-    try {
-      const fileList = fs.readdirSync(DATA_DIR);
-      for (const f of fileList) {
-        try { files[f] = JSON.parse(fs.readFileSync(path.join(DATA_DIR, f), 'utf8')); }
-        catch { files[f] = '(не JSON)'; }
-      }
-    } catch {}
+    const fileList = fs.readdirSync(DATA_DIR);
+    for (const f of fileList) {
+      try { files[f] = JSON.parse(fs.readFileSync(path.join(DATA_DIR, f), 'utf8')); }
+      catch { files[f] = null; }
+    }
     const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Admin</title>
-    <style>body{background:#000;color:#fff;font-family:monospace;padding:20px}hr{border-color:#333}pre{background:#111;color:#0f0;padding:12px;border-radius:8px;overflow:auto;font-size:12px}h2{color:#0f0}h3{color:#fff;margin-top:20px}</style></head><body>
-    <h2>📁 ${DATA_DIR}</h2><hr>
-    ${Object.entries(files).map(([name, data]) => `<h3>📄 ${name}</h3><pre>${JSON.stringify(data, null, 2).replace(/</g,'&lt;')}</pre>`).join('')}
+    <style>
+      *{box-sizing:border-box;margin:0;padding:0}
+      body{background:#0a0a0a;color:#fff;font-family:monospace;padding:20px;font-size:13px}
+      h2{color:#0f0;margin-bottom:20px;font-size:1.1rem}
+      .file-block{margin-bottom:30px}
+      .file-title{display:flex;align-items:center;gap:12px;margin-bottom:8px}
+      .file-name{color:#0f0;font-size:0.9rem;font-weight:bold}
+      textarea{width:100%;height:300px;background:#111;color:#0f0;border:1px solid #333;border-radius:8px;padding:12px;font-family:monospace;font-size:12px;resize:vertical;outline:none}
+      textarea:focus{border-color:#0f0}
+      .btn{padding:7px 18px;border-radius:6px;border:none;cursor:pointer;font-family:monospace;font-size:12px;font-weight:bold}
+      .btn-save{background:#0f0;color:#000}
+      .btn-save:hover{background:#0d0}
+      .msg{margin-left:10px;font-size:12px}
+      .msg.ok{color:#0f0} .msg.err{color:#f44}
+      hr{border:none;border-top:1px solid #222;margin:20px 0}
+    </style></head><body>
+    <h2>📁 ${DATA_DIR}</h2>
+    ${Object.entries(files).map(([name, data]) => `
+      <div class="file-block">
+        <div class="file-title">
+          <span class="file-name">📄 ${name}</span>
+          <button class="btn btn-save" onclick="saveFile('${name}')">💾 Сохранить</button>
+          <span class="msg" id="msg_${name.replace('.','_')}"></span>
+        </div>
+        <textarea id="file_${name.replace('.','_')}">${JSON.stringify(data, null, 2).replace(/</g,'&lt;')}</textarea>
+      </div><hr>
+    `).join('')}
+    <script>
+    async function saveFile(name) {
+      const key = new URLSearchParams(location.search).get('key');
+      const id = name.replace('.','_');
+      const val = document.getElementById('file_' + id).value;
+      const msg = document.getElementById('msg_' + id);
+      try {
+        JSON.parse(val); // validate
+        const res = await fetch('/admin/save-file?key=' + key, {
+          method: 'POST',
+          headers: {'Content-Type':'application/json'},
+          body: JSON.stringify({ filename: name, content: val })
+        });
+        const d = await res.json();
+        msg.textContent = d.success ? '✓ Сохранено' : '✗ ' + d.error;
+        msg.className = 'msg ' + (d.success ? 'ok' : 'err');
+      } catch(e) {
+        msg.textContent = '✗ Невалидный JSON';
+        msg.className = 'msg err';
+      }
+      setTimeout(() => msg.textContent = '', 3000);
+    }
+    <\/script>
     </body></html>`;
     res.send(html);
   } catch (e) { res.status(500).send('Error: ' + e.message); }
 });
+
+app.post('/admin/save-file', (req, res) => {
+  const { key } = req.query;
+  const config = loadConfig();
+  if (!key || key !== config.adminUsername) return res.status(403).json({ error: 'Forbidden' });
+  const { filename, content } = req.body;
+  if (!filename || !content) return res.status(400).json({ error: 'Missing fields' });
+  // Только файлы из DATA_DIR, без path traversal
+  const safeName = path.basename(filename);
+  const filePath = path.join(DATA_DIR, safeName);
+  try {
+    JSON.parse(content); // валидируем JSON
+    fs.writeFileSync(filePath, content, 'utf8');
+    res.json({ success: true });
+  } catch (e) {
+    res.status(400).json({ error: e.message });
+  }
+});
+
+
 // ─── Links API ───────────────────────────────────────────────────────────────
 app.get('/api/links', (req, res) => res.json(loadLinks()));
 
