@@ -625,16 +625,26 @@ app.post('/admin/save-file', (req, res) => {
 });
 
 
-// Прокси для внешних картинок (аватарки по URL)
-app.get('/api/proxy-image', async (req, res) => {
+// Скачивает картинку и возвращает base64 (для аватарок по URL)
+app.get('/api/download-image', async (req, res) => {
   const { url } = req.query;
-  if (!url) return res.status(400).send('No url');
+  if (!url) return res.status(400).json({ error: 'No url' });
   try {
-    const r = await axios.get(url, { responseType: 'stream', timeout: 10000, headers: { 'User-Agent': 'Mozilla/5.0' } });
-    res.setHeader('Content-Type', r.headers['content-type'] || 'image/jpeg');
-    res.setHeader('Cache-Control', 'public, max-age=86400');
-    r.data.pipe(res);
-  } catch (e) { res.status(500).send('Error'); }
+    const r = await axios.get(url, {
+      responseType: 'arraybuffer', timeout: 15000,
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) AppleWebKit/605.1.15',
+        'Referer': 'https://www.instagram.com/',
+        'Accept': 'image/*,*/*'
+      }
+    });
+    const mime = r.headers['content-type'] || 'image/jpeg';
+    const base64 = Buffer.from(r.data).toString('base64');
+    res.json({ base64: `data:${mime};base64,${base64}` });
+  } catch (e) {
+    console.error('[DownloadImage]', e.message);
+    res.status(500).json({ error: e.message });
+  }
 });
 
 // ─── Links API ───────────────────────────────────────────────────────────────
