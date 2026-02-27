@@ -586,6 +586,16 @@ app.put('/api/links/:id', (req, res) => {
   res.json({ success: true, link: links[idx] });
 });
 
+app.post('/api/links/reorder', (req, res) => {
+  const { ids } = req.body;
+  if (!Array.isArray(ids)) return res.status(400).json({ error: 'ids required' });
+  const links = loadLinks();
+  const map = new Map(links.map(l => [l.id, l]));
+  const reordered = ids.map(id => map.get(Number(id))).filter(Boolean);
+  saveLinks(reordered);
+  res.json({ success: true });
+});
+
 app.delete('/api/links/:id', (req, res) => {
   const id = Number(req.params.id);
   saveLinks(loadLinks().filter(l => l.id !== id));
