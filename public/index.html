@@ -173,6 +173,23 @@
     .admin-msg-body { font-size: 0.9rem; color: var(--text-dim); line-height: 1.7; }
 
     /* ── TOAST ── */
+    /* ── LINKS ── */
+    .links-page-inner { width: 100%; max-width: 640px; padding: 20px 20px 60px; }
+    .links-page-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+    .links-page-title { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 1.3rem; letter-spacing: -0.03em; }
+    .link-card { display: flex; align-items: center; gap: 14px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px 14px; margin-bottom: 10px; transition: border-color 0.2s; }
+    .link-card:hover { border-color: #444; }
+    .link-avatar { width: 52px; height: 52px; border-radius: 50%; object-fit: cover; flex-shrink: 0; background: var(--surface2); }
+    .link-avatar-placeholder { width: 52px; height: 52px; border-radius: 50%; background: var(--surface2); flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 1.3rem; }
+    .link-info { flex: 1; min-width: 0; }
+    .link-name { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 0.9rem; letter-spacing: -0.02em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 8px; }
+    .link-icons { display: flex; gap: 10px; flex-wrap: wrap; }
+    .link-icon-btn { display: flex; align-items: center; justify-content: center; width: 30px; height: 30px; border-radius: 8px; background: var(--surface2); border: 1px solid var(--border); color: var(--text); text-decoration: none; transition: background 0.15s, border-color 0.15s; flex-shrink: 0; }
+    .link-icon-btn:hover { background: var(--border); border-color: var(--text-muted); }
+    .link-icon-btn svg { display: block; }
+    .link-actions { display: flex; flex-direction: column; gap: 6px; flex-shrink: 0; }
+    .links-empty { text-align: center; padding: 40px 20px; color: var(--text-muted); font-size: 0.82rem; line-height: 1.8; }
+
     .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(80px); background: var(--surface); border: 1px solid var(--border); color: var(--text); padding: 10px 18px; border-radius: 100px; font-size: 0.78rem; z-index: 2000; transition: transform 0.25s cubic-bezier(0.34,1.56,0.64,1), opacity 0.2s; opacity: 0; white-space: nowrap; }
     .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
 
@@ -262,6 +279,7 @@
 <nav class="navbar">
   <button class="nav-btn active" id="navInsttik" onclick="switchPage('insttik')">INSTAGRAM</button>
   <button class="nav-btn" id="navRelease" onclick="switchPage('release')">RELEASE</button>
+  <button class="nav-btn" id="navLinks" onclick="switchPage('links')">LINKS</button>
 </nav>
 
 <!-- PAGE: INSTTIK -->
@@ -312,6 +330,53 @@
   </div>
 </div>
 
+<!-- PAGE: LINKS -->
+<div class="page" id="pageLinks">
+  <div class="links-page-inner">
+    <div class="links-page-header">
+      <div class="links-page-title">Links</div>
+      <button class="btn-add-release" onclick="openLinkModal()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Добавить
+      </button>
+    </div>
+    <div id="linksList"><div class="links-empty">Нет карточек.<br>Нажми «Добавить» чтобы создать первую.</div></div>
+  </div>
+</div>
+
+<!-- Модалка Links -->
+<div class="modal-overlay" id="linkModalOverlay">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <h2 id="linkModalTitle">Добавить карточку</h2>
+    <input type="hidden" id="editLinkId"/>
+    <div class="release-form-field">
+      <label class="release-form-label">Имя артиста</label>
+      <input type="text" id="linkArtist" placeholder="Например: IVE"/>
+    </div>
+    <div class="release-form-field">
+      <label class="release-form-label">Instagram username (для аватарки)</label>
+      <input type="text" id="linkInstagram" placeholder="ive.official"/>
+    </div>
+    <div class="release-form-field">
+      <label class="release-form-label">TikTok</label>
+      <input type="text" id="linkTiktok" placeholder="https://tiktok.com/@..."/>
+    </div>
+    <div class="release-form-field">
+      <label class="release-form-label">YouTube</label>
+      <input type="text" id="linkYoutube" placeholder="https://youtube.com/@..."/>
+    </div>
+    <div class="release-form-field">
+      <label class="release-form-label">Spotify</label>
+      <input type="text" id="linkSpotify" placeholder="https://open.spotify.com/artist/..."/>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-save" id="linkSaveBtn" onclick="saveLink()">Добавить</button>
+      <button class="btn-cancel" onclick="closeLinkModal()">Отмена</button>
+    </div>
+  </div>
+</div>
+
 <script>
   const DL_ICON = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v10M7 15l5 5 5-5"/><path d="M5 20h14"/></svg>`;
   let siteEnabled = true;
@@ -327,6 +392,7 @@
     const navEl = document.getElementById('nav' + page.charAt(0).toUpperCase() + page.slice(1));
     if (navEl) navEl.classList.add('active');
     if (page === 'release') loadReleases();
+    if (page === 'links') renderLinks();
   }
 
   // ── Toast ──────────────────────────────────────────────────────────────────
@@ -738,6 +804,137 @@
   // Инициализация
   checkSiteStatus();
   setInterval(checkSiteStatus, 30000);
+
+  // ── LINKS ──────────────────────────────────────────────────────────────────
+  function openLinkModal() {
+    document.getElementById('editLinkId').value = '';
+    document.getElementById('linkModalTitle').textContent = 'Добавить карточку';
+    document.getElementById('linkSaveBtn').textContent = 'Добавить';
+    document.getElementById('linkArtist').value = '';
+    document.getElementById('linkInstagram').value = '';
+    document.getElementById('linkTiktok').value = '';
+    document.getElementById('linkYoutube').value = '';
+    document.getElementById('linkSpotify').value = '';
+    document.getElementById('linkModalOverlay').classList.add('show');
+  }
+
+  function closeLinkModal() { document.getElementById('linkModalOverlay').classList.remove('show'); }
+  document.getElementById('linkModalOverlay').addEventListener('click', e => { if (e.target.id === 'linkModalOverlay') closeLinkModal(); });
+
+  function openEditLinkModal(card) {
+    document.getElementById('editLinkId').value = card.id;
+    document.getElementById('linkModalTitle').textContent = 'Изменить карточку';
+    document.getElementById('linkSaveBtn').textContent = 'Сохранить';
+    document.getElementById('linkArtist').value = card.artist || '';
+    document.getElementById('linkInstagram').value = card.instagram || '';
+    document.getElementById('linkTiktok').value = card.tiktok || '';
+    document.getElementById('linkYoutube').value = card.youtube || '';
+    document.getElementById('linkSpotify').value = card.spotify || '';
+    document.getElementById('linkModalOverlay').classList.add('show');
+  }
+
+  function getLinks() {
+    try { return JSON.parse(localStorage.getItem('linkCards') || '[]'); } catch { return []; }
+  }
+  function saveLinks(links) { localStorage.setItem('linkCards', JSON.stringify(links)); }
+
+  function saveLink() {
+    const artist = document.getElementById('linkArtist').value.trim();
+    const instagram = document.getElementById('linkInstagram').value.trim().replace('@','');
+    const tiktok = document.getElementById('linkTiktok').value.trim();
+    const youtube = document.getElementById('linkYoutube').value.trim();
+    const spotify = document.getElementById('linkSpotify').value.trim();
+    if (!artist) { showToast('Укажи имя артиста!'); return; }
+    const editId = document.getElementById('editLinkId').value;
+    const links = getLinks();
+    if (editId) {
+      const idx = links.findIndex(l => l.id == editId);
+      if (idx !== -1) links[idx] = { ...links[idx], artist, instagram, tiktok, youtube, spotify };
+    } else {
+      links.unshift({ id: Date.now(), artist, instagram, tiktok, youtube, spotify });
+    }
+    saveLinks(links);
+    closeLinkModal();
+    renderLinks();
+    showToast(editId ? '✓ Карточка обновлена!' : '✓ Карточка добавлена!');
+  }
+
+  function deleteLink(id) {
+    saveLinks(getLinks().filter(l => l.id != id));
+    renderLinks();
+    showToast('Удалено');
+  }
+
+  const SOCIAL_ICONS = {
+    instagram: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none"/></svg>`,
+    tiktok:    `<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-2.88 2.5 2.89 2.89 0 01-2.89-2.89 2.89 2.89 0 012.89-2.89c.28 0 .54.04.79.1V9.01a6.32 6.32 0 00-.79-.05 6.34 6.34 0 00-6.34 6.34 6.34 6.34 0 006.34 6.34 6.34 6.34 0 006.33-6.34V8.69a8.18 8.18 0 004.78 1.52V6.75a4.85 4.85 0 01-1.01-.06z"/></svg>`,
+    youtube:   `<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M23 7s-.3-2-1.2-2.8c-1.1-1.2-2.4-1.2-3-1.3C16.6 2.8 12 2.8 12 2.8s-4.6 0-6.8.1c-.6.1-1.9.1-3 1.3C1.3 5 1 7 1 7S.7 9.2.7 11.4v2.1c0 2.2.3 4.4.3 4.4s.3 2 1.2 2.8c1.1 1.2 2.6 1.1 3.3 1.2C7.5 22 12 22 12 22s4.6 0 6.8-.2c.6-.1 1.9-.1 3-1.2.9-.8 1.2-2.8 1.2-2.8s.3-2.2.3-4.4v-2.1C23.3 9.2 23 7 23 7zM9.7 15.5V8.4l8.1 3.6-8.1 3.5z"/></svg>`,
+    spotify:   `<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2zm4.586 14.424a.622.622 0 01-.857.207c-2.348-1.435-5.304-1.76-8.785-.964a.622.622 0 11-.277-1.215c3.809-.87 7.076-.496 9.712 1.115.294.181.387.564.207.857zm1.224-2.722a.78.78 0 01-1.072.257c-2.687-1.652-6.785-2.131-9.965-1.166a.78.78 0 01-.973-.519.781.781 0 01.52-.973c3.632-1.102 8.147-.568 11.233 1.329a.78.78 0 01.257 1.072zm.105-2.835c-3.223-1.914-8.54-2.09-11.618-1.156a.935.935 0 11-.542-1.79c3.532-1.072 9.404-.865 13.115 1.338a.935.935 0 01-.955 1.608z"/></svg>`
+  };
+
+  function renderLinks() {
+    const list = document.getElementById('linksList');
+    const links = getLinks();
+    if (!links.length) {
+      list.innerHTML = '<div class="links-empty">Нет карточек.<br>Нажми «Добавить» чтобы создать первую.</div>';
+      return;
+    }
+    list.innerHTML = '';
+    links.forEach(card => {
+      const el = document.createElement('div');
+      el.className = 'link-card';
+
+      // Аватарка
+      if (card.instagram) {
+        const img = document.createElement('img');
+        img.className = 'link-avatar';
+        img.src = `/proxy?url=${encodeURIComponent('https://unavatar.io/instagram/' + card.instagram)}`;
+        img.onerror = () => { img.replaceWith(makePlaceholder()); };
+        el.appendChild(img);
+      } else {
+        el.appendChild(makePlaceholder());
+      }
+
+      // Инфо
+      const info = document.createElement('div'); info.className = 'link-info';
+      const name = document.createElement('div'); name.className = 'link-name'; name.textContent = card.artist;
+      const icons = document.createElement('div'); icons.className = 'link-icons';
+
+      if (card.instagram) {
+        const url = 'https://instagram.com/' + card.instagram;
+        icons.appendChild(makeLinkIcon('instagram', url));
+      }
+      if (card.tiktok) icons.appendChild(makeLinkIcon('tiktok', card.tiktok));
+      if (card.youtube) icons.appendChild(makeLinkIcon('youtube', card.youtube));
+      if (card.spotify) icons.appendChild(makeLinkIcon('spotify', card.spotify));
+
+      info.appendChild(name); info.appendChild(icons);
+      el.appendChild(info);
+
+      // Кнопки
+      const actions = document.createElement('div'); actions.className = 'link-actions';
+      const editBtn = document.createElement('button'); editBtn.className = 'btn-delete-release';
+      editBtn.style.opacity = '0.6';
+      editBtn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>`;
+      editBtn.onclick = () => openEditLinkModal(card);
+      const delBtn = document.createElement('button'); delBtn.className = 'btn-delete-release';
+      delBtn.innerHTML = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="3,6 5,6 21,6"/><path d="M19,6l-1,14a2,2,0,0,1-2,2H8a2,2,0,0,1-2-2L5,6"/><path d="M10,11v6"/><path d="M14,11v6"/></svg>`;
+      delBtn.onclick = () => deleteLink(card.id);
+      actions.appendChild(editBtn); actions.appendChild(delBtn);
+      el.appendChild(actions);
+
+      list.appendChild(el);
+    });
+  }
+
+  function makePlaceholder() {
+    const ph = document.createElement('div'); ph.className = 'link-avatar-placeholder'; ph.textContent = '🎤'; return ph;
+  }
+  function makeLinkIcon(type, url) {
+    const a = document.createElement('a'); a.className = 'link-icon-btn';
+    a.href = url; a.target = '_blank'; a.rel = 'noopener';
+    a.innerHTML = SOCIAL_ICONS[type]; return a;
+  }
 
   // ── THEME ──────────────────────────────────────────────────────────────────
   function applyTheme(theme) {
