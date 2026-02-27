@@ -872,17 +872,22 @@
     reader.readAsDataURL(file);
   }
 
-  function handleLinkAvatarUrl(val) {
+  async function handleLinkAvatarUrl(val) {
     const prev = document.getElementById('linkAvatarUrlPreview');
-    if (val.startsWith('http')) {
-      prev.src = '/api/proxy-image?url=' + encodeURIComponent(val);
-      prev.style.display = 'block';
-      prev.onerror = () => prev.style.display = 'none';
-      linkAvatarBase64 = val; // сохраняем оригинальный URL
-      linkAvatarChanged = true;
-    } else {
-      prev.style.display = 'none';
-    }
+    if (!val.startsWith('http')) { prev.style.display = 'none'; return; }
+    prev.src = ''; prev.style.display = 'none';
+    try {
+      const res = await fetch('/api/download-image?url=' + encodeURIComponent(val));
+      const data = await res.json();
+      if (data.base64) {
+        linkAvatarBase64 = data.base64;
+        linkAvatarChanged = true;
+        prev.src = data.base64;
+        prev.style.display = 'block';
+      } else {
+        showToast('Не удалось загрузить картинку');
+      }
+    } catch { showToast('Ошибка загрузки картинки'); }
   }
 
   function openEditLinkModal(card) {
@@ -899,7 +904,7 @@
       switchAvatarTab('url');
       document.getElementById('linkAvatarUrl').value = card.avatar;
       const urlPrev = document.getElementById('linkAvatarUrlPreview');
-      urlPrev.src = '/api/proxy-image?url=' + encodeURIComponent(card.avatar); urlPrev.style.display = 'block';
+      urlPrev.src = card.avatar; urlPrev.style.display = 'block';
     } else if (card.avatar) {
       switchAvatarTab('file');
       const prev = document.getElementById('linkAvatarPreview');
@@ -977,7 +982,7 @@
       if (card.avatar) {
         const img = document.createElement('img');
         img.className = 'link-avatar';
-        img.src = card.avatar.startsWith('http') ? '/api/proxy-image?url=' + encodeURIComponent(card.avatar) : card.avatar;
+        img.src = card.avatar; // всегда base64 или data URL
         img.onerror = () => img.replaceWith(makePlaceholder());
         el.appendChild(img);
       } else { el.appendChild(makePlaceholder()); }
