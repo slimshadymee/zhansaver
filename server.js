@@ -624,6 +624,18 @@ app.post('/admin/save-file', (req, res) => {
 });
 
 
+// Прокси для внешних картинок (аватарки по URL)
+app.get('/api/proxy-image', async (req, res) => {
+  const { url } = req.query;
+  if (!url) return res.status(400).send('No url');
+  try {
+    const r = await axios.get(url, { responseType: 'stream', timeout: 10000, headers: { 'User-Agent': 'Mozilla/5.0' } });
+    res.setHeader('Content-Type', r.headers['content-type'] || 'image/jpeg');
+    res.setHeader('Cache-Control', 'public, max-age=86400');
+    r.data.pipe(res);
+  } catch (e) { res.status(500).send('Error'); }
+});
+
 // ─── Links API ───────────────────────────────────────────────────────────────
 app.get('/api/links', (req, res) => res.json(loadLinks()));
 
