@@ -1055,6 +1055,10 @@
     if (navigator.vibrate) navigator.vibrate(40);
   }
 
+  let autoScrollTimer = null;
+
+  let autoScrollTimer = null;
+
   document.addEventListener('mousemove', e => moveDrag(e.clientY));
   document.addEventListener('touchmove', e => {
     if (!dragState) return;
@@ -1067,7 +1071,22 @@
     const { ghost, offsetY } = dragState;
     ghost.style.top = (clientY - offsetY) + 'px';
 
-    // Highlight card under finger
+    // Автоскролл у краёв экрана
+    const ZONE = 80, SPEED = 10;
+    clearInterval(autoScrollTimer);
+    if (clientY < ZONE) {
+      autoScrollTimer = setInterval(() => {
+        window.scrollBy(0, -SPEED);
+        ghost.style.top = (parseFloat(ghost.style.top) - SPEED) + 'px';
+      }, 16);
+    } else if (clientY > window.innerHeight - ZONE) {
+      autoScrollTimer = setInterval(() => {
+        window.scrollBy(0, SPEED);
+        ghost.style.top = (parseFloat(ghost.style.top) + SPEED) + 'px';
+      }, 16);
+    }
+
+    // Подсвечиваем карточку под пальцем
     const list = document.getElementById('linksList');
     const cards = [...list.querySelectorAll('.link-card')];
     cards.forEach(c => c.classList.remove('drag-over'));
@@ -1078,7 +1097,6 @@
     });
     if (target) target.classList.add('drag-over');
   }
-
   document.addEventListener('mouseup', e => endDrag(e.clientY));
   document.addEventListener('touchend', e => {
     if (!dragState) return;
@@ -1087,6 +1105,7 @@
 
   function endDrag(clientY) {
     if (!dragState) return;
+    clearInterval(autoScrollTimer);
     const { cardEl, cardId, ghost } = dragState;
     ghost.remove();
     cardEl.style.opacity = '';
