@@ -151,8 +151,8 @@
     .release-cover { width: 56px; height: 56px; border-radius: 8px; object-fit: cover; background: var(--surface2); flex-shrink: 0; }
     .release-cover-placeholder { width: 56px; height: 56px; border-radius: 8px; background: var(--surface2); flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 1.4rem; }
     .release-info { flex: 1; min-width: 0; }
-    .release-title-text { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 0.78rem; letter-spacing: -0.02em; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; line-height: 1.25; }
-    .release-artist-text { font-size: 0.72rem; color: var(--text-muted); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .release-title-text { font-family: 'Syne', sans-serif; font-weight: 800; font-size: clamp(0.65rem, 2.5vw, 0.82rem); letter-spacing: -0.02em; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; line-height: 1.25; }
+    .release-artist-text { font-size: clamp(0.6rem, 2vw, 0.72rem); color: var(--text-muted); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .release-right { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; flex-shrink: 0; max-width: 110px; }
     .release-date-badge { font-size: 0.63rem; color: var(--text-dim); font-family: 'Space Mono', monospace; white-space: nowrap; text-align: right; }
     .release-countdown { font-size: 0.62rem; color: var(--text-muted); font-family: 'Space Mono', monospace; text-align: right; white-space: nowrap; }
@@ -185,7 +185,7 @@
     .link-avatar { width: 48px; height: 48px; border-radius: 50%; object-fit: cover; flex-shrink: 0; background: var(--surface2); }
     .link-avatar-placeholder { width: 48px; height: 48px; border-radius: 50%; background: var(--surface2); flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; }
     .link-info { flex: 1; min-width: 0; }
-    .link-name { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 0.88rem; letter-spacing: -0.02em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .link-name { font-family: 'Syne', sans-serif; font-weight: 800; font-size: clamp(0.68rem, 2.8vw, 0.9rem); letter-spacing: -0.02em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .link-right { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
     .link-icons { display: flex; gap: 8px; }
     .link-icon-btn { display: flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 8px; background: var(--surface2); border: 1px solid var(--border); color: var(--text); text-decoration: none; transition: background 0.15s, border-color 0.15s; flex-shrink: 0; }
@@ -356,10 +356,20 @@
     <input type="hidden" id="editLinkId"/>
     <div class="release-form-field">
       <label class="release-form-label">Аватарка</label>
-      <div class="cover-upload-area" id="linkAvatarArea">
-        <input type="file" id="linkAvatarInput" accept="image/*" onchange="handleLinkAvatar(event)"/>
-        <img class="cover-preview" id="linkAvatarPreview" alt="avatar"/>
-        <div class="upload-text" id="linkAvatarText">Нажми чтобы выбрать фото</div>
+      <div style="display:flex;gap:6px;margin-bottom:8px;">
+        <button type="button" class="cover-tab active" id="avatarTabFile" onclick="switchAvatarTab('file')">📁 Файл</button>
+        <button type="button" class="cover-tab" id="avatarTabUrl" onclick="switchAvatarTab('url')">🔗 Ссылка</button>
+      </div>
+      <div id="avatarFileSection">
+        <div class="cover-upload-area" id="linkAvatarArea">
+          <input type="file" id="linkAvatarInput" accept="image/*" onchange="handleLinkAvatar(event)"/>
+          <img class="cover-preview" id="linkAvatarPreview" alt="avatar"/>
+          <div class="upload-text" id="linkAvatarText">Нажми чтобы выбрать фото</div>
+        </div>
+      </div>
+      <div id="avatarUrlSection" style="display:none">
+        <input type="text" id="linkAvatarUrl" placeholder="https://..." oninput="handleLinkAvatarUrl(this.value)" style="width:100%;padding:12px 14px;background:var(--bg);border:1.5px solid var(--border);border-radius:var(--radius);color:var(--text);font-size:0.85rem;font-family:Space Mono,monospace;outline:none;"/>
+        <img id="linkAvatarUrlPreview" alt="preview" style="margin-top:8px;width:64px;height:64px;object-fit:cover;border-radius:50%;display:none;"/>
       </div>
     </div>
     <div class="release-form-field">
@@ -834,11 +844,21 @@
     document.getElementById('linkAvatarInput').value = '';
     document.getElementById('linkAvatarPreview').style.display = 'none';
     document.getElementById('linkAvatarText').style.display = 'block';
+    document.getElementById('linkAvatarUrl').value = '';
+    document.getElementById('linkAvatarUrlPreview').style.display = 'none';
+    switchAvatarTab('file');
     document.getElementById('linkModalOverlay').classList.add('show');
   }
 
   function closeLinkModal() { document.getElementById('linkModalOverlay').classList.remove('show'); }
   document.getElementById('linkModalOverlay').addEventListener('click', e => { if (e.target.id === 'linkModalOverlay') closeLinkModal(); });
+
+  function switchAvatarTab(tab) {
+    document.getElementById('avatarFileSection').style.display = tab === 'file' ? '' : 'none';
+    document.getElementById('avatarUrlSection').style.display = tab === 'url' ? '' : 'none';
+    document.getElementById('avatarTabFile').classList.toggle('active', tab === 'file');
+    document.getElementById('avatarTabUrl').classList.toggle('active', tab === 'url');
+  }
 
   function handleLinkAvatar(event) {
     const file = event.target.files[0]; if (!file) return;
@@ -852,6 +872,17 @@
     reader.readAsDataURL(file);
   }
 
+  function handleLinkAvatarUrl(val) {
+    const prev = document.getElementById('linkAvatarUrlPreview');
+    if (val.startsWith('http')) {
+      prev.src = val; prev.style.display = 'block';
+      prev.onerror = () => prev.style.display = 'none';
+      linkAvatarBase64 = val; linkAvatarChanged = true;
+    } else {
+      prev.style.display = 'none';
+    }
+  }
+
   function openEditLinkModal(card) {
     linkAvatarBase64 = card.avatar || null; linkAvatarChanged = false;
     document.getElementById('editLinkId').value = card.id;
@@ -862,9 +893,21 @@
     document.getElementById('linkTiktok').value = card.tiktok || '';
     document.getElementById('linkYoutube').value = card.youtube || '';
     document.getElementById('linkSpotify').value = card.spotify || '';
-    const prev = document.getElementById('linkAvatarPreview');
-    if (card.avatar) { prev.src = card.avatar; prev.style.display = 'block'; document.getElementById('linkAvatarText').style.display = 'none'; }
-    else { prev.style.display = 'none'; document.getElementById('linkAvatarText').style.display = 'block'; }
+    if (card.avatar && card.avatar.startsWith('http')) {
+      switchAvatarTab('url');
+      document.getElementById('linkAvatarUrl').value = card.avatar;
+      const urlPrev = document.getElementById('linkAvatarUrlPreview');
+      urlPrev.src = card.avatar; urlPrev.style.display = 'block';
+    } else if (card.avatar) {
+      switchAvatarTab('file');
+      const prev = document.getElementById('linkAvatarPreview');
+      prev.src = card.avatar; prev.style.display = 'block';
+      document.getElementById('linkAvatarText').style.display = 'none';
+    } else {
+      switchAvatarTab('file');
+      document.getElementById('linkAvatarPreview').style.display = 'none';
+      document.getElementById('linkAvatarText').style.display = 'block';
+    }
     document.getElementById('linkModalOverlay').classList.add('show');
   }
 
