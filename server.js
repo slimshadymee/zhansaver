@@ -14,6 +14,7 @@ if (!fs.existsSync(DATA_DIR)) {
 }
 const CONFIG_FILE = path.join(DATA_DIR, 'config.json');
 const RELEASES_FILE = path.join(DATA_DIR, 'releases.json');
+const LINKS_FILE = path.join(DATA_DIR, 'links.json');
 
 // При первом запуске на Railway — копируем config.json из репо в volume
 if (process.env.RAILWAY_ENVIRONMENT && !fs.existsSync(CONFIG_FILE)) {
@@ -50,6 +51,17 @@ function saveReleases(releases) {
   } catch (e) {
     console.error(`[Releases] SAVE ERROR: ${e.message} (path: ${RELEASES_FILE})`);
   }
+}
+
+// ─── Links ───────────────────────────────────────────────────────────────────
+function loadLinks() {
+  try { return JSON.parse(fs.readFileSync(LINKS_FILE, 'utf8')); }
+  catch { return []; }
+}
+function saveLinks(links) {
+  try {
+    fs.writeFileSync(LINKS_FILE, JSON.stringify(links, null, 2));
+  } catch (e) { console.error('[Links] Save error:', e.message); }
 }
 
 // ─── Telegram Bot ─────────────────────────────────────────────────────────────
@@ -549,6 +561,37 @@ app.get('/admin/releases', (req, res) => {
     res.send(html);
   } catch (e) { res.status(500).send('Error: ' + e.message); }
 });
+// ─── Links API ───────────────────────────────────────────────────────────────
+app.get('/api/links', (req, res) => res.json(loadLinks()));
+
+app.post('/api/links', (req, res) => {
+  const { artist, instagram, tiktok, youtube, spotify, avatar } = req.body;
+  if (!artist) return res.status(400).json({ error: 'Укажи имя артиста' });
+  const links = loadLinks();
+  const link = { id: Date.now(), artist, instagram: instagram || '', tiktok: tiktok || '', youtube: youtube || '', spotify: spotify || '', avatar: avatar || null };
+  links.unshift(link);
+  saveLinks(links);
+  res.json({ success: true, link });
+});
+
+app.put('/api/links/:id', (req, res) => {
+  const id = Number(req.params.id);
+  const { artist, instagram, tiktok, youtube, spotify, avatar } = req.body;
+  const links = loadLinks();
+  const idx = links.findIndex(l => l.id === id);
+  if (idx === -1) return res.status(404).json({ error: 'Не найден' });
+  const newAvatar = (avatar !== null && avatar !== undefined) ? avatar : links[idx].avatar;
+  links[idx] = { ...links[idx], artist, instagram: instagram || '', tiktok: tiktok || '', youtube: youtube || '', spotify: spotify || '', avatar: newAvatar };
+  saveLinks(links);
+  res.json({ success: true, link: links[idx] });
+});
+
+app.delete('/api/links/:id', (req, res) => {
+  const id = Number(req.params.id);
+  saveLinks(loadLinks().filter(l => l.id !== id));
+  res.json({ success: true });
+});
+
 // Релизы
 app.get('/api/releases', (req, res) => res.json(loadReleases()));
 
@@ -589,6 +632,7 @@ app.listen(PORT, () => {
   const config = loadConfig();
   console.log(config.adminUsername ? `👤 Admin: @${config.adminUsername}` : '⚠️  adminUsername не задан.');
   if (!fs.existsSync(RELEASES_FILE)) saveReleases([]);
+  if (!fs.existsSync(LINKS_FILE)) saveLinks([]);
 
   // Запускаем после того как сервер поднялся
   pollTelegram().catch(console.error);
