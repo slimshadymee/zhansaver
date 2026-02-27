@@ -712,19 +712,23 @@ app.delete('/api/releases/:id', (req, res) => {
 });
 
 // ─── Запуск ───────────────────────────────────────────────────────────────────
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
   console.log(`\n✅ ZHANSAVER запущен: http://localhost:${PORT}`);
   console.log(getCookie() ? '🍪 Куки загружены!' : '⚠️  Куки не настроены.');
   const config = loadConfig();
   console.log(config.adminUsername ? `👤 Admin: @${config.adminUsername}` : '⚠️  adminUsername не задан.');
   if (!fs.existsSync(RELEASES_FILE)) saveReleases([]);
   if (!fs.existsSync(LINKS_FILE)) saveLinks([]);
+});
 
-  // Запускаем после того как сервер поднялся
-  pollTelegram().catch(console.error);
+// Запускаем фоновые задачи через setImmediate — только после того как listen завершился
+server.on('listening', () => {
+  // Telegram polling в отдельном "потоке" — не блокирует HTTP
+  setImmediate(() => pollTelegram().catch(console.error));
   console.log('🤖 Telegram бот запущен!');
 
   // Проверяем релизы каждый час
   setInterval(checkReleaseDates, 60 * 60 * 1000);
-  setTimeout(checkReleaseDates, 5000);
+  // Первая проверка через 10 секунд после старта
+  setTimeout(checkReleaseDates, 10000);
 });
