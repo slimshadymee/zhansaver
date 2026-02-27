@@ -17,6 +17,7 @@ if (!fs.existsSync(DATA_DIR)) {
 const CONFIG_FILE = path.join(DATA_DIR, 'config.json');
 const RELEASES_FILE = path.join(DATA_DIR, 'releases.json');
 const LINKS_FILE = path.join(DATA_DIR, 'links.json');
+const NEWS_FILE = path.join(DATA_DIR, 'news.json');
 
 // При первом запуске на Railway — копируем config.json из репо в volume
 if (process.env.RAILWAY_ENVIRONMENT && !fs.existsSync(CONFIG_FILE)) {
@@ -66,12 +67,29 @@ function saveLinks(links) {
   } catch (e) { console.error('[Links] Save error:', e.message); }
 }
 
+// ─── News ────────────────────────────────────────────────────────────────────
+function loadNews() {
+  try { return JSON.parse(fs.readFileSync(NEWS_FILE, 'utf8')); }
+  catch { return []; }
+}
+function saveNews(news) {
+  try { fs.writeFileSync(NEWS_FILE, JSON.stringify(news, null, 2)); }
+  catch (e) { console.error('[News] Save error:', e.message); }
+}
+function cleanExpiredNews() {
+  const news = loadNews();
+  const now = Date.now();
+  const filtered = news.filter(n => !n.deleteAt || n.deleteAt > now);
+  if (filtered.length !== news.length) saveNews(filtered);
+}
+
 // ─── Telegram Bot ─────────────────────────────────────────────────────────────
 const TG_TOKEN = process.env.TG_TOKEN || '8252644018:AAGOkyp67N0Myv0o-_LWfSpieGtYba6if0w';
 const TG_API = `https://api.telegram.org/bot${TG_TOKEN}`;
 let lastUpdateId = 0;
 const awaitingCookie = new Set();
 const awaitingMessage = new Set();
+const awaitingNews = new Map(); // chatId -> { step, data }
 
 async function tgSend(chatId, text, opts = {}) {
   await axios.post(`${TG_API}/sendMessage`, { chat_id: chatId, text, ...opts });
@@ -241,6 +259,78 @@ async function handleTgMessage(msg) {
     return;
   }
 
+  // /cancel — сброс любого ожидания
+  if (text === '/cancel') {
+    awaitingNews.delete(chatId);
+    awaitingCookie.delete(chatId);
+    awaitingMessage.delete(chatId);
+    await tgSend(chatId, '❌ Отменено.');
+    return;
+  }
+
+  // /news flow
+  if (awaitingNews.has(chatId)) {
+    const state = awaitingNews.get(chatId);
+
+    if (state.step === 'photo') {
+      const photo = msg.photo;
+      if (!photo) {
+        await tgSend(chatId, '❌ Нужно фото! Отправь изображение постера.\n\n/cancel — отменить');
+        return;
+      }
+      const fileId = photo[photo.length - 1].file_id;
+      try {
+        const fileRes = await axios.get(`${TG_API}/getFile?file_id=${fileId}`);
+        const filePath = fileRes.data.result.file_path;
+        const fileUrl = `https://api.telegram.org/file/bot${TG_TOKEN}/${filePath}`;
+        const imgRes = await axios.get(fileUrl, { responseType: 'arraybuffer', timeout: 30000 });
+        const base64 = 'data:image/jpeg;base64,' + Buffer.from(imgRes.data).toString('base64');
+        state.data.image = base64;
+        state.step = 'title';
+        awaitingNews.set(chatId, state);
+        await tgSend(chatId, '✅ Фото получено!\n\n✏️ Шаг 2/4: Отправь заголовок новости:\n\n/cancel — отменить');
+      } catch (e) {
+        awaitingNews.delete(chatId);
+        await tgSend(chatId, '❌ Ошибка загрузки фото. Попробуй снова /news');
+      }
+      return;
+    }
+
+    if (state.step === 'title') {
+      if (!msg.text) { await tgSend(chatId, '❌ Отправь текст заголовка'); return; }
+      state.data.title = text;
+      state.step = 'spotify';
+      awaitingNews.set(chatId, state);
+      await tgSend(chatId, '✅ Заголовок сохранён!\n\n🎵 Шаг 3/4: Отправь ссылку на Spotify:\n\n/cancel — отменить');
+      return;
+    }
+
+    if (state.step === 'spotify') {
+      if (!msg.text) { await tgSend(chatId, '❌ Отправь ссылку текстом'); return; }
+      state.data.spotify = text;
+      state.step = 'days';
+      awaitingNews.set(chatId, state);
+      await tgSend(chatId, '✅ Ссылка сохранена!\n\n⏳ Шаг 4/4: Через сколько дней удалить?\n\nОтправь число (1, 2, 3, 7...)\n\n/cancel — отменить');
+      return;
+    }
+
+    if (state.step === 'days') {
+      if (!msg.text) { await tgSend(chatId, '❌ Отправь число'); return; }
+      const days = parseInt(text);
+      if (isNaN(days) || days < 1 || days > 30) {
+        await tgSend(chatId, '❌ Введи число от 1 до 30');
+        return;
+      }
+      const deleteAt = Date.now() + days * 24 * 60 * 60 * 1000;
+      const newsItem = { id: Date.now(), ...state.data, deleteAt, createdAt: new Date().toISOString() };
+      const news = loadNews();
+      news.unshift(newsItem);
+      saveNews(news);
+      awaitingNews.delete(chatId);
+      await tgSend(chatId, `✅ Новость опубликована!\n\n📰 ${newsItem.title}\n🗓 Удалится через ${days} дн.`);
+      return;
+    }
+  }
   // /start
   if (text === '/start') {
     if (!isAdmin(username)) return;
@@ -264,7 +354,8 @@ async function handleTgMessage(msg) {
       `/offsite — выключить сайт\n` +
       `/message — показать сообщение\n` +
       `/unmessage — убрать сообщение\n` +
-      `/cookie — обновить куки`
+      `/cookie — обновить куки\n` +
+      `/news — добавить новость`
     );
     return;
   }
@@ -304,6 +395,28 @@ async function handleTgMessage(msg) {
     awaitingCookie.add(chatId);
     return;
   }
+
+  if (text === '/news') {
+    awaitingNews.set(chatId, { step: 'photo', data: {} });
+    await tgSend(chatId, '📰 Создаём новость!\n\n📸 Шаг 1/4: Отправь фото постера трека:');
+    return;
+  }
+
+  if (text === '/delnews') {
+    const news = loadNews();
+    if (!news.length) { await tgSend(chatId, 'Нет новостей'); return; }
+    const list = news.map((n, i) => `${i+1}. ${n.title} (ID: ${n.id})`).join('\n');
+    await tgSend(chatId, `📰 Новости:\n\n${list}\n\nОтправь /delnews_ID для удаления`);
+    return;
+  }
+
+  if (text.startsWith('/delnews_')) {
+    const id = Number(text.replace('/delnews_', ''));
+    const news = loadNews().filter(n => n.id !== id);
+    saveNews(news);
+    await tgSend(chatId, '✅ Новость удалена');
+    return;
+  }
 }
 
 async function pollTelegram() {
@@ -316,7 +429,8 @@ async function pollTelegram() {
       for (const update of (res.data.result || [])) {
         lastUpdateId = update.update_id;
         const msg = update.message;
-        if (!msg || !msg.text) continue;
+        if (!msg) continue;
+        if (!msg.text && !msg.photo) continue;
         handleTgMessage(msg).catch(e => console.error('[TG] Error:', e.message));
       }
     } catch (err) {
@@ -688,7 +802,29 @@ app.delete('/api/links/:id', (req, res) => {
   res.json({ success: true });
 });
 
-// Релизы
+// ─── News API ────────────────────────────────────────────────────────────────
+app.get('/api/news', (req, res) => {
+  cleanExpiredNews();
+  res.json(loadNews());
+});
+
+app.post('/api/news', (req, res) => {
+  const { title, spotify, image, deleteAt } = req.body;
+  if (!image) return res.status(400).json({ error: 'Нет изображения' });
+  const news = loadNews();
+  const item = { id: Date.now(), title: title || 'NEW MUSIC', spotify: spotify || '', image, deleteAt: deleteAt || null, createdAt: new Date().toISOString() };
+  news.unshift(item);
+  saveNews(news);
+  res.json({ success: true, item });
+});
+
+app.delete('/api/news/:id', (req, res) => {
+  const id = Number(req.params.id);
+  saveNews(loadNews().filter(n => n.id !== id));
+  res.json({ success: true });
+});
+
+// ─── Releases API// Релизы
 app.get('/api/releases', (req, res) => res.json(loadReleases()));
 
 app.post('/api/releases', (req, res) => {
@@ -729,6 +865,7 @@ const server = app.listen(PORT, () => {
   console.log(config.adminUsername ? `👤 Admin: @${config.adminUsername}` : '⚠️  adminUsername не задан.');
   if (!fs.existsSync(RELEASES_FILE)) saveReleases([]);
   if (!fs.existsSync(LINKS_FILE)) saveLinks([]);
+  if (!fs.existsSync(NEWS_FILE)) saveNews([]);
 });
 
 // Запускаем фоновые задачи через setImmediate — только после того как listen завершился
@@ -739,6 +876,7 @@ server.on('listening', () => {
 
   // Проверяем релизы каждый час
   setInterval(checkReleaseDates, 60 * 60 * 1000);
+  setInterval(cleanExpiredNews, 60 * 60 * 1000);
   // Первая проверка через 10 секунд после старта
   setTimeout(checkReleaseDates, 10000);
 });
