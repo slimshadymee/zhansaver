@@ -1,1579 +1,1579 @@
-<!DOCTYPE html>
-<html lang="ru">
-<head>
-  <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
-  <title>ZHANSAVER</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@700;800&display=swap" rel="stylesheet">
-  <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    :root {
-      --bg: #000; --surface: #111; --surface2: #1a1a1a; --border: #2a2a2a;
-      --border-active: #fff; --text: #fff; --text-muted: #666; --text-dim: #999;
-      --btn-bg: #fff; --btn-text: #000; --danger: #ff3b3b; --success: #3bff8a; --radius: 12px;
-    }
-    body.light {
-      --bg: #f5f5f5; --surface: #fff; --surface2: #efefef; --border: #e0e0e0;
-      --border-active: #000; --text: #0a0a0a; --text-muted: #888; --text-dim: #aaa;
-      --btn-bg: #0a0a0a; --btn-text: #fff;
-    }
-    .theme-btn {
-      position: fixed; bottom: 20px; right: 20px; z-index: 1000;
-      width: 44px; height: 44px; border-radius: 50%;
-      background: var(--surface); border: 1.5px solid var(--border);
-      color: var(--text); cursor: pointer; font-size: 1.1rem;
-      display: flex; align-items: center; justify-content: center;
-      box-shadow: 0 2px 12px rgba(0,0,0,0.3); transition: transform 0.15s, border-color 0.2s;
-    }
-    .theme-btn:hover { transform: scale(1.1); border-color: var(--border-active); }
-    html { font-size: 16px; }
-    body { min-height: 100vh; background: var(--bg); font-family: 'Space Mono', monospace; color: var(--text); display: flex; flex-direction: column; align-items: center; -webkit-font-smoothing: antialiased; }
+  <!DOCTYPE html>
+  <html lang="ru">
+  <head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
+    <title>ZHANSAVER</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@700;800&display=swap" rel="stylesheet">
+    <style>
+      *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+      :root {
+        --bg: #000; --surface: #111; --surface2: #1a1a1a; --border: #2a2a2a;
+        --border-active: #fff; --text: #fff; --text-muted: #666; --text-dim: #999;
+        --btn-bg: #fff; --btn-text: #000; --danger: #ff3b3b; --success: #3bff8a; --radius: 12px;
+      }
+      body.light {
+        --bg: #f5f5f5; --surface: #fff; --surface2: #efefef; --border: #e0e0e0;
+        --border-active: #000; --text: #0a0a0a; --text-muted: #888; --text-dim: #aaa;
+        --btn-bg: #0a0a0a; --btn-text: #fff;
+      }
+      .theme-btn {
+        position: fixed; bottom: 20px; right: 20px; z-index: 1000;
+        width: 44px; height: 44px; border-radius: 50%;
+        background: var(--surface); border: 1.5px solid var(--border);
+        color: var(--text); cursor: pointer; font-size: 1.1rem;
+        display: flex; align-items: center; justify-content: center;
+        box-shadow: 0 2px 12px rgba(0,0,0,0.3); transition: transform 0.15s, border-color 0.2s;
+      }
+      .theme-btn:hover { transform: scale(1.1); border-color: var(--border-active); }
+      html { font-size: 16px; }
+      body { min-height: 100vh; background: var(--bg); font-family: 'Space Mono', monospace; color: var(--text); display: flex; flex-direction: column; align-items: center; -webkit-font-smoothing: antialiased; }
 
-    /* ── NAVBAR ── */
-    .navbar {
-      width: 100%; max-width: 640px;
-      display: flex; align-items: center; justify-content: center;
-      gap: 4px; padding: 20px 20px 0;
-    }
-    .nav-btn {
-      flex: 1; min-width: 0; padding: 10px 4px; background: transparent;
-      border: 1.5px solid var(--border); border-radius: 10px;
-      color: var(--text-muted); font-family: 'Syne', sans-serif; font-weight: 800;
-      font-size: clamp(0.58rem, 2.2vw, 0.75rem); letter-spacing: 0.03em; text-transform: uppercase;
-      cursor: pointer; transition: all 0.18s; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-    }
-    .nav-btn:hover { border-color: #444; color: var(--text); }
-    .nav-btn.active { background: var(--btn-bg); color: var(--btn-text); border-color: var(--btn-bg); }
+      /* ── NAVBAR ── */
+      .navbar {
+        width: 100%; max-width: 640px;
+        display: flex; align-items: center; justify-content: center;
+        gap: 4px; padding: 20px 20px 0;
+      }
+      .nav-btn {
+        flex: 1; min-width: 0; padding: 10px 4px; background: transparent;
+        border: 1.5px solid var(--border); border-radius: 10px;
+        color: var(--text-muted); font-family: 'Syne', sans-serif; font-weight: 800;
+        font-size: clamp(0.58rem, 2.2vw, 0.75rem); letter-spacing: 0.03em; text-transform: uppercase;
+        cursor: pointer; transition: all 0.18s; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      }
+      .nav-btn:hover { border-color: #444; color: var(--text); }
+      .nav-btn.active { background: var(--btn-bg); color: var(--btn-text); border-color: var(--btn-bg); }
 
-    /* ── PAGES ── */
-    .page { display: none; width: 100%; flex-direction: column; align-items: center; padding-bottom: 60px; }
-    .page.active { display: flex; }
+      /* ── PAGES ── */
+      .page { display: none; width: 100%; flex-direction: column; align-items: center; padding-bottom: 60px; }
+      .page.active { display: flex; }
 
-    /* ── INSTTIK PAGE ── */
-    .header { width: 100%; max-width: 640px; padding: 32px 20px 0; text-align: center; }
-    .logo-mark { width: 44px; height: 44px; border: 2px solid var(--text); border-radius: 10px; display: flex; align-items: center; justify-content: center; margin: 0 auto 16px; }
-    .logo-mark svg { display: block; }
-    h1 { font-family: 'Syne', sans-serif; font-weight: 800; font-size: clamp(1.6rem, 7vw, 2.2rem); letter-spacing: -0.03em; color: var(--text); line-height: 1; margin-bottom: 8px; }
-    .tagline { color: var(--text-muted); font-size: 0.78rem; letter-spacing: 0.05em; text-transform: uppercase; margin-bottom: 28px; }
-    .site-disabled-banner { width: 100%; margin: 0 auto 16px; padding: 14px 16px; background: rgba(255,59,59,0.1); border: 1.5px solid var(--danger); border-radius: var(--radius); font-size: 0.82rem; color: var(--danger); text-align: center; display: none; }
-    .site-disabled-banner.show { display: block; }
-    .input-row { display: flex; gap: 8px; width: 100%; }
-    .input-group { flex: 1; display: flex; background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--radius); overflow: hidden; transition: border-color 0.2s; }
-    .input-group:focus-within { border-color: var(--border-active); }
-    input[type="text"] { flex: 1; padding: 14px; background: transparent; border: none; color: var(--text); font-size: 0.875rem; font-family: 'Space Mono', monospace; outline: none; min-width: 0; }
-    input[type="text"]::placeholder { color: var(--text-muted); }
-    input[type="text"]:disabled { opacity: 0.4; cursor: not-allowed; }
-    .btn-paste { padding: 0 14px; background: transparent; border: none; border-left: 1px solid var(--border); color: var(--text-muted); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: color 0.15s, background 0.15s; flex-shrink: 0; }
-    .btn-paste:hover { color: var(--text); background: rgba(255,255,255,0.05); }
-    .btn-fetch { padding: 14px 20px; background: var(--btn-bg); color: var(--btn-text); border: none; border-radius: var(--radius); font-size: 0.875rem; font-family: 'Syne', sans-serif; font-weight: 800; cursor: pointer; white-space: nowrap; letter-spacing: -0.01em; transition: opacity 0.15s, transform 0.1s; flex-shrink: 0; }
-    .btn-fetch:hover { opacity: 0.85; }
-    .btn-fetch:active { transform: scale(0.97); }
-    .btn-fetch:disabled { opacity: 0.35; cursor: not-allowed; transform: none; }
-    .status { width: 100%; max-width: 640px; margin-top: 12px; display: none; }
-    .status-inner { padding: 12px 14px; border-radius: var(--radius); font-size: 0.8rem; line-height: 1.5; }
-    .status.loading { display: block; }
-    .status.loading .status-inner { background: var(--surface); border: 1px solid var(--border); color: var(--text-dim); }
-    .status.error { display: block; }
-    .status.error .status-inner { background: rgba(255,59,59,0.08); border: 1px solid rgba(255,59,59,0.3); color: var(--danger); }
-    .divider { width: calc(100% - 40px); max-width: 640px; height: 1px; background: var(--border); margin: 28px 0; display: none; }
-    .divider.show { display: block; }
-    .results { width: 100%; max-width: 900px; padding: 0 20px; display: none; }
-    .results.show { display: block; }
-    .results-header { max-width: 640px; margin: 0 auto 16px; display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
-    .results-title { font-size: 0.78rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.08em; }
-    .btn-dl-all { display: flex; align-items: center; gap: 6px; padding: 9px 16px; background: var(--btn-bg); color: var(--btn-text); border: none; border-radius: 9px; font-size: 0.8rem; font-family: 'Syne', sans-serif; font-weight: 800; cursor: pointer; transition: opacity 0.15s; }
-    .btn-dl-all:hover { opacity: 0.82; }
-    .media-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 240px), 1fr)); gap: 12px; }
-    .media-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; transition: border-color 0.2s; }
-    .media-card:hover { border-color: #444; }
-    .media-thumb { position: relative; aspect-ratio: 1; background: var(--surface2); overflow: hidden; }
-    .media-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
-    .media-badge { position: absolute; top: 8px; right: 8px; padding: 3px 8px; background: rgba(0,0,0,0.85); border: 1px solid rgba(255,255,255,0.15); border-radius: 20px; font-size: 0.68rem; font-weight: 700; color: var(--text); letter-spacing: 0.05em; }
-    .media-footer { padding: 11px 13px; display: flex; align-items: center; justify-content: space-between; gap: 8px; border-top: 1px solid var(--border); }
-    .media-index { font-size: 0.75rem; color: var(--text-muted); }
-    .btn-dl { display: flex; align-items: center; gap: 5px; padding: 7px 13px; background: var(--btn-bg); color: var(--btn-text); border: none; border-radius: 8px; font-size: 0.75rem; font-family: 'Syne', sans-serif; font-weight: 800; cursor: pointer; transition: opacity 0.15s; }
-    .btn-dl:hover { opacity: 0.8; }
-    .btn-dl.done { background: var(--success); color: #000; }
-    .single-media { display: flex; flex-direction: column; align-items: center; gap: 16px; }
-    .single-media img { max-width: 480px; width: 100%; border-radius: var(--radius); border: 1px solid var(--border); }
-    /* Видео без контролов — просто постер */
-    .single-video { max-width: 480px; width: 100%; border-radius: var(--radius); border: 1px solid var(--border); overflow: hidden; background: #000; display: block; cursor: pointer; }
+      /* ── INSTTIK PAGE ── */
+      .header { width: 100%; max-width: 640px; padding: 32px 20px 0; text-align: center; }
+      .logo-mark { width: 44px; height: 44px; border: 2px solid var(--text); border-radius: 10px; display: flex; align-items: center; justify-content: center; margin: 0 auto 16px; }
+      .logo-mark svg { display: block; }
+      h1 { font-family: 'Syne', sans-serif; font-weight: 800; font-size: clamp(1.6rem, 7vw, 2.2rem); letter-spacing: -0.03em; color: var(--text); line-height: 1; margin-bottom: 8px; }
+      .tagline { color: var(--text-muted); font-size: 0.78rem; letter-spacing: 0.05em; text-transform: uppercase; margin-bottom: 28px; }
+      .site-disabled-banner { width: 100%; margin: 0 auto 16px; padding: 14px 16px; background: rgba(255,59,59,0.1); border: 1.5px solid var(--danger); border-radius: var(--radius); font-size: 0.82rem; color: var(--danger); text-align: center; display: none; }
+      .site-disabled-banner.show { display: block; }
+      .input-row { display: flex; gap: 8px; width: 100%; }
+      .input-group { flex: 1; display: flex; background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--radius); overflow: hidden; transition: border-color 0.2s; }
+      .input-group:focus-within { border-color: var(--border-active); }
+      input[type="text"] { flex: 1; padding: 14px; background: transparent; border: none; color: var(--text); font-size: 0.875rem; font-family: 'Space Mono', monospace; outline: none; min-width: 0; }
+      input[type="text"]::placeholder { color: var(--text-muted); }
+      input[type="text"]:disabled { opacity: 0.4; cursor: not-allowed; }
+      .btn-paste { padding: 0 14px; background: transparent; border: none; border-left: 1px solid var(--border); color: var(--text-muted); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: color 0.15s, background 0.15s; flex-shrink: 0; }
+      .btn-paste:hover { color: var(--text); background: rgba(255,255,255,0.05); }
+      .btn-fetch { padding: 14px 20px; background: var(--btn-bg); color: var(--btn-text); border: none; border-radius: var(--radius); font-size: 0.875rem; font-family: 'Syne', sans-serif; font-weight: 800; cursor: pointer; white-space: nowrap; letter-spacing: -0.01em; transition: opacity 0.15s, transform 0.1s; flex-shrink: 0; }
+      .btn-fetch:hover { opacity: 0.85; }
+      .btn-fetch:active { transform: scale(0.97); }
+      .btn-fetch:disabled { opacity: 0.35; cursor: not-allowed; transform: none; }
+      .status { width: 100%; max-width: 640px; margin-top: 12px; display: none; }
+      .status-inner { padding: 12px 14px; border-radius: var(--radius); font-size: 0.8rem; line-height: 1.5; }
+      .status.loading { display: block; }
+      .status.loading .status-inner { background: var(--surface); border: 1px solid var(--border); color: var(--text-dim); }
+      .status.error { display: block; }
+      .status.error .status-inner { background: rgba(255,59,59,0.08); border: 1px solid rgba(255,59,59,0.3); color: var(--danger); }
+      .divider { width: calc(100% - 40px); max-width: 640px; height: 1px; background: var(--border); margin: 28px 0; display: none; }
+      .divider.show { display: block; }
+      .results { width: 100%; max-width: 900px; padding: 0 20px; display: none; }
+      .results.show { display: block; }
+      .results-header { max-width: 640px; margin: 0 auto 16px; display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+      .results-title { font-size: 0.78rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.08em; }
+      .btn-dl-all { display: flex; align-items: center; gap: 6px; padding: 9px 16px; background: var(--btn-bg); color: var(--btn-text); border: none; border-radius: 9px; font-size: 0.8rem; font-family: 'Syne', sans-serif; font-weight: 800; cursor: pointer; transition: opacity 0.15s; }
+      .btn-dl-all:hover { opacity: 0.82; }
+      .media-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 240px), 1fr)); gap: 12px; }
+      .media-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; transition: border-color 0.2s; }
+      .media-card:hover { border-color: #444; }
+      .media-thumb { position: relative; aspect-ratio: 1; background: var(--surface2); overflow: hidden; }
+      .media-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+      .media-badge { position: absolute; top: 8px; right: 8px; padding: 3px 8px; background: rgba(0,0,0,0.85); border: 1px solid rgba(255,255,255,0.15); border-radius: 20px; font-size: 0.68rem; font-weight: 700; color: var(--text); letter-spacing: 0.05em; }
+      .media-footer { padding: 11px 13px; display: flex; align-items: center; justify-content: space-between; gap: 8px; border-top: 1px solid var(--border); }
+      .media-index { font-size: 0.75rem; color: var(--text-muted); }
+      .btn-dl { display: flex; align-items: center; gap: 5px; padding: 7px 13px; background: var(--btn-bg); color: var(--btn-text); border: none; border-radius: 8px; font-size: 0.75rem; font-family: 'Syne', sans-serif; font-weight: 800; cursor: pointer; transition: opacity 0.15s; }
+      .btn-dl:hover { opacity: 0.8; }
+      .btn-dl.done { background: var(--success); color: #000; }
+      .single-media { display: flex; flex-direction: column; align-items: center; gap: 16px; }
+      .single-media img { max-width: 480px; width: 100%; border-radius: var(--radius); border: 1px solid var(--border); }
+      /* Видео без контролов — просто постер */
+      .single-video { max-width: 480px; width: 100%; border-radius: var(--radius); border: 1px solid var(--border); overflow: hidden; background: #000; display: block; cursor: pointer; }
 
-    /* ── МОДАЛКА КУКИ ── */
-    .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.92); z-index: 1000; align-items: flex-end; justify-content: center; }
-    @media (min-width: 480px) { .modal-overlay { align-items: center; padding: 20px; } }
-    .modal-overlay.show { display: flex; }
-    .modal { background: var(--surface); border: 1px solid var(--border); border-radius: 20px 20px 0 0; padding: 24px 20px; width: 100%; max-width: 560px; max-height: 90vh; overflow-y: auto; }
-    @media (min-width: 480px) { .modal { border-radius: 16px; padding: 28px; } }
-    .modal-handle { width: 36px; height: 4px; background: var(--border); border-radius: 2px; margin: 0 auto 20px; }
-    @media (min-width: 480px) { .modal-handle { display: none; } }
-    .modal h2 { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 1.1rem; margin-bottom: 8px; letter-spacing: -0.02em; }
-    .modal p { color: var(--text-muted); font-size: 0.78rem; line-height: 1.7; margin-bottom: 16px; }
-    .steps-mini { list-style: none; margin-bottom: 18px; display: flex; flex-direction: column; gap: 6px; }
-    .steps-mini li { color: var(--text-dim); font-size: 0.78rem; line-height: 1.6; padding-left: 22px; position: relative; }
-    .steps-mini li::before { content: attr(data-n); position: absolute; left: 0; color: var(--text); font-weight: 700; }
-    .steps-mini li strong { color: var(--text); }
-    textarea { width: 100%; min-height: 80px; background: var(--bg); border: 1.5px solid var(--border); border-radius: var(--radius); color: var(--text); font-size: 0.75rem; padding: 12px; resize: vertical; outline: none; font-family: 'Space Mono', monospace; line-height: 1.5; transition: border-color 0.2s; }
-    textarea:focus { border-color: var(--border-active); }
-    textarea::placeholder { color: var(--text-muted); }
-    .modal-actions { display: flex; gap: 8px; margin-top: 14px; }
-    .btn-save { flex: 1; padding: 13px; background: var(--btn-bg); color: var(--btn-text); border: none; border-radius: var(--radius); font-size: 0.9rem; font-family: 'Syne', sans-serif; font-weight: 800; cursor: pointer; transition: opacity 0.15s; }
-    .btn-save:hover { opacity: 0.85; }
-    .btn-cancel { padding: 13px 18px; background: transparent; color: var(--text-muted); border: 1px solid var(--border); border-radius: var(--radius); font-size: 0.9rem; font-family: 'Space Mono', monospace; cursor: pointer; transition: background 0.15s, color 0.15s; }
-    .btn-cancel:hover { background: var(--surface2); color: var(--text); }
+      /* ── МОДАЛКА КУКИ ── */
+      .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.92); z-index: 1000; align-items: flex-end; justify-content: center; }
+      @media (min-width: 480px) { .modal-overlay { align-items: center; padding: 20px; } }
+      .modal-overlay.show { display: flex; }
+      .modal { background: var(--surface); border: 1px solid var(--border); border-radius: 20px 20px 0 0; padding: 24px 20px; width: 100%; max-width: 560px; max-height: 90vh; overflow-y: auto; }
+      @media (min-width: 480px) { .modal { border-radius: 16px; padding: 28px; } }
+      .modal-handle { width: 36px; height: 4px; background: var(--border); border-radius: 2px; margin: 0 auto 20px; }
+      @media (min-width: 480px) { .modal-handle { display: none; } }
+      .modal h2 { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 1.1rem; margin-bottom: 8px; letter-spacing: -0.02em; }
+      .modal p { color: var(--text-muted); font-size: 0.78rem; line-height: 1.7; margin-bottom: 16px; }
+      .steps-mini { list-style: none; margin-bottom: 18px; display: flex; flex-direction: column; gap: 6px; }
+      .steps-mini li { color: var(--text-dim); font-size: 0.78rem; line-height: 1.6; padding-left: 22px; position: relative; }
+      .steps-mini li::before { content: attr(data-n); position: absolute; left: 0; color: var(--text); font-weight: 700; }
+      .steps-mini li strong { color: var(--text); }
+      textarea { width: 100%; min-height: 80px; background: var(--bg); border: 1.5px solid var(--border); border-radius: var(--radius); color: var(--text); font-size: 0.75rem; padding: 12px; resize: vertical; outline: none; font-family: 'Space Mono', monospace; line-height: 1.5; transition: border-color 0.2s; }
+      textarea:focus { border-color: var(--border-active); }
+      textarea::placeholder { color: var(--text-muted); }
+      .modal-actions { display: flex; gap: 8px; margin-top: 14px; }
+      .btn-save { flex: 1; padding: 13px; background: var(--btn-bg); color: var(--btn-text); border: none; border-radius: var(--radius); font-size: 0.9rem; font-family: 'Syne', sans-serif; font-weight: 800; cursor: pointer; transition: opacity 0.15s; }
+      .btn-save:hover { opacity: 0.85; }
+      .btn-cancel { padding: 13px 18px; background: transparent; color: var(--text-muted); border: 1px solid var(--border); border-radius: var(--radius); font-size: 0.9rem; font-family: 'Space Mono', monospace; cursor: pointer; transition: background 0.15s, color 0.15s; }
+      .btn-cancel:hover { background: var(--surface2); color: var(--text); }
 
-    /* ── МОДАЛКА ДОБАВИТЬ РЕЛИЗ ── */
-    .release-form-label { font-size: 0.72rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 6px; display: block; }
-    .release-form-field { margin-bottom: 14px; }
-    .release-form-field input[type="text"],
-    .release-form-field input[type="date"] { width: 100%; padding: 12px 14px; background: var(--bg); border: 1.5px solid var(--border); border-radius: var(--radius); color: var(--text); font-size: 0.85rem; font-family: 'Space Mono', monospace; outline: none; transition: border-color 0.2s; }
-    .release-form-field input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(1); }
-    .release-form-field input:focus { border-color: var(--border-active); }
-    .cover-upload-area { border: 1.5px dashed var(--border); border-radius: var(--radius); padding: 20px; text-align: center; cursor: pointer; transition: border-color 0.2s; position: relative; overflow: hidden; }
-    .cover-upload-area:hover { border-color: #555; }
-    .cover-upload-area input[type="file"] { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
-    .cover-upload-area .upload-text { font-size: 0.78rem; color: var(--text-muted); }
-    .cover-preview { width: 100%; height: 140px; object-fit: cover; border-radius: 8px; display: none; }
-    .cover-tab { flex: 1; padding: 8px; background: transparent; border: 1.5px solid var(--border); border-radius: 8px; color: var(--text-muted); font-family: 'Space Mono', monospace; font-size: 0.72rem; cursor: pointer; transition: all 0.15s; }
-    .cover-tab.active { background: var(--btn-bg); color: var(--btn-text); border-color: var(--btn-bg); }
+      /* ── МОДАЛКА ДОБАВИТЬ РЕЛИЗ ── */
+      .release-form-label { font-size: 0.72rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 6px; display: block; }
+      .release-form-field { margin-bottom: 14px; }
+      .release-form-field input[type="text"],
+      .release-form-field input[type="date"] { width: 100%; padding: 12px 14px; background: var(--bg); border: 1.5px solid var(--border); border-radius: var(--radius); color: var(--text); font-size: 0.85rem; font-family: 'Space Mono', monospace; outline: none; transition: border-color 0.2s; }
+      .release-form-field input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(1); }
+      .release-form-field input:focus { border-color: var(--border-active); }
+      .cover-upload-area { border: 1.5px dashed var(--border); border-radius: var(--radius); padding: 20px; text-align: center; cursor: pointer; transition: border-color 0.2s; position: relative; overflow: hidden; }
+      .cover-upload-area:hover { border-color: #555; }
+      .cover-upload-area input[type="file"] { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
+      .cover-upload-area .upload-text { font-size: 0.78rem; color: var(--text-muted); }
+      .cover-preview { width: 100%; height: 140px; object-fit: cover; border-radius: 8px; display: none; }
+      .cover-tab { flex: 1; padding: 8px; background: transparent; border: 1.5px solid var(--border); border-radius: 8px; color: var(--text-muted); font-family: 'Space Mono', monospace; font-size: 0.72rem; cursor: pointer; transition: all 0.15s; }
+      .cover-tab.active { background: var(--btn-bg); color: var(--btn-text); border-color: var(--btn-bg); }
 
-    /* ── RELEASE PAGE ── */
-    .release-page-inner { width: 100%; max-width: 640px; padding: 28px 20px 0; }
-    .release-page-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; }
-    .release-page-title { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 1.4rem; letter-spacing: -0.03em; }
-    .btn-add-release { display: flex; align-items: center; gap: 6px; padding: 10px 18px; background: var(--btn-bg); color: var(--btn-text); border: none; border-radius: 10px; font-family: 'Syne', sans-serif; font-weight: 800; font-size: 0.82rem; cursor: pointer; transition: opacity 0.15s; }
-    .btn-add-release:hover { opacity: 0.85; }
-    .releases-list { display: flex; flex-direction: column; gap: 12px; }
-    .release-card { display: flex; align-items: center; gap: 14px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; padding: 12px 14px; position: relative; transition: border-color 0.2s; }
-    .release-card:hover { border-color: #444; }
-    .release-card.released { border-color: rgba(59,255,138,0.25); }
-    .release-cover { width: 56px; height: 56px; border-radius: 8px; object-fit: cover; background: var(--surface2); flex-shrink: 0; }
-    .release-cover-placeholder { width: 56px; height: 56px; border-radius: 8px; background: var(--surface2); flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 1.4rem; }
-    .release-info { flex: 1; min-width: 0; }
-    .release-title-text { font-family: 'Syne', sans-serif; font-weight: 800; font-size: clamp(0.65rem, 2.5vw, 0.82rem); letter-spacing: -0.02em; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; line-height: 1.25; }
-    .release-artist-text { font-size: clamp(0.6rem, 2vw, 0.72rem); color: var(--text-muted); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .release-right { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; flex-shrink: 0; max-width: 110px; }
-    .release-date-badge { font-size: 0.63rem; color: var(--text-dim); font-family: 'Space Mono', monospace; white-space: nowrap; text-align: right; }
-    .release-countdown { font-size: 0.62rem; color: var(--text-muted); font-family: 'Space Mono', monospace; text-align: right; white-space: nowrap; }
-    .release-status { font-size: 0.63rem; font-weight: 700; padding: 2px 8px; border-radius: 20px; letter-spacing: 0.04em; text-transform: uppercase; }
-    .release-status.out { background: rgba(59,255,138,0.12); color: var(--success); }
-    .release-status.upcoming { background: rgba(255,255,255,0.07); color: var(--text-dim); }
-    .btn-delete-release { background: transparent; border: none; color: var(--text-muted); cursor: pointer; padding: 4px; border-radius: 6px; transition: color 0.15s, background 0.15s; flex-shrink: 0; }
-    .btn-delete-release:hover { color: var(--danger); background: rgba(255,59,59,0.1); }
-    .releases-empty { text-align: center; padding: 60px 20px; color: var(--text-muted); font-size: 0.82rem; line-height: 1.7; }
+      /* ── RELEASE PAGE ── */
+      .release-page-inner { width: 100%; max-width: 640px; padding: 28px 20px 0; }
+      .release-page-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; }
+      .release-page-title { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 1.4rem; letter-spacing: -0.03em; }
+      .btn-add-release { display: flex; align-items: center; gap: 6px; padding: 10px 18px; background: var(--btn-bg); color: var(--btn-text); border: none; border-radius: 10px; font-family: 'Syne', sans-serif; font-weight: 800; font-size: 0.82rem; cursor: pointer; transition: opacity 0.15s; }
+      .btn-add-release:hover { opacity: 0.85; }
+      .releases-list { display: flex; flex-direction: column; gap: 12px; }
+      .release-card { display: flex; align-items: center; gap: 14px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; padding: 12px 14px; position: relative; transition: border-color 0.2s; }
+      .release-card:hover { border-color: #444; }
+      .release-card.released { border-color: rgba(59,255,138,0.25); }
+      .release-cover { width: 56px; height: 56px; border-radius: 8px; object-fit: cover; background: var(--surface2); flex-shrink: 0; }
+      .release-cover-placeholder { width: 56px; height: 56px; border-radius: 8px; background: var(--surface2); flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 1.4rem; }
+      .release-info { flex: 1; min-width: 0; }
+      .release-title-text { font-family: 'Syne', sans-serif; font-weight: 800; font-size: clamp(0.65rem, 2.5vw, 0.82rem); letter-spacing: -0.02em; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; line-height: 1.25; }
+      .release-artist-text { font-size: clamp(0.6rem, 2vw, 0.72rem); color: var(--text-muted); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+      .release-right { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; flex-shrink: 0; max-width: 110px; }
+      .release-date-badge { font-size: 0.63rem; color: var(--text-dim); font-family: 'Space Mono', monospace; white-space: nowrap; text-align: right; }
+      .release-countdown { font-size: 0.62rem; color: var(--text-muted); font-family: 'Space Mono', monospace; text-align: right; white-space: nowrap; }
+      .release-status { font-size: 0.63rem; font-weight: 700; padding: 2px 8px; border-radius: 20px; letter-spacing: 0.04em; text-transform: uppercase; }
+      .release-status.out { background: rgba(59,255,138,0.12); color: var(--success); }
+      .release-status.upcoming { background: rgba(255,255,255,0.07); color: var(--text-dim); }
+      .btn-delete-release { background: transparent; border: none; color: var(--text-muted); cursor: pointer; padding: 4px; border-radius: 6px; transition: color 0.15s, background 0.15s; flex-shrink: 0; }
+      .btn-delete-release:hover { color: var(--danger); background: rgba(255,59,59,0.1); }
+      .releases-empty { text-align: center; padding: 60px 20px; color: var(--text-muted); font-size: 0.82rem; line-height: 1.7; }
 
-    /* ── ADMIN MSG OVERLAY ── */
-    .admin-msg-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.97); z-index: 9999; align-items: center; justify-content: center; padding: 24px; }
-    .admin-msg-overlay.show { display: flex; }
-    .admin-msg-box { max-width: 560px; width: 100%; border: 1.5px solid var(--danger); border-radius: 20px; padding: 40px 32px; text-align: center; background: #0a0a0a; animation: fadeIn 0.3s ease; }
-    @keyframes fadeIn { from { opacity: 0; transform: scale(0.96); } to { opacity: 1; transform: scale(1); } }
-    .admin-msg-icon { font-size: 2.4rem; margin-bottom: 16px; }
-    .admin-msg-title { font-family: 'Syne', sans-serif; font-weight: 800; font-size: clamp(1.3rem, 5vw, 1.8rem); letter-spacing: -0.03em; color: #fff; margin-bottom: 14px; }
-    .admin-msg-body { font-size: 0.9rem; color: var(--text-dim); line-height: 1.7; }
+      /* ── ADMIN MSG OVERLAY ── */
+      .admin-msg-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.97); z-index: 9999; align-items: center; justify-content: center; padding: 24px; }
+      .admin-msg-overlay.show { display: flex; }
+      .admin-msg-box { max-width: 560px; width: 100%; border: 1.5px solid var(--danger); border-radius: 20px; padding: 40px 32px; text-align: center; background: #0a0a0a; animation: fadeIn 0.3s ease; }
+      @keyframes fadeIn { from { opacity: 0; transform: scale(0.96); } to { opacity: 1; transform: scale(1); } }
+      .admin-msg-icon { font-size: 2.4rem; margin-bottom: 16px; }
+      .admin-msg-title { font-family: 'Syne', sans-serif; font-weight: 800; font-size: clamp(1.3rem, 5vw, 1.8rem); letter-spacing: -0.03em; color: #fff; margin-bottom: 14px; }
+      .admin-msg-body { font-size: 0.9rem; color: var(--text-dim); line-height: 1.7; }
 
-    /* ── IMAGE CROPPER ── */
-    .cropper-wrap { position: relative; display: none; margin-top: 10px; border-radius: 10px; overflow: hidden; background: #000; touch-action: none; user-select: none; }
-    .cropper-wrap img { display: block; width: 100%; pointer-events: none; }
-    .cropper-overlay { position: absolute; inset: 0; background: rgba(0,0,0,0.5); pointer-events: none; }
-    .crop-box { position: absolute; border: 2px solid #fff; box-shadow: 0 0 0 9999px rgba(0,0,0,0.5); cursor: move; box-sizing: border-box; }
-    .crop-box::before, .crop-box::after { content:''; position:absolute; background:#fff; }
-    .crop-corner { position: absolute; width: 14px; height: 14px; border: 2px solid #fff; background: #fff; border-radius: 2px; }
-    .crop-corner.tl { top:-1px; left:-1px; cursor:nw-resize; }
-    .crop-corner.tr { top:-1px; right:-1px; cursor:ne-resize; }
-    .crop-corner.bl { bottom:-1px; left:-1px; cursor:sw-resize; }
-    .crop-corner.br { bottom:-1px; right:-1px; cursor:se-resize; }
-    .crop-grid { position: absolute; inset: 0; pointer-events: none; }
-    .crop-grid-line { position: absolute; background: rgba(255,255,255,0.25); }
-    .crop-apply-btn { display: block; width: 100%; margin-top: 8px; padding: 10px; background: var(--btn-bg); color: var(--btn-text); border: none; border-radius: 10px; font-family: 'Syne', sans-serif; font-weight: 800; font-size: 0.85rem; cursor: pointer; }
+      /* ── IMAGE CROPPER ── */
+      .cropper-wrap { position: relative; display: none; margin-top: 10px; border-radius: 10px; overflow: hidden; background: #000; touch-action: none; user-select: none; }
+      .cropper-wrap img { display: block; width: 100%; pointer-events: none; }
+      .cropper-overlay { position: absolute; inset: 0; background: rgba(0,0,0,0.5); pointer-events: none; }
+      .crop-box { position: absolute; border: 2px solid #fff; box-shadow: 0 0 0 9999px rgba(0,0,0,0.5); cursor: move; box-sizing: border-box; }
+      .crop-box::before, .crop-box::after { content:''; position:absolute; background:#fff; }
+      .crop-corner { position: absolute; width: 14px; height: 14px; border: 2px solid #fff; background: #fff; border-radius: 2px; }
+      .crop-corner.tl { top:-1px; left:-1px; cursor:nw-resize; }
+      .crop-corner.tr { top:-1px; right:-1px; cursor:ne-resize; }
+      .crop-corner.bl { bottom:-1px; left:-1px; cursor:sw-resize; }
+      .crop-corner.br { bottom:-1px; right:-1px; cursor:se-resize; }
+      .crop-grid { position: absolute; inset: 0; pointer-events: none; }
+      .crop-grid-line { position: absolute; background: rgba(255,255,255,0.25); }
+      .crop-apply-btn { display: block; width: 100%; margin-top: 8px; padding: 10px; background: var(--btn-bg); color: var(--btn-text); border: none; border-radius: 10px; font-family: 'Syne', sans-serif; font-weight: 800; font-size: 0.85rem; cursor: pointer; }
 
-    /* ── TOAST ── */
-    /* ── LINKS ── */
-    .links-page-inner { width: 100%; max-width: 640px; padding: 20px 20px 60px; }
-    .links-page-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
-    .links-page-title { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 1.3rem; letter-spacing: -0.03em; }
-    .link-card { display: flex; align-items: center; gap: 12px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px 14px; margin-bottom: 10px; transition: border-color 0.2s, opacity 0.2s, transform 0.15s; user-select: none; }
-    .link-card:hover { border-color: #444; }
-    .link-card.dragging { opacity: 0.4; transform: scale(0.98); border-color: var(--border-active); }
-    .link-card.drag-over { border-color: var(--border-active); border-style: dashed; }
-    .link-card.long-press { transform: scale(1.02); border-color: var(--border-active); box-shadow: 0 4px 20px rgba(255,255,255,0.1); }
-    .link-avatar { width: 48px; height: 48px; border-radius: 50%; object-fit: cover; flex-shrink: 0; background: var(--surface2); }
-    .link-avatar-placeholder { width: 48px; height: 48px; border-radius: 50%; background: var(--surface2); flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; }
-    .link-info { flex: 1; min-width: 0; }
-    .link-name { font-family: 'Syne', sans-serif; font-weight: 800; font-size: clamp(0.68rem, 2.8vw, 0.9rem); letter-spacing: -0.02em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .link-right { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
-    .link-icons { display: flex; gap: 8px; }
-    .link-icon-btn { display: flex; align-items: center; justify-content: center; width: 30px; height: 30px; border-radius: 8px; background: var(--surface2); border: 1px solid var(--border); color: var(--text); text-decoration: none; transition: background 0.15s; flex-shrink: 0; }
-    .link-icon-btn:hover { background: var(--border); }
-    .link-icon-btn svg { display: block; }
-    .link-actions { display: flex; flex-direction: column; gap: 6px; flex-shrink: 0; padding-left: 8px; margin-left: 2px; border-left: 1px solid var(--border); }
-    .links-empty { text-align: center; padding: 40px 20px; color: var(--text-muted); font-size: 0.82rem; line-height: 1.8; }
+      /* ── TOAST ── */
+      /* ── LINKS ── */
+      .links-page-inner { width: 100%; max-width: 640px; padding: 20px 20px 60px; }
+      .links-page-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+      .links-page-title { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 1.3rem; letter-spacing: -0.03em; }
+      .link-card { display: flex; align-items: center; gap: 12px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px 14px; margin-bottom: 10px; transition: border-color 0.2s, opacity 0.2s, transform 0.15s; user-select: none; }
+      .link-card:hover { border-color: #444; }
+      .link-card.dragging { opacity: 0.4; transform: scale(0.98); border-color: var(--border-active); }
+      .link-card.drag-over { border-color: var(--border-active); border-style: dashed; }
+      .link-card.long-press { transform: scale(1.02); border-color: var(--border-active); box-shadow: 0 4px 20px rgba(255,255,255,0.1); }
+      .link-avatar { width: 48px; height: 48px; border-radius: 50%; object-fit: cover; flex-shrink: 0; background: var(--surface2); }
+      .link-avatar-placeholder { width: 48px; height: 48px; border-radius: 50%; background: var(--surface2); flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; }
+      .link-info { flex: 1; min-width: 0; }
+      .link-name { font-family: 'Syne', sans-serif; font-weight: 800; font-size: clamp(0.68rem, 2.8vw, 0.9rem); letter-spacing: -0.02em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+      .link-right { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+      .link-icons { display: flex; gap: 8px; }
+      .link-icon-btn { display: flex; align-items: center; justify-content: center; width: 30px; height: 30px; border-radius: 8px; background: var(--surface2); border: 1px solid var(--border); color: var(--text); text-decoration: none; transition: background 0.15s; flex-shrink: 0; }
+      .link-icon-btn:hover { background: var(--border); }
+      .link-icon-btn svg { display: block; }
+      .link-actions { display: flex; flex-direction: column; gap: 6px; flex-shrink: 0; padding-left: 8px; margin-left: 2px; border-left: 1px solid var(--border); }
+      .links-empty { text-align: center; padding: 40px 20px; color: var(--text-muted); font-size: 0.82rem; line-height: 1.8; }
 
-    /* ── NEWS ── */
-    .news-page-inner { width: 100%; max-width: 640px; padding: 20px 20px 80px; }
-    .news-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
-    .news-header-title { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 1.3rem; letter-spacing: -0.03em; }
-    .news-header-btns { display: flex; gap: 8px; }
-    .news-card { position: relative; border-radius: 16px; overflow: hidden; margin-bottom: 16px; background: #111; }
-    .news-checkbox { position: absolute; top: 10px; right: 10px; z-index: 10; width: 24px; height: 24px; border-radius: 6px; border: 2px solid rgba(255,255,255,0.8); background: rgba(0,0,0,0.4); display: none; align-items: center; justify-content: center; cursor: pointer; transition: background 0.15s, border-color 0.15s; }
-    .news-checkbox.checked { background: #ff3b3b; border-color: #ff3b3b; }
-    .news-checkbox svg { display: none; }
-    .news-checkbox.checked svg { display: block; }
-    .delete-mode-active .news-checkbox { display: flex; }
-    .news-delete-bar { display: none; position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%); background: #ff3b3b; color: #fff; border-radius: 14px; padding: 12px 24px; font-family: 'Syne', sans-serif; font-weight: 800; font-size: 0.9rem; z-index: 500; gap: 12px; align-items: center; box-shadow: 0 4px 20px rgba(255,59,59,0.4); cursor: pointer; }
-    .news-delete-bar.visible { display: flex; }
-    .news-poster { width: 100%; aspect-ratio: 3/2; object-fit: cover; display: block; }
-    .news-poster-placeholder { width: 100%; aspect-ratio: 3/2; background: var(--surface2); display: flex; align-items: center; justify-content: center; font-size: 3rem; }
-    .news-overlay { position: absolute; inset: 0; background: linear-gradient(to right, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0.1) 60%); }
-    .news-label { position: absolute; top: 50%; left: 16px; transform: translateY(-50%); font-family: 'Syne', sans-serif; font-weight: 900; font-size: clamp(1.5rem, 7vw, 2.2rem); color: #fff; letter-spacing: -0.03em; text-shadow: 0 2px 12px rgba(0,0,0,0.5); line-height: 1; }
-    .news-listen-btn { position: absolute; bottom: 12px; right: 12px; background: #fff; border-radius: 20px; padding: 7px 14px; display: flex; align-items: center; gap: 6px; text-decoration: none; box-shadow: 0 2px 12px rgba(0,0,0,0.4); transition: transform 0.15s; color: #000; font-family: 'Syne', sans-serif; font-weight: 800; font-size: 0.72rem; letter-spacing: 0.02em; white-space: nowrap; }
-    .news-listen-btn:hover { transform: scale(1.05); }
-    .news-empty { text-align: center; padding: 60px 20px; color: var(--text-muted); font-size: 0.82rem; line-height: 1.8; }
-    /* Cropper */
-    #newsCropBox { min-width: 40px; min-height: 40px; }
-    /* Confirm modal */
-    .confirm-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 2000; display: flex; align-items: center; justify-content: center; padding: 20px; opacity: 0; pointer-events: none; transition: opacity 0.2s; }
-    .confirm-overlay.show { opacity: 1; pointer-events: all; }
-    .confirm-box { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 24px; max-width: 320px; width: 100%; text-align: center; }
-    .confirm-box h3 { font-family: 'Syne', sans-serif; font-weight: 800; margin-bottom: 8px; }
-    .confirm-box p { font-size: 0.82rem; color: var(--text-muted); margin-bottom: 20px; }
-    .confirm-btns { display: flex; gap: 10px; }
-    .confirm-btns button { flex: 1; padding: 10px; border-radius: 10px; border: none; cursor: pointer; font-family: 'Syne', sans-serif; font-weight: 700; font-size: 0.85rem; }
-    .btn-confirm-yes { background: #ff3b3b; color: #fff; }
-    .btn-confirm-no { background: var(--surface2); color: var(--text); }
+      /* ── NEWS ── */
+      .news-page-inner { width: 100%; max-width: 640px; padding: 20px 20px 80px; }
+      .news-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+      .news-header-title { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 1.3rem; letter-spacing: -0.03em; }
+      .news-header-btns { display: flex; gap: 8px; }
+      .news-card { position: relative; border-radius: 16px; overflow: hidden; margin-bottom: 16px; background: #111; }
+      .news-checkbox { position: absolute; top: 10px; right: 10px; z-index: 10; width: 24px; height: 24px; border-radius: 6px; border: 2px solid rgba(255,255,255,0.8); background: rgba(0,0,0,0.4); display: none; align-items: center; justify-content: center; cursor: pointer; transition: background 0.15s, border-color 0.15s; }
+      .news-checkbox.checked { background: #ff3b3b; border-color: #ff3b3b; }
+      .news-checkbox svg { display: none; }
+      .news-checkbox.checked svg { display: block; }
+      .delete-mode-active .news-checkbox { display: flex; }
+      .news-delete-bar { display: none; position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%); background: #ff3b3b; color: #fff; border-radius: 14px; padding: 12px 24px; font-family: 'Syne', sans-serif; font-weight: 800; font-size: 0.9rem; z-index: 500; gap: 12px; align-items: center; box-shadow: 0 4px 20px rgba(255,59,59,0.4); cursor: pointer; }
+      .news-delete-bar.visible { display: flex; }
+      .news-poster { width: 100%; aspect-ratio: 3/2; object-fit: cover; display: block; }
+      .news-poster-placeholder { width: 100%; aspect-ratio: 3/2; background: var(--surface2); display: flex; align-items: center; justify-content: center; font-size: 3rem; }
+      .news-overlay { position: absolute; inset: 0; background: linear-gradient(to right, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0.1) 60%); }
+      .news-label { position: absolute; top: 50%; left: 16px; transform: translateY(-50%); font-family: 'Syne', sans-serif; font-weight: 900; font-size: clamp(1.5rem, 7vw, 2.2rem); color: #fff; letter-spacing: -0.03em; text-shadow: 0 2px 12px rgba(0,0,0,0.5); line-height: 1; }
+      .news-listen-btn { position: absolute; bottom: 12px; right: 12px; background: #fff; border-radius: 20px; padding: 7px 14px; display: flex; align-items: center; gap: 6px; text-decoration: none; box-shadow: 0 2px 12px rgba(0,0,0,0.4); transition: transform 0.15s; color: #000; font-family: 'Syne', sans-serif; font-weight: 800; font-size: 0.72rem; letter-spacing: 0.02em; white-space: nowrap; }
+      .news-listen-btn:hover { transform: scale(1.05); }
+      .news-empty { text-align: center; padding: 60px 20px; color: var(--text-muted); font-size: 0.82rem; line-height: 1.8; }
+      /* Cropper */
+      #newsCropBox { min-width: 40px; min-height: 40px; }
+      /* Confirm modal */
+      .confirm-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 2000; display: flex; align-items: center; justify-content: center; padding: 20px; opacity: 0; pointer-events: none; transition: opacity 0.2s; }
+      .confirm-overlay.show { opacity: 1; pointer-events: all; }
+      .confirm-box { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 24px; max-width: 320px; width: 100%; text-align: center; }
+      .confirm-box h3 { font-family: 'Syne', sans-serif; font-weight: 800; margin-bottom: 8px; }
+      .confirm-box p { font-size: 0.82rem; color: var(--text-muted); margin-bottom: 20px; }
+      .confirm-btns { display: flex; gap: 10px; }
+      .confirm-btns button { flex: 1; padding: 10px; border-radius: 10px; border: none; cursor: pointer; font-family: 'Syne', sans-serif; font-weight: 700; font-size: 0.85rem; }
+      .btn-confirm-yes { background: #ff3b3b; color: #fff; }
+      .btn-confirm-no { background: var(--surface2); color: var(--text); }
 
-    .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(80px); background: var(--surface); border: 1px solid var(--border); color: var(--text); padding: 10px 18px; border-radius: 100px; font-size: 0.78rem; z-index: 2000; transition: transform 0.25s cubic-bezier(0.34,1.56,0.64,1), opacity 0.2s; opacity: 0; white-space: nowrap; }
-    .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+      .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(80px); background: var(--surface); border: 1px solid var(--border); color: var(--text); padding: 10px 18px; border-radius: 100px; font-size: 0.78rem; z-index: 2000; transition: transform 0.25s cubic-bezier(0.34,1.56,0.64,1), opacity 0.2s; opacity: 0; white-space: nowrap; }
+      .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
 
-    @media (max-width: 480px) {
-      .header { padding-top: 20px; }
-      .btn-fetch { padding: 14px 16px; font-size: 0.8rem; }
-      input[type="text"] { font-size: 0.8rem; }
-      .media-grid { grid-template-columns: repeat(2, 1fr); gap: 8px; }
-    }
-    @media (max-width: 360px) { .media-grid { grid-template-columns: 1fr; } }
-  </style>
-</head>
-<body>
+      @media (max-width: 480px) {
+        .header { padding-top: 20px; }
+        .btn-fetch { padding: 14px 16px; font-size: 0.8rem; }
+        input[type="text"] { font-size: 0.8rem; }
+        .media-grid { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+      }
+      @media (max-width: 360px) { .media-grid { grid-template-columns: 1fr; } }
+    </style>
+  </head>
+  <body>
 
-<!-- Полноэкранное сообщение от администратора -->
-<div class="admin-msg-overlay" id="adminMsgOverlay">
-  <div class="admin-msg-box">
-    <div class="admin-msg-icon">📢</div>
-    <div class="admin-msg-title" id="adminMsgTitle">Внимание</div>
-    <div class="admin-msg-body" id="adminMsgBody"></div>
+  <!-- Полноэкранное сообщение от администратора -->
+  <div class="admin-msg-overlay" id="adminMsgOverlay">
+    <div class="admin-msg-box">
+      <div class="admin-msg-icon">📢</div>
+      <div class="admin-msg-title" id="adminMsgTitle">Внимание</div>
+      <div class="admin-msg-body" id="adminMsgBody"></div>
+    </div>
   </div>
-</div>
 
 
-</div>
+  </div>
 
-<!-- Модалка добавить/редактировать релиз -->
-<div class="modal-overlay" id="releaseModalOverlay">
-  <div class="modal">
-    <div class="modal-handle"></div>
-    <h2 id="modalTitle">Добавить релиз</h2>
-    <input type="hidden" id="editReleaseId"/>
+  <!-- Модалка добавить/редактировать релиз -->
+  <div class="modal-overlay" id="releaseModalOverlay">
+    <div class="modal">
+      <div class="modal-handle"></div>
+      <h2 id="modalTitle">Добавить релиз</h2>
+      <input type="hidden" id="editReleaseId"/>
 
-    <div class="release-form-field">
-      <label class="release-form-label">Обложка</label>
-      <div style="display:flex;gap:6px;margin-bottom:8px;">
-        <button type="button" class="cover-tab active" id="coverTabFile" onclick="switchCoverTab('file')">📁 Файл</button>
-        <button type="button" class="cover-tab" id="coverTabUrl" onclick="switchCoverTab('url')">🔗 Ссылка</button>
-      </div>
-      <div id="coverFileSection">
-        <div class="cover-upload-area" id="coverUploadArea">
-          <input type="file" id="coverFileInput" accept="image/*" onchange="handleCoverUpload(event)"/>
-          <img class="cover-preview" id="coverPreview" alt="cover"/>
-          <div class="upload-text" id="uploadText">Нажми чтобы выбрать файл</div>
+      <div class="release-form-field">
+        <label class="release-form-label">Обложка</label>
+        <div style="display:flex;gap:6px;margin-bottom:8px;">
+          <button type="button" class="cover-tab active" id="coverTabFile" onclick="switchCoverTab('file')">📁 Файл</button>
+          <button type="button" class="cover-tab" id="coverTabUrl" onclick="switchCoverTab('url')">🔗 Ссылка</button>
+        </div>
+        <div id="coverFileSection">
+          <div class="cover-upload-area" id="coverUploadArea">
+            <input type="file" id="coverFileInput" accept="image/*" onchange="handleCoverUpload(event)"/>
+            <img class="cover-preview" id="coverPreview" alt="cover"/>
+            <div class="upload-text" id="uploadText">Нажми чтобы выбрать файл</div>
+          </div>
+        </div>
+        <div id="coverUrlSection" style="display:none">
+          <input type="text" id="coverUrlInput" placeholder="https://..." oninput="handleCoverUrl(this.value)" style="width:100%;padding:12px 14px;background:var(--bg);border:1.5px solid var(--border);border-radius:var(--radius);color:var(--text);font-size:0.85rem;font-family:Space Mono,monospace;outline:none;"/>
+          <img class="cover-preview" id="coverUrlPreview" alt="cover" style="margin-top:8px;width:100%;height:140px;object-fit:cover;border-radius:8px;display:none;"/>
         </div>
       </div>
-      <div id="coverUrlSection" style="display:none">
-        <input type="text" id="coverUrlInput" placeholder="https://..." oninput="handleCoverUrl(this.value)" style="width:100%;padding:12px 14px;background:var(--bg);border:1.5px solid var(--border);border-radius:var(--radius);color:var(--text);font-size:0.85rem;font-family:Space Mono,monospace;outline:none;"/>
-        <img class="cover-preview" id="coverUrlPreview" alt="cover" style="margin-top:8px;width:100%;height:140px;object-fit:cover;border-radius:8px;display:none;"/>
+
+      <div class="release-form-field">
+        <label class="release-form-label">Имя артиста</label>
+        <input type="text" id="releaseArtist" placeholder="Например: Travis Scott"/>
       </div>
-    </div>
 
-    <div class="release-form-field">
-      <label class="release-form-label">Имя артиста</label>
-      <input type="text" id="releaseArtist" placeholder="Например: Travis Scott"/>
-    </div>
-
-    <div class="release-form-field">
-      <label class="release-form-label">Название</label>
-      <input type="text" id="releaseTitle" placeholder="Например: UTOPIA"/>
-    </div>
-
-    <div class="release-form-field">
-      <label class="release-form-label">Дата и время выхода</label>
-      <div style="display:flex;gap:8px;margin-bottom:8px;">
-        <input type="date" id="releaseDate" style="flex:1"/>
-        <input type="time" id="releaseTime" value="00:00" style="width:100px;padding:12px 10px;background:var(--bg);border:1.5px solid var(--border);border-radius:var(--radius);color:var(--text);font-size:0.85rem;font-family:Space Mono,monospace;outline:none;"/>
+      <div class="release-form-field">
+        <label class="release-form-label">Название</label>
+        <input type="text" id="releaseTitle" placeholder="Например: UTOPIA"/>
       </div>
-      <div style="display:flex;gap:6px;">
-        <button type="button" class="cover-tab" id="tzUTC" onclick="selectTZ('UTC')">UTC</button>
-        <button type="button" class="cover-tab active" id="tzKST" onclick="selectTZ('KST')">🇰🇷 KST +9</button>
-        <button type="button" class="cover-tab" id="tzMSK" onclick="selectTZ('MSK')">🇷🇺 MSK +3</button>
-        <button type="button" class="cover-tab" id="tzALMT" onclick="selectTZ('ALMT')">🇰🇿 +5</button>
-      </div>
-    </div>
 
-    <div class="modal-actions">
-      <button class="btn-save" id="modalSaveBtn" onclick="saveRelease()">Добавить</button>
-      <button class="btn-cancel" onclick="closeReleaseModal()">Отмена</button>
-    </div>
-  </div>
-</div>
-
-<div class="toast" id="toast"></div>
-
-<!-- NAVBAR -->
-<nav class="navbar">
-  <button class="nav-btn active" id="navInsttik" onclick="switchPage('insttik')">INSTAGRAM</button>
-  <button class="nav-btn" id="navRelease" onclick="switchPage('release')">RELEASE</button>
-  <button class="nav-btn" id="navLinks" onclick="switchPage('links')">LINKS</button>
-  <button class="nav-btn" id="navNews" onclick="switchPage('news')">NEWS</button>
-</nav>
-
-<!-- PAGE: INSTTIK -->
-<div class="page active" id="pageInsttik">
-  <div class="header">
-
-    <h1>ZHANSAVER</h1>
-    <p class="tagline">Instagram</p>
-
-    <div class="site-disabled-banner" id="siteDisabledBanner">
-      🔴 Сайт временно не работает. Приём ссылок отключён.
-    </div>
-    <div class="input-row">
-      <div class="input-group">
-        <input type="text" id="urlInput" placeholder="instagram.com/p/..." autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
-        <button class="btn-paste" onclick="pasteFromClipboard()" title="Вставить из буфера">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <rect x="9" y="2" width="10" height="4" rx="1"/>
-            <path d="M9 4H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-2"/>
-          </svg>
-        </button>
-      </div>
-      <button class="btn-fetch" id="fetchBtn" onclick="fetchMedia()">Найти</button>
-    </div>
-
-    <div class="status" id="status">
-      <div class="status-inner" id="statusInner"></div>
-    </div>
-  </div>
-
-  <div class="divider" id="divider"></div>
-  <div class="results" id="results"></div>
-</div>
-
-<!-- PAGE: RELEASE -->
-<div class="page" id="pageRelease">
-  <div class="release-page-inner">
-    <div class="release-page-header">
-      <div class="release-page-title">Релизы</div>
-      <button class="btn-add-release" onclick="openReleaseModal()">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-        Добавить
-      </button>
-    </div>
-    <div class="releases-list" id="releasesList">
-      <div class="releases-empty">Нет релизов.<br>Нажми «Добавить» чтобы создать первый.</div>
-    </div>
-  </div>
-</div>
-
-<!-- PAGE: LINKS -->
-<div class="page" id="pageLinks">
-  <div class="links-page-inner">
-    <div class="links-page-header">
-      <div class="links-page-title">Карточки</div>
-      <button class="btn-add-release" onclick="openLinkModal()">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-        Добавить
-      </button>
-    </div>
-    <div id="linksList"><div class="links-empty">Нет карточек.<br>Нажми «Добавить» чтобы создать первую.</div></div>
-  </div>
-</div>
-
-<!-- Модалка Links -->
-<div class="modal-overlay" id="linkModalOverlay">
-  <div class="modal">
-    <div class="modal-handle"></div>
-    <h2 id="linkModalTitle">Добавить карточку</h2>
-    <input type="hidden" id="editLinkId"/>
-    <div class="release-form-field">
-      <label class="release-form-label">Аватарка</label>
-      <div style="display:flex;gap:6px;margin-bottom:8px;">
-        <button type="button" class="cover-tab active" id="avatarTabFile" onclick="switchAvatarTab('file')">📁 Файл</button>
-        <button type="button" class="cover-tab" id="avatarTabUrl" onclick="switchAvatarTab('url')">🔗 Ссылка</button>
-      </div>
-      <div id="avatarFileSection">
-        <div class="cover-upload-area" id="linkAvatarArea">
-          <input type="file" id="linkAvatarInput" accept="image/*" onchange="handleLinkAvatar(event)"/>
-          <img class="cover-preview" id="linkAvatarPreview" alt="avatar"/>
-          <div class="upload-text" id="linkAvatarText">Нажми чтобы выбрать фото</div>
+      <div class="release-form-field">
+        <label class="release-form-label">Дата и время выхода</label>
+        <div style="display:flex;gap:8px;margin-bottom:8px;">
+          <input type="date" id="releaseDate" style="flex:1"/>
+          <input type="time" id="releaseTime" value="00:00" style="width:100px;padding:12px 10px;background:var(--bg);border:1.5px solid var(--border);border-radius:var(--radius);color:var(--text);font-size:0.85rem;font-family:Space Mono,monospace;outline:none;"/>
+        </div>
+        <div style="display:flex;gap:6px;">
+          <button type="button" class="cover-tab" id="tzUTC" onclick="selectTZ('UTC')">UTC</button>
+          <button type="button" class="cover-tab active" id="tzKST" onclick="selectTZ('KST')">🇰🇷 KST +9</button>
+          <button type="button" class="cover-tab" id="tzMSK" onclick="selectTZ('MSK')">🇷🇺 MSK +3</button>
+          <button type="button" class="cover-tab" id="tzALMT" onclick="selectTZ('ALMT')">🇰🇿 +5</button>
         </div>
       </div>
-      <div id="avatarUrlSection" style="display:none">
-        <input type="text" id="linkAvatarUrl" placeholder="https://..." oninput="handleLinkAvatarUrl(this.value)" style="width:100%;padding:12px 14px;background:var(--bg);border:1.5px solid var(--border);border-radius:var(--radius);color:var(--text);font-size:0.85rem;font-family:Space Mono,monospace;outline:none;"/>
-        <img id="linkAvatarUrlPreview" alt="preview" style="margin-top:8px;width:64px;height:64px;object-fit:cover;border-radius:50%;display:none;"/>
+
+      <div class="modal-actions">
+        <button class="btn-save" id="modalSaveBtn" onclick="saveRelease()">Добавить</button>
+        <button class="btn-cancel" onclick="closeReleaseModal()">Отмена</button>
       </div>
     </div>
-    <div class="release-form-field">
-      <label class="release-form-label">Имя артиста</label>
-      <input type="text" id="linkArtist" placeholder="Например: IVE"/>
-    </div>
-    <div class="release-form-field">
-      <label class="release-form-label">Instagram</label>
-      <input type="text" id="linkInstagram" placeholder="https://instagram.com/@..."/>
-    </div>
-    <div class="release-form-field">
-      <label class="release-form-label">TikTok</label>
-      <input type="text" id="linkTiktok" placeholder="https://tiktok.com/@..."/>
-    </div>
-    <div class="release-form-field">
-      <label class="release-form-label">YouTube</label>
-      <input type="text" id="linkYoutube" placeholder="https://youtube.com/@..."/>
-    </div>
-    <div class="release-form-field">
-      <label class="release-form-label">Spotify</label>
-      <input type="text" id="linkSpotify" placeholder="https://open.spotify.com/artist/..."/>
-    </div>
-    <div class="modal-actions">
-      <button class="btn-save" id="linkSaveBtn" onclick="saveLink()">Добавить</button>
-      <button class="btn-cancel" onclick="closeLinkModal()">Отмена</button>
-    </div>
   </div>
-</div>
 
-<!-- PAGE: NEWS -->
-<div class="page" id="pageNews">
-  <div class="news-page-inner">
-    <div class="news-header">
-      <div class="news-header-title">Новости</div>
-      <div class="news-header-btns">
-        <button class="btn-add-release" id="newsDeleteModeBtn" onclick="toggleNewsDeleteMode()" style="background:transparent;color:var(--danger);border-color:var(--danger);">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="3,6 5,6 21,6"/><path d="M19,6l-1,14a2,2,0,0,1-2,2H8a2,2,0,0,1-2-2L5,6"/><path d="M10,11v6"/><path d="M14,11v6"/></svg>
-          Удалить
-        </button>
-        <button class="btn-add-release" onclick="openNewsModal()">
+  <div class="toast" id="toast"></div>
+
+  <!-- NAVBAR -->
+  <nav class="navbar">
+    <button class="nav-btn active" id="navInsttik" onclick="switchPage('insttik')">INSTAGRAM</button>
+    <button class="nav-btn" id="navRelease" onclick="switchPage('release')">RELEASE</button>
+    <button class="nav-btn" id="navLinks" onclick="switchPage('links')">LINKS</button>
+    <button class="nav-btn" id="navNews" onclick="switchPage('news')">NEWS</button>
+  </nav>
+
+  <!-- PAGE: INSTTIK -->
+  <div class="page active" id="pageInsttik">
+    <div class="header">
+
+      <h1>ZHANSAVER</h1>
+      <p class="tagline">Instagram</p>
+
+      <div class="site-disabled-banner" id="siteDisabledBanner">
+        🔴 Сайт временно не работает. Приём ссылок отключён.
+      </div>
+      <div class="input-row">
+        <div class="input-group">
+          <input type="text" id="urlInput" placeholder="instagram.com/p/..." autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+          <button class="btn-paste" onclick="pasteFromClipboard()" title="Вставить из буфера">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="9" y="2" width="10" height="4" rx="1"/>
+              <path d="M9 4H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-2"/>
+            </svg>
+          </button>
+        </div>
+        <button class="btn-fetch" id="fetchBtn" onclick="fetchMedia()">Найти</button>
+      </div>
+
+      <div class="status" id="status">
+        <div class="status-inner" id="statusInner"></div>
+      </div>
+    </div>
+
+    <div class="divider" id="divider"></div>
+    <div class="results" id="results"></div>
+  </div>
+
+  <!-- PAGE: RELEASE -->
+  <div class="page" id="pageRelease">
+    <div class="release-page-inner">
+      <div class="release-page-header">
+        <div class="release-page-title">Релизы</div>
+        <button class="btn-add-release" onclick="openReleaseModal()">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
           Добавить
         </button>
       </div>
-    </div>
-    <div id="newsList"><div class="news-empty">Нет новостей.<br>Нажми «Добавить» чтобы создать первую.</div></div>
-  </div>
-</div>
-
-<!-- Модалка News -->
-<div class="modal-overlay" id="newsModalOverlay">
-  <div class="modal">
-    <div class="modal-handle"></div>
-    <h2>Добавить новость</h2>
-    <div class="release-form-field">
-      <label class="release-form-label">Постер</label>
-      <div class="cover-upload-area" id="newsImgArea">
-        <input type="file" id="newsImgInput" accept="image/*" onchange="handleNewsImage(event)"/>
-        <img class="cover-preview" id="newsImgPreview" alt="poster" style="display:none"/>
-        <div class="upload-text" id="newsImgText">Нажми чтобы выбрать фото</div>
+      <div class="releases-list" id="releasesList">
+        <div class="releases-empty">Нет релизов.<br>Нажми «Добавить» чтобы создать первый.</div>
       </div>
-      <div class="cropper-wrap" id="cropperWrap">
-        <img id="cropperImg" alt="crop"/>
-        <div class="crop-box" id="cropBox">
-          <div class="crop-grid">
-            <div class="crop-grid-line" style="left:33%;top:0;width:1px;height:100%"></div>
-            <div class="crop-grid-line" style="left:66%;top:0;width:1px;height:100%"></div>
-            <div class="crop-grid-line" style="top:33%;left:0;height:1px;width:100%"></div>
-            <div class="crop-grid-line" style="top:66%;left:0;height:1px;width:100%"></div>
+    </div>
+  </div>
+
+  <!-- PAGE: LINKS -->
+  <div class="page" id="pageLinks">
+    <div class="links-page-inner">
+      <div class="links-page-header">
+        <div class="links-page-title">Карточки</div>
+        <button class="btn-add-release" onclick="openLinkModal()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Добавить
+        </button>
+      </div>
+      <div id="linksList"><div class="links-empty">Нет карточек.<br>Нажми «Добавить» чтобы создать первую.</div></div>
+    </div>
+  </div>
+
+  <!-- Модалка Links -->
+  <div class="modal-overlay" id="linkModalOverlay">
+    <div class="modal">
+      <div class="modal-handle"></div>
+      <h2 id="linkModalTitle">Добавить карточку</h2>
+      <input type="hidden" id="editLinkId"/>
+      <div class="release-form-field">
+        <label class="release-form-label">Аватарка</label>
+        <div style="display:flex;gap:6px;margin-bottom:8px;">
+          <button type="button" class="cover-tab active" id="avatarTabFile" onclick="switchAvatarTab('file')">📁 Файл</button>
+          <button type="button" class="cover-tab" id="avatarTabUrl" onclick="switchAvatarTab('url')">🔗 Ссылка</button>
+        </div>
+        <div id="avatarFileSection">
+          <div class="cover-upload-area" id="linkAvatarArea">
+            <input type="file" id="linkAvatarInput" accept="image/*" onchange="handleLinkAvatar(event)"/>
+            <img class="cover-preview" id="linkAvatarPreview" alt="avatar"/>
+            <div class="upload-text" id="linkAvatarText">Нажми чтобы выбрать фото</div>
           </div>
-          <div class="crop-corner tl"></div>
-          <div class="crop-corner tr"></div>
-          <div class="crop-corner bl"></div>
-          <div class="crop-corner br"></div>
+        </div>
+        <div id="avatarUrlSection" style="display:none">
+          <input type="text" id="linkAvatarUrl" placeholder="https://..." oninput="handleLinkAvatarUrl(this.value)" style="width:100%;padding:12px 14px;background:var(--bg);border:1.5px solid var(--border);border-radius:var(--radius);color:var(--text);font-size:0.85rem;font-family:Space Mono,monospace;outline:none;"/>
+          <img id="linkAvatarUrlPreview" alt="preview" style="margin-top:8px;width:64px;height:64px;object-fit:cover;border-radius:50%;display:none;"/>
         </div>
       </div>
-      <button class="crop-apply-btn" id="cropApplyBtn" style="display:none" onclick="applyCropSelection()">✓ Применить обрезку</button>
-      <canvas id="newsCanvas" style="display:none"></canvas>
-    </div>
-    <div class="release-form-field">
-      <label class="release-form-label">Текст на постере</label>
-      <input type="text" id="newsTitle" placeholder="NEW MUSIC"/>
-    </div>
-    <div class="release-form-field">
-      <label class="release-form-label">Ссылка на Spotify</label>
-      <input type="text" id="newsSpotify" placeholder="https://open.spotify.com/..."/>
-    </div>
-    <div class="release-form-field">
-      <label class="release-form-label">Автоудаление</label>
-      <div style="display:flex;gap:6px;flex-wrap:wrap;">
-        <button type="button" class="cover-tab active" id="newsDays1" onclick="selectNewsDays(1)">1 день</button>
-        <button type="button" class="cover-tab" id="newsDays3" onclick="selectNewsDays(3)">3 дня</button>
-        <button type="button" class="cover-tab" id="newsDays7" onclick="selectNewsDays(7)">7 дней</button>
-        <button type="button" class="cover-tab" id="newsDays14" onclick="selectNewsDays(14)">14 дней</button>
-        <button type="button" class="cover-tab" id="newsDays30" onclick="selectNewsDays(30)">30 дней</button>
+      <div class="release-form-field">
+        <label class="release-form-label">Имя артиста</label>
+        <input type="text" id="linkArtist" placeholder="Например: IVE"/>
+      </div>
+      <div class="release-form-field">
+        <label class="release-form-label">Instagram</label>
+        <input type="text" id="linkInstagram" placeholder="https://instagram.com/@..."/>
+      </div>
+      <div class="release-form-field">
+        <label class="release-form-label">TikTok</label>
+        <input type="text" id="linkTiktok" placeholder="https://tiktok.com/@..."/>
+      </div>
+      <div class="release-form-field">
+        <label class="release-form-label">YouTube</label>
+        <input type="text" id="linkYoutube" placeholder="https://youtube.com/@..."/>
+      </div>
+      <div class="release-form-field">
+        <label class="release-form-label">Spotify</label>
+        <input type="text" id="linkSpotify" placeholder="https://open.spotify.com/artist/..."/>
+      </div>
+      <div class="modal-actions">
+        <button class="btn-save" id="linkSaveBtn" onclick="saveLink()">Добавить</button>
+        <button class="btn-cancel" onclick="closeLinkModal()">Отмена</button>
       </div>
     </div>
-    <div class="modal-actions">
-      <button class="btn-save" onclick="saveNews()">Опубликовать</button>
-      <button class="btn-cancel" onclick="closeNewsModal()">Отмена</button>
+  </div>
+
+  <!-- PAGE: NEWS -->
+  <div class="page" id="pageNews">
+    <div class="news-page-inner">
+      <div class="news-header">
+        <div class="news-header-title">Новости</div>
+        <div class="news-header-btns">
+          <button class="btn-add-release" id="newsDeleteModeBtn" onclick="toggleNewsDeleteMode()" style="background:transparent;color:var(--danger);border-color:var(--danger);">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="3,6 5,6 21,6"/><path d="M19,6l-1,14a2,2,0,0,1-2,2H8a2,2,0,0,1-2-2L5,6"/><path d="M10,11v6"/><path d="M14,11v6"/></svg>
+            Удалить
+          </button>
+          <button class="btn-add-release" onclick="openNewsModal()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Добавить
+          </button>
+        </div>
+      </div>
+      <div id="newsList"><div class="news-empty">Нет новостей.<br>Нажми «Добавить» чтобы создать первую.</div></div>
     </div>
   </div>
-</div>
 
-<!-- Confirm delete -->
-<div class="confirm-overlay" id="confirmOverlay">
-  <div class="confirm-box">
-    <h3>Удалить новость?</h3>
-    <p id="confirmText">Это действие нельзя отменить.</p>
-    <div class="confirm-btns">
-      <button class="btn-confirm-yes" id="confirmYes">Удалить</button>
-      <button class="btn-confirm-no" onclick="closeConfirm()">Отмена</button>
+  <!-- Модалка News -->
+  <div class="modal-overlay" id="newsModalOverlay">
+    <div class="modal">
+      <div class="modal-handle"></div>
+      <h2>Добавить новость</h2>
+      <div class="release-form-field">
+        <label class="release-form-label">Постер</label>
+        <div class="cover-upload-area" id="newsImgArea">
+          <input type="file" id="newsImgInput" accept="image/*" onchange="handleNewsImage(event)"/>
+          <img class="cover-preview" id="newsImgPreview" alt="poster" style="display:none"/>
+          <div class="upload-text" id="newsImgText">Нажми чтобы выбрать фото</div>
+        </div>
+        <div class="cropper-wrap" id="cropperWrap">
+          <img id="cropperImg" alt="crop"/>
+          <div class="crop-box" id="cropBox">
+            <div class="crop-grid">
+              <div class="crop-grid-line" style="left:33%;top:0;width:1px;height:100%"></div>
+              <div class="crop-grid-line" style="left:66%;top:0;width:1px;height:100%"></div>
+              <div class="crop-grid-line" style="top:33%;left:0;height:1px;width:100%"></div>
+              <div class="crop-grid-line" style="top:66%;left:0;height:1px;width:100%"></div>
+            </div>
+            <div class="crop-corner tl"></div>
+            <div class="crop-corner tr"></div>
+            <div class="crop-corner bl"></div>
+            <div class="crop-corner br"></div>
+          </div>
+        </div>
+        <button class="crop-apply-btn" id="cropApplyBtn" style="display:none" onclick="applyCropSelection()">✓ Применить обрезку</button>
+        <canvas id="newsCanvas" style="display:none"></canvas>
+      </div>
+      <div class="release-form-field">
+        <label class="release-form-label">Текст на постере</label>
+        <input type="text" id="newsTitle" placeholder="NEW MUSIC"/>
+      </div>
+      <div class="release-form-field">
+        <label class="release-form-label">Ссылка на Spotify</label>
+        <input type="text" id="newsSpotify" placeholder="https://open.spotify.com/..."/>
+      </div>
+      <div class="release-form-field">
+        <label class="release-form-label">Автоудаление</label>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;">
+          <button type="button" class="cover-tab active" id="newsDays1" onclick="selectNewsDays(1)">1 день</button>
+          <button type="button" class="cover-tab" id="newsDays3" onclick="selectNewsDays(3)">3 дня</button>
+          <button type="button" class="cover-tab" id="newsDays7" onclick="selectNewsDays(7)">7 дней</button>
+          <button type="button" class="cover-tab" id="newsDays14" onclick="selectNewsDays(14)">14 дней</button>
+          <button type="button" class="cover-tab" id="newsDays30" onclick="selectNewsDays(30)">30 дней</button>
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn-save" onclick="saveNews()">Опубликовать</button>
+        <button class="btn-cancel" onclick="closeNewsModal()">Отмена</button>
+      </div>
     </div>
   </div>
-</div>
 
-<!-- News delete bar -->
-<div class="news-delete-bar" id="newsDeleteBar" onclick="confirmDeleteSelected()">
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="3,6 5,6 21,6"/><path d="M19,6l-1,14a2,2,0,0,1-2,2H8a2,2,0,0,1-2-2L5,6"/></svg>
-  <span id="newsDeleteBarText">Удалить выбранные</span>
-</div>
+  <!-- Confirm delete -->
+  <div class="confirm-overlay" id="confirmOverlay">
+    <div class="confirm-box">
+      <h3>Удалить новость?</h3>
+      <p id="confirmText">Это действие нельзя отменить.</p>
+      <div class="confirm-btns">
+        <button class="btn-confirm-yes" id="confirmYes">Удалить</button>
+        <button class="btn-confirm-no" onclick="closeConfirm()">Отмена</button>
+      </div>
+    </div>
+  </div>
 
-<script>
-  const DL_ICON = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v10M7 15l5 5 5-5"/><path d="M5 20h14"/></svg>`;
-  let siteEnabled = true;
-  let coverBase64 = null;
-  let coverChanged = false;
+  <!-- News delete bar -->
+  <div class="news-delete-bar" id="newsDeleteBar" onclick="confirmDeleteSelected()">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="3,6 5,6 21,6"/><path d="M19,6l-1,14a2,2,0,0,1-2,2H8a2,2,0,0,1-2-2L5,6"/></svg>
+    <span id="newsDeleteBarText">Удалить выбранные</span>
+  </div>
 
-  // ── Навигация ──────────────────────────────────────────────────────────────
-  function switchPage(page) {
-    document.querySelectorAll('.page').forEach(p => { p.classList.remove('active'); p.style.display = 'none'; });
-    document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-    const pageEl = document.getElementById('page' + page.charAt(0).toUpperCase() + page.slice(1));
-    if (pageEl) { pageEl.classList.add('active'); pageEl.style.display = 'flex'; }
-    const navEl = document.getElementById('nav' + page.charAt(0).toUpperCase() + page.slice(1));
-    if (navEl) navEl.classList.add('active');
-    if (page === 'release') loadReleases();
-    if (page === 'links') loadLinks();
-    if (page === 'news') loadNews();
-  }
+  <script>
+    const DL_ICON = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v10M7 15l5 5 5-5"/><path d="M5 20h14"/></svg>`;
+    let siteEnabled = true;
+    let coverBase64 = null;
+    let coverChanged = false;
 
-  // ── Toast ──────────────────────────────────────────────────────────────────
-  function showToast(msg, duration = 2000) {
-    const t = document.getElementById('toast');
-    t.textContent = msg; t.classList.add('show');
-    setTimeout(() => t.classList.remove('show'), duration);
-  }
+    // ── Навигация ──────────────────────────────────────────────────────────────
+    function switchPage(page) {
+      document.querySelectorAll('.page').forEach(p => { p.classList.remove('active'); p.style.display = 'none'; });
+      document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+      const pageEl = document.getElementById('page' + page.charAt(0).toUpperCase() + page.slice(1));
+      if (pageEl) { pageEl.classList.add('active'); pageEl.style.display = 'flex'; }
+      const navEl = document.getElementById('nav' + page.charAt(0).toUpperCase() + page.slice(1));
+      if (navEl) navEl.classList.add('active');
+      if (page === 'release') loadReleases();
+      if (page === 'links') loadLinks();
+      if (page === 'news') loadNews();
+    }
 
-  // ── Clipboard ─────────────────────────────────────────────────────────────
-  async function pasteFromClipboard() {
-    try {
-      const text = await navigator.clipboard.readText();
-      if (text) { document.getElementById('urlInput').value = text.trim(); showToast('Ссылка вставлена'); }
-      else showToast('Буфер пуст');
-    } catch { showToast('Нет доступа к буферу — вставьте вручную'); }
-  }
+    // ── Toast ──────────────────────────────────────────────────────────────────
+    function showToast(msg, duration = 2000) {
+      const t = document.getElementById('toast');
+      t.textContent = msg; t.classList.add('show');
+      setTimeout(() => t.classList.remove('show'), duration);
+    }
 
-  // ── Статус сайта ───────────────────────────────────────────────────────────
-  async function checkSiteStatus() {
-    try {
-      const res = await fetch('/api/status');
-      const data = await res.json();
-      siteEnabled = data.siteEnabled !== false;
-      if (!siteEnabled) {
-        document.getElementById('siteDisabledBanner').classList.add('show');
-        document.getElementById('fetchBtn').disabled = true;
-        document.getElementById('urlInput').disabled = true;
-      } else {
-        document.getElementById('siteDisabledBanner').classList.remove('show');
-        document.getElementById('fetchBtn').disabled = false;
-        document.getElementById('urlInput').disabled = false;
-      }
-      if (data.siteMessage?.active && data.siteMessage.title) {
-        document.getElementById('adminMsgTitle').textContent = data.siteMessage.title;
-        document.getElementById('adminMsgBody').textContent = data.siteMessage.body || '';
-        document.getElementById('adminMsgOverlay').classList.add('show');
-      } else {
-        document.getElementById('adminMsgOverlay').classList.remove('show');
-      }
-    } catch {}
-  }
-  // ── Статус поиска ─────────────────────────────────────────────────────────
-  function showStatus(msg, type) {
-    document.getElementById('statusInner').textContent = msg;
-    document.getElementById('status').className = 'status ' + type;
-  }
-  function hideStatus() { document.getElementById('status').className = 'status'; }
+    // ── Clipboard ─────────────────────────────────────────────────────────────
+    async function pasteFromClipboard() {
+      try {
+        const text = await navigator.clipboard.readText();
+        if (text) { document.getElementById('urlInput').value = text.trim(); showToast('Ссылка вставлена'); }
+        else showToast('Буфер пуст');
+      } catch { showToast('Нет доступа к буферу — вставьте вручную'); }
+    }
 
-  // ── Fetch медиа ───────────────────────────────────────────────────────────
-  async function fetchMedia() {
-    if (!siteEnabled) { showStatus('❌ Сайт временно не работает.', 'error'); return; }
-    const url = document.getElementById('urlInput').value.trim();
-    const btn = document.getElementById('fetchBtn');
-    const results = document.getElementById('results');
-    const divider = document.getElementById('divider');
-    results.className = 'results'; results.innerHTML = '';
-    divider.className = 'divider';
-    if (!url) { showStatus('Вставьте ссылку на пост', 'error'); return; }
-    btn.disabled = true; btn.textContent = '...';
-    showStatus('Получаем медиафайлы...', 'loading');
-    try {
-      const res = await fetch('/api/fetch', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ url }) });
-      const data = await res.json();
-      if (!data.success) {
-        showStatus('❌ ' + (data.siteDisabled ? 'Сайт временно не работает.' : data.error), 'error');
-        return;
-      }
-      hideStatus();
-      renderResults(data.media, data.shortcode);
-    } catch { showStatus('Ошибка соединения с сервером', 'error'); }
-    finally { btn.disabled = !siteEnabled; btn.textContent = 'Найти'; }
-  }
-  function download(mediaUrl, filename) {
-    const a = document.createElement('a');
-    a.href = `/proxy?url=${encodeURIComponent(mediaUrl)}&dl=1`;
-    a.download = filename;
-    document.body.appendChild(a); a.click(); document.body.removeChild(a);
-  }
-
-  function renderResults(media, shortcode) {
-    const results = document.getElementById('results');
-    const divider = document.getElementById('divider');
-    results.innerHTML = '';
-
-    if (media.length === 1) {
-      const item = media[0];
-      const ext = item.type === 'video' ? 'mp4' : 'jpg';
-      const wrap = document.createElement('div');
-      wrap.className = 'single-media';
-
-      if (item.type === 'video') {
-        const v = document.createElement('video');
-        v.className = 'single-video';
-        v.src = `/proxy?url=${encodeURIComponent(item.url)}`;
-        v.playsinline = true;
-        v.preload = 'auto';
-        v.setAttribute('webkit-playsinline', '');
-        v.style.maxHeight = '70vh';
-        v.onclick = () => v.paused ? v.play() : v.pause();
-        wrap.appendChild(v);
-      } else {
-        const img = document.createElement('img');
-        img.src = `/proxy?url=${encodeURIComponent(item.url)}`; img.alt = 'photo';
-        wrap.appendChild(img);
-      }
-
-      const dlBtn = document.createElement('button');
-      dlBtn.className = 'btn-dl';
-      dlBtn.innerHTML = `${DL_ICON} Скачать ${item.type === 'video' ? 'видео' : 'фото'}`;
-      dlBtn.onclick = () => {
-        download(item.url, `media_${shortcode}.${ext}`);
-        dlBtn.className = 'btn-dl done'; dlBtn.textContent = '✓ Загружается';
-        setTimeout(() => { dlBtn.className = 'btn-dl'; dlBtn.innerHTML = `${DL_ICON} Скачать`; }, 3000);
-      };
-      wrap.appendChild(dlBtn);
-      results.appendChild(wrap);
-    } else {
-      const header = document.createElement('div'); header.className = 'results-header';
-      const title = document.createElement('span'); title.className = 'results-title'; title.textContent = `${media.length} файлов`;
-      const dlAll = document.createElement('button'); dlAll.className = 'btn-dl-all';
-      dlAll.innerHTML = `${DL_ICON} Скачать все`;
-      dlAll.onclick = () => media.forEach((item, i) =>
-        setTimeout(() => download(item.url, `media_${shortcode}_${i+1}.${item.type==='video'?'mp4':'jpg'}`), i * 700)
-      );
-      header.appendChild(title); header.appendChild(dlAll); results.appendChild(header);
-
-      const grid = document.createElement('div'); grid.className = 'media-grid';
-      media.forEach((item, i) => {
-        const ext = item.type === 'video' ? 'mp4' : 'jpg';
-        const card = document.createElement('div'); card.className = 'media-card';
-        const thumbWrap = document.createElement('div'); thumbWrap.className = 'media-thumb';
-
-        // Всегда показываем картинку (thumb или postер), без видео-элемента
-        const img = document.createElement('img');
-        if (item.type === 'video') {
-          img.src = item.thumb ? `/proxy?url=${encodeURIComponent(item.thumb)}` : '';
+    // ── Статус сайта ───────────────────────────────────────────────────────────
+    async function checkSiteStatus() {
+      try {
+        const res = await fetch('/api/status');
+        const data = await res.json();
+        siteEnabled = data.siteEnabled !== false;
+        if (!siteEnabled) {
+          document.getElementById('siteDisabledBanner').classList.add('show');
+          document.getElementById('fetchBtn').disabled = true;
+          document.getElementById('urlInput').disabled = true;
         } else {
-          img.src = `/proxy?url=${encodeURIComponent(item.url)}`;
+          document.getElementById('siteDisabledBanner').classList.remove('show');
+          document.getElementById('fetchBtn').disabled = false;
+          document.getElementById('urlInput').disabled = false;
         }
-        img.loading = 'lazy'; img.alt = `${item.type === 'video' ? 'Видео' : 'Фото'} ${i+1}`;
-        thumbWrap.appendChild(img);
+        if (data.siteMessage?.active && data.siteMessage.title) {
+          document.getElementById('adminMsgTitle').textContent = data.siteMessage.title;
+          document.getElementById('adminMsgBody').textContent = data.siteMessage.body || '';
+          document.getElementById('adminMsgOverlay').classList.add('show');
+        } else {
+          document.getElementById('adminMsgOverlay').classList.remove('show');
+        }
+      } catch {}
+    }
+    // ── Статус поиска ─────────────────────────────────────────────────────────
+    function showStatus(msg, type) {
+      document.getElementById('statusInner').textContent = msg;
+      document.getElementById('status').className = 'status ' + type;
+    }
+    function hideStatus() { document.getElementById('status').className = 'status'; }
 
-        const badge = document.createElement('span'); badge.className = 'media-badge';
-        badge.textContent = item.type === 'video' ? '▶ ВИДЕО' : 'ФОТО';
-        thumbWrap.appendChild(badge);
+    // ── Fetch медиа ───────────────────────────────────────────────────────────
+    async function fetchMedia() {
+      if (!siteEnabled) { showStatus('❌ Сайт временно не работает.', 'error'); return; }
+      const url = document.getElementById('urlInput').value.trim();
+      const btn = document.getElementById('fetchBtn');
+      const results = document.getElementById('results');
+      const divider = document.getElementById('divider');
+      results.className = 'results'; results.innerHTML = '';
+      divider.className = 'divider';
+      if (!url) { showStatus('Вставьте ссылку на пост', 'error'); return; }
+      btn.disabled = true; btn.textContent = '...';
+      showStatus('Получаем медиафайлы...', 'loading');
+      try {
+        const res = await fetch('/api/fetch', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ url }) });
+        const data = await res.json();
+        if (!data.success) {
+          showStatus('❌ ' + (data.siteDisabled ? 'Сайт временно не работает.' : data.error), 'error');
+          return;
+        }
+        hideStatus();
+        renderResults(data.media, data.shortcode);
+      } catch { showStatus('Ошибка соединения с сервером', 'error'); }
+      finally { btn.disabled = !siteEnabled; btn.textContent = 'Найти'; }
+    }
+    function download(mediaUrl, filename) {
+      const a = document.createElement('a');
+      a.href = `/proxy?url=${encodeURIComponent(mediaUrl)}&dl=1`;
+      a.download = filename;
+      document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    }
 
-        const footer = document.createElement('div'); footer.className = 'media-footer';
-        const idx = document.createElement('span'); idx.className = 'media-index'; idx.textContent = `${i+1} / ${media.length}`;
-        const dlBtn = document.createElement('button'); dlBtn.className = 'btn-dl';
-        dlBtn.innerHTML = `${DL_ICON} Скачать`;
+    function renderResults(media, shortcode) {
+      const results = document.getElementById('results');
+      const divider = document.getElementById('divider');
+      results.innerHTML = '';
+
+      if (media.length === 1) {
+        const item = media[0];
+        const ext = item.type === 'video' ? 'mp4' : 'jpg';
+        const wrap = document.createElement('div');
+        wrap.className = 'single-media';
+
+        if (item.type === 'video') {
+          const v = document.createElement('video');
+          v.className = 'single-video';
+          v.src = `/proxy?url=${encodeURIComponent(item.url)}`;
+          v.playsinline = true;
+          v.preload = 'auto';
+          v.setAttribute('webkit-playsinline', '');
+          v.style.maxHeight = '70vh';
+          v.onclick = () => v.paused ? v.play() : v.pause();
+          wrap.appendChild(v);
+        } else {
+          const img = document.createElement('img');
+          img.src = `/proxy?url=${encodeURIComponent(item.url)}`; img.alt = 'photo';
+          wrap.appendChild(img);
+        }
+
+        const dlBtn = document.createElement('button');
+        dlBtn.className = 'btn-dl';
+        dlBtn.innerHTML = `${DL_ICON} Скачать ${item.type === 'video' ? 'видео' : 'фото'}`;
         dlBtn.onclick = () => {
-          download(item.url, `media_${shortcode}_${i+1}.${ext}`);
-          dlBtn.className = 'btn-dl done'; dlBtn.textContent = '✓';
+          download(item.url, `media_${shortcode}.${ext}`);
+          dlBtn.className = 'btn-dl done'; dlBtn.textContent = '✓ Загружается';
           setTimeout(() => { dlBtn.className = 'btn-dl'; dlBtn.innerHTML = `${DL_ICON} Скачать`; }, 3000);
         };
-        footer.appendChild(idx); footer.appendChild(dlBtn);
-        card.appendChild(thumbWrap); card.appendChild(footer);
-        grid.appendChild(card);
+        wrap.appendChild(dlBtn);
+        results.appendChild(wrap);
+      } else {
+        const header = document.createElement('div'); header.className = 'results-header';
+        const title = document.createElement('span'); title.className = 'results-title'; title.textContent = `${media.length} файлов`;
+        const dlAll = document.createElement('button'); dlAll.className = 'btn-dl-all';
+        dlAll.innerHTML = `${DL_ICON} Скачать все`;
+        dlAll.onclick = () => media.forEach((item, i) =>
+          setTimeout(() => download(item.url, `media_${shortcode}_${i+1}.${item.type==='video'?'mp4':'jpg'}`), i * 700)
+        );
+        header.appendChild(title); header.appendChild(dlAll); results.appendChild(header);
+
+        const grid = document.createElement('div'); grid.className = 'media-grid';
+        media.forEach((item, i) => {
+          const ext = item.type === 'video' ? 'mp4' : 'jpg';
+          const card = document.createElement('div'); card.className = 'media-card';
+          const thumbWrap = document.createElement('div'); thumbWrap.className = 'media-thumb';
+
+          // Всегда показываем картинку (thumb или postер), без видео-элемента
+          const img = document.createElement('img');
+          if (item.type === 'video') {
+            img.src = item.thumb ? `/proxy?url=${encodeURIComponent(item.thumb)}` : '';
+          } else {
+            img.src = `/proxy?url=${encodeURIComponent(item.url)}`;
+          }
+          img.loading = 'lazy'; img.alt = `${item.type === 'video' ? 'Видео' : 'Фото'} ${i+1}`;
+          thumbWrap.appendChild(img);
+
+          const badge = document.createElement('span'); badge.className = 'media-badge';
+          badge.textContent = item.type === 'video' ? '▶ ВИДЕО' : 'ФОТО';
+          thumbWrap.appendChild(badge);
+
+          const footer = document.createElement('div'); footer.className = 'media-footer';
+          const idx = document.createElement('span'); idx.className = 'media-index'; idx.textContent = `${i+1} / ${media.length}`;
+          const dlBtn = document.createElement('button'); dlBtn.className = 'btn-dl';
+          dlBtn.innerHTML = `${DL_ICON} Скачать`;
+          dlBtn.onclick = () => {
+            download(item.url, `media_${shortcode}_${i+1}.${ext}`);
+            dlBtn.className = 'btn-dl done'; dlBtn.textContent = '✓';
+            setTimeout(() => { dlBtn.className = 'btn-dl'; dlBtn.innerHTML = `${DL_ICON} Скачать`; }, 3000);
+          };
+          footer.appendChild(idx); footer.appendChild(dlBtn);
+          card.appendChild(thumbWrap); card.appendChild(footer);
+          grid.appendChild(card);
+        });
+        results.appendChild(grid);
+      }
+
+      divider.className = 'divider show';
+      results.className = 'results show';
+      results.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    document.getElementById('urlInput').addEventListener('keydown', e => { if (e.key === 'Enter') fetchMedia(); });
+
+    // ── RELEASE PAGE ──────────────────────────────────────────────────────────
+    let selectedTZ = 'KST';
+
+    function selectTZ(tz) {
+      selectedTZ = tz;
+      ['UTC','KST','MSK','ALMT'].forEach(t => {
+        document.getElementById('tz' + t).classList.toggle('active', t === tz);
       });
-      results.appendChild(grid);
     }
 
-    divider.className = 'divider show';
-    results.className = 'results show';
-    results.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  }
-
-  document.getElementById('urlInput').addEventListener('keydown', e => { if (e.key === 'Enter') fetchMedia(); });
-
-  // ── RELEASE PAGE ──────────────────────────────────────────────────────────
-  let selectedTZ = 'KST';
-
-  function selectTZ(tz) {
-    selectedTZ = tz;
-    ['UTC','KST','MSK','ALMT'].forEach(t => {
-      document.getElementById('tz' + t).classList.toggle('active', t === tz);
-    });
-  }
-
-  function openReleaseModal() {
-    coverBase64 = null;
-    coverChanged = false;
-    document.getElementById('editReleaseId').value = '';
-    document.getElementById('modalTitle').textContent = 'Добавить релиз';
-    document.getElementById('modalSaveBtn').textContent = 'Добавить';
-    document.getElementById('coverPreview').style.display = 'none';
-    document.getElementById('uploadText').style.display = 'block';
-    document.getElementById('coverFileInput').value = '';
-    document.getElementById('coverUrlInput').value = '';
-    document.getElementById('coverUrlPreview').style.display = 'none';
-    document.getElementById('releaseArtist').value = '';
-    document.getElementById('releaseTitle').value = '';
-    document.getElementById('releaseDate').value = '';
-    document.getElementById('releaseTime').value = '00:00';
-    selectTZ('KST');
-    switchCoverTab('file');
-    document.getElementById('releaseModalOverlay').classList.add('show');
-  }
-
-  function openEditModal(r) {
-    coverBase64 = r.cover || null;
-    coverChanged = false;
-    document.getElementById('editReleaseId').value = r.id;
-    document.getElementById('modalTitle').textContent = 'Изменить релиз';
-    document.getElementById('modalSaveBtn').textContent = 'Сохранить';
-    document.getElementById('releaseArtist').value = r.artist || '';
-    document.getElementById('releaseTitle').value = r.title || '';
-    document.getElementById('releaseDate').value = r.releaseDate || '';
-    document.getElementById('releaseTime').value = r.releaseTime || '00:00';
-    selectTZ(r.timezone || 'KST');
-    // Обложка
-    if (r.cover && r.cover.startsWith('http')) {
-      switchCoverTab('url');
-      document.getElementById('coverUrlInput').value = r.cover;
-      const prev = document.getElementById('coverUrlPreview');
-      prev.src = r.cover; prev.style.display = 'block';
-    } else if (r.cover) {
-      switchCoverTab('file');
-      const prev = document.getElementById('coverPreview');
-      prev.src = r.cover; prev.style.display = 'block';
-      document.getElementById('uploadText').style.display = 'none';
-    } else {
-      switchCoverTab('file');
-    }
-    document.getElementById('releaseModalOverlay').classList.add('show');
-  }
-
-  function switchCoverTab(tab) {
-    document.getElementById('coverFileSection').style.display = tab === 'file' ? 'block' : 'none';
-    document.getElementById('coverUrlSection').style.display = tab === 'url' ? 'block' : 'none';
-    document.getElementById('coverTabFile').className = 'cover-tab' + (tab === 'file' ? ' active' : '');
-    document.getElementById('coverTabUrl').className = 'cover-tab' + (tab === 'url' ? ' active' : '');
-    if (tab === 'file') { coverBase64 = null; document.getElementById('coverUrlInput').value = ''; }
-    else { coverBase64 = null; document.getElementById('coverFileInput').value = ''; document.getElementById('coverPreview').style.display = 'none'; document.getElementById('uploadText').style.display = 'block'; }
-  }
-
-  function handleCoverUrl(val) {
-    const preview = document.getElementById('coverUrlPreview');
-    if (val.startsWith('http')) {
-      preview.src = val;
-      preview.style.display = 'block';
-      preview.onerror = () => { preview.style.display = 'none'; };
-      coverBase64 = val;
-      coverChanged = true;
-    } else {
-      preview.style.display = 'none';
+    function openReleaseModal() {
       coverBase64 = null;
+      coverChanged = false;
+      document.getElementById('editReleaseId').value = '';
+      document.getElementById('modalTitle').textContent = 'Добавить релиз';
+      document.getElementById('modalSaveBtn').textContent = 'Добавить';
+      document.getElementById('coverPreview').style.display = 'none';
+      document.getElementById('uploadText').style.display = 'block';
+      document.getElementById('coverFileInput').value = '';
+      document.getElementById('coverUrlInput').value = '';
+      document.getElementById('coverUrlPreview').style.display = 'none';
+      document.getElementById('releaseArtist').value = '';
+      document.getElementById('releaseTitle').value = '';
+      document.getElementById('releaseDate').value = '';
+      document.getElementById('releaseTime').value = '00:00';
+      selectTZ('KST');
+      switchCoverTab('file');
+      document.getElementById('releaseModalOverlay').classList.add('show');
     }
-  }
-  function closeReleaseModal() { document.getElementById('releaseModalOverlay').classList.remove('show'); }
-  document.getElementById('releaseModalOverlay').addEventListener('click', e => { if (e.target.id === 'releaseModalOverlay') closeReleaseModal(); });
 
-  function handleCoverUpload(event) {
-    const file = event.target.files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      coverBase64 = e.target.result;
-      coverChanged = true;
-      const preview = document.getElementById('coverPreview');
-      preview.src = coverBase64;
-      preview.style.display = 'block';
-      document.getElementById('uploadText').style.display = 'none';
-    };
-    reader.readAsDataURL(file);
-  }
-
-  async function saveRelease() {
-    const artist = document.getElementById('releaseArtist').value.trim();
-    const title = document.getElementById('releaseTitle').value.trim();
-    const releaseDate = document.getElementById('releaseDate').value;
-    const releaseTime = document.getElementById('releaseTime').value || '00:00';
-    const timezone = selectedTZ;
-    const editId = document.getElementById('editReleaseId').value;
-    if (!artist || !title || !releaseDate) { showToast('Заполни все поля!'); return; }
-
-    const isEdit = !!editId;
-    // При редактировании: если coverBase64 не менялся (остался как при открытии) — передаём null чтобы сервер оставил старую обложку
-    // coverChanged отслеживает был ли файл/url выбран заново
-    const body = { artist, title, releaseDate, releaseTime, timezone, cover: coverChanged ? coverBase64 : null };
-    const res = await fetch(isEdit ? `/api/releases/${editId}` : '/api/releases', {
-      method: isEdit ? 'PUT' : 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body)
-    });
-    const data = await res.json();
-    if (data.success) {
-      closeReleaseModal();
-      loadReleases();
-      showToast(isEdit ? '✓ Релиз обновлён!' : '✓ Релиз добавлен!');
-    } else {
-      showToast('Ошибка: ' + data.error);
-    }
-  }
-
-  async function loadReleases() {
-    try {
-      const res = await fetch('/api/releases');
-      const releases = await res.json();
-      renderReleases(releases);
-    } catch { showToast('Ошибка загрузки релизов'); }
-  }
-
-  function renderReleases(releases) {
-    const list = document.getElementById('releasesList');
-    if (!releases.length) {
-      list.innerHTML = '<div class="releases-empty">Нет релизов.<br>Нажми «Добавить» чтобы создать первый.</div>';
-      return;
-    }
-    list.innerHTML = '';
-    releases.forEach(r => {
-      const TZOFF = { KST: 9, MSK: 3, ALMT: 5, UTC: 0 };
-      const offset = TZOFF[r.timezone] !== undefined ? TZOFF[r.timezone] : 0;
-      const dt = new Date(`${r.releaseDate}T${r.releaseTime || '00:00'}:00Z`);
-      dt.setHours(dt.getHours() - offset);
-      const isReleased = dt <= new Date();
-      const card = document.createElement('div');
-      card.className = 'release-card' + (isReleased ? ' released' : '');
-
+    function openEditModal(r) {
+      coverBase64 = r.cover || null;
+      coverChanged = false;
+      document.getElementById('editReleaseId').value = r.id;
+      document.getElementById('modalTitle').textContent = 'Изменить релиз';
+      document.getElementById('modalSaveBtn').textContent = 'Сохранить';
+      document.getElementById('releaseArtist').value = r.artist || '';
+      document.getElementById('releaseTitle').value = r.title || '';
+      document.getElementById('releaseDate').value = r.releaseDate || '';
+      document.getElementById('releaseTime').value = r.releaseTime || '00:00';
+      selectTZ(r.timezone || 'KST');
       // Обложка
-      if (r.cover) {
-        const img = document.createElement('img');
-        img.className = 'release-cover'; img.src = r.cover; img.alt = r.title;
-        card.appendChild(img);
+      if (r.cover && r.cover.startsWith('http')) {
+        switchCoverTab('url');
+        document.getElementById('coverUrlInput').value = r.cover;
+        const prev = document.getElementById('coverUrlPreview');
+        prev.src = r.cover; prev.style.display = 'block';
+      } else if (r.cover) {
+        switchCoverTab('file');
+        const prev = document.getElementById('coverPreview');
+        prev.src = r.cover; prev.style.display = 'block';
+        document.getElementById('uploadText').style.display = 'none';
       } else {
-        const ph = document.createElement('div');
-        ph.className = 'release-cover-placeholder'; ph.textContent = '🎵';
-        card.appendChild(ph);
+        switchCoverTab('file');
       }
+      document.getElementById('releaseModalOverlay').classList.add('show');
+    }
 
-      // Инфо
-      const info = document.createElement('div'); info.className = 'release-info';
-      const titleEl = document.createElement('div'); titleEl.className = 'release-title-text'; titleEl.textContent = r.title;
-      const artistEl = document.createElement('div'); artistEl.className = 'release-artist-text'; artistEl.textContent = r.artist;
-      info.appendChild(titleEl); info.appendChild(artistEl);
-      card.appendChild(info);
+    function switchCoverTab(tab) {
+      document.getElementById('coverFileSection').style.display = tab === 'file' ? 'block' : 'none';
+      document.getElementById('coverUrlSection').style.display = tab === 'url' ? 'block' : 'none';
+      document.getElementById('coverTabFile').className = 'cover-tab' + (tab === 'file' ? ' active' : '');
+      document.getElementById('coverTabUrl').className = 'cover-tab' + (tab === 'url' ? ' active' : '');
+      if (tab === 'file') { coverBase64 = null; document.getElementById('coverUrlInput').value = ''; }
+      else { coverBase64 = null; document.getElementById('coverFileInput').value = ''; document.getElementById('coverPreview').style.display = 'none'; document.getElementById('uploadText').style.display = 'block'; }
+    }
 
-      // Правый блок
-      const right = document.createElement('div'); right.className = 'release-right';
-      const dateBadge = document.createElement('div'); dateBadge.className = 'release-date-badge';
-      dateBadge.textContent = formatDate(r.releaseDate, r.releaseTime, r.timezone);
-      right.appendChild(dateBadge);
-      if (!isReleased) {
-        const countdown = document.createElement('div');
-        countdown.className = 'release-countdown';
-        countdown.dataset.releaseTs = dt.getTime();
-        updateCountdown(countdown, dt);
-        right.appendChild(countdown);
+    function handleCoverUrl(val) {
+      const preview = document.getElementById('coverUrlPreview');
+      if (val.startsWith('http')) {
+        preview.src = val;
+        preview.style.display = 'block';
+        preview.onerror = () => { preview.style.display = 'none'; };
+        coverBase64 = val;
+        coverChanged = true;
+      } else {
+        preview.style.display = 'none';
+        coverBase64 = null;
       }
-      const statusBadge = document.createElement('div');
-      statusBadge.className = 'release-status ' + (isReleased ? 'out' : 'upcoming');
-      statusBadge.textContent = isReleased ? '✓ Вышел' : 'Скоро';
-      right.appendChild(statusBadge);
-      card.appendChild(right);
+    }
+    function closeReleaseModal() { document.getElementById('releaseModalOverlay').classList.remove('show'); }
+    document.getElementById('releaseModalOverlay').addEventListener('click', e => { if (e.target.id === 'releaseModalOverlay') closeReleaseModal(); });
 
-      // Кнопка удалить
-      // Кнопки действий
-      const actions = document.createElement('div'); actions.style.cssText = 'display:flex;flex-direction:column;gap:6px;margin-left:4px;';
-      const editBtn = document.createElement('button'); editBtn.className = 'btn-delete-release';
-      editBtn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>`;
-      editBtn.title = 'Изменить'; editBtn.style.opacity = '0.6';
-      editBtn.onclick = () => openEditModal(r);
-      const delBtn = document.createElement('button'); delBtn.className = 'btn-delete-release';
-      delBtn.innerHTML = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="3,6 5,6 21,6"/><path d="M19,6l-1,14a2,2,0,0,1-2,2H8a2,2,0,0,1-2-2L5,6"/><path d="M10,11v6"/><path d="M14,11v6"/></svg>`;
-      delBtn.title = 'Удалить'; delBtn.onclick = () => deleteRelease(r.id);
-      actions.appendChild(editBtn); actions.appendChild(delBtn);
-      card.appendChild(actions);
+    function handleCoverUpload(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        coverBase64 = e.target.result;
+        coverChanged = true;
+        const preview = document.getElementById('coverPreview');
+        preview.src = coverBase64;
+        preview.style.display = 'block';
+        document.getElementById('uploadText').style.display = 'none';
+      };
+      reader.readAsDataURL(file);
+    }
 
-      list.appendChild(card);
-    });
-  }
+    async function saveRelease() {
+      const artist = document.getElementById('releaseArtist').value.trim();
+      const title = document.getElementById('releaseTitle').value.trim();
+      const releaseDate = document.getElementById('releaseDate').value;
+      const releaseTime = document.getElementById('releaseTime').value || '00:00';
+      const timezone = selectedTZ;
+      const editId = document.getElementById('editReleaseId').value;
+      if (!artist || !title || !releaseDate) { showToast('Заполни все поля!'); return; }
 
-  async function deleteRelease(id) {
-    await fetch(`/api/releases/${id}`, { method: 'DELETE' });
-    loadReleases();
-    showToast('Удалено');
-  }
-
-  function updateCountdown(el, targetDate) {
-    const diff = targetDate - new Date();
-    if (diff <= 0) { el.textContent = ''; return; }
-    const d = Math.floor(diff / 86400000);
-    const h = Math.floor((diff % 86400000) / 3600000);
-    const m = Math.floor((diff % 3600000) / 60000);
-    const s = Math.floor((diff % 60000) / 1000);
-    if (d > 0) el.textContent = d + 'д ' + String(h).padStart(2,'0') + ':' + String(m).padStart(2,'0') + ':' + String(s).padStart(2,'0');
-    else el.textContent = String(h).padStart(2,'0') + ':' + String(m).padStart(2,'0') + ':' + String(s).padStart(2,'0');
-  }
-
-  // Тикаем каждую секунду
-  setInterval(() => {
-    document.querySelectorAll('.release-countdown[data-release-ts]').forEach(el => {
-      const ts = Number(el.dataset.releaseTs);
-      updateCountdown(el, new Date(ts));
-    });
-  }, 1000);
-
-  function formatDate(dateStr, timeStr, tz) {
-    if (!dateStr) return '';
-    const [y, m, d] = dateStr.split('-');
-    const months = ['янв','фев','мар','апр','май','июн','июл','авг','сен','окт','ноя','дек'];
-    let base = `${parseInt(d)} ${months[parseInt(m)-1]} ${y}`;
-    if (timeStr && timeStr !== '00:00') base += ` · ${timeStr}`;
-    if (tz && tz !== 'UTC') base += ` ${tz}`;
-    return base;
-  }
-
-  // Инициализация
-  checkSiteStatus();
-  setInterval(checkSiteStatus, 30000);
-
-  // ── LINKS ──────────────────────────────────────────────────────────────────
-  let linkAvatarBase64 = null;
-  let linkAvatarChanged = false;
-
-  function openLinkModal() {
-    linkAvatarBase64 = null; linkAvatarChanged = false;
-    document.getElementById('editLinkId').value = '';
-    document.getElementById('linkModalTitle').textContent = 'Добавить карточку';
-    document.getElementById('linkSaveBtn').textContent = 'Добавить';
-    document.getElementById('linkArtist').value = '';
-    document.getElementById('linkInstagram').value = '';
-    document.getElementById('linkTiktok').value = '';
-    document.getElementById('linkYoutube').value = '';
-    document.getElementById('linkSpotify').value = '';
-    document.getElementById('linkAvatarInput').value = '';
-    document.getElementById('linkAvatarPreview').style.display = 'none';
-    document.getElementById('linkAvatarText').style.display = 'block';
-    document.getElementById('linkAvatarUrl').value = '';
-    document.getElementById('linkAvatarUrlPreview').style.display = 'none';
-    switchAvatarTab('file');
-    document.getElementById('linkModalOverlay').classList.add('show');
-  }
-
-  function closeLinkModal() { document.getElementById('linkModalOverlay').classList.remove('show'); }
-  document.getElementById('linkModalOverlay').addEventListener('click', e => { if (e.target.id === 'linkModalOverlay') closeLinkModal(); });
-
-  function switchAvatarTab(tab) {
-    document.getElementById('avatarFileSection').style.display = tab === 'file' ? '' : 'none';
-    document.getElementById('avatarUrlSection').style.display = tab === 'url' ? '' : 'none';
-    document.getElementById('avatarTabFile').classList.toggle('active', tab === 'file');
-    document.getElementById('avatarTabUrl').classList.toggle('active', tab === 'url');
-  }
-
-  function handleLinkAvatar(event) {
-    const file = event.target.files[0]; if (!file) return;
-    const reader = new FileReader();
-    reader.onload = e => {
-      linkAvatarBase64 = e.target.result; linkAvatarChanged = true;
-      const prev = document.getElementById('linkAvatarPreview');
-      prev.src = linkAvatarBase64; prev.style.display = 'block';
-      document.getElementById('linkAvatarText').style.display = 'none';
-    };
-    reader.readAsDataURL(file);
-  }
-
-  async function handleLinkAvatarUrl(val) {
-    const prev = document.getElementById('linkAvatarUrlPreview');
-    if (!val.startsWith('http')) { prev.style.display = 'none'; return; }
-    prev.src = ''; prev.style.display = 'none';
-    try {
-      const res = await fetch('/api/download-image?url=' + encodeURIComponent(val));
+      const isEdit = !!editId;
+      // При редактировании: если coverBase64 не менялся (остался как при открытии) — передаём null чтобы сервер оставил старую обложку
+      // coverChanged отслеживает был ли файл/url выбран заново
+      const body = { artist, title, releaseDate, releaseTime, timezone, cover: coverChanged ? coverBase64 : null };
+      const res = await fetch(isEdit ? `/api/releases/${editId}` : '/api/releases', {
+        method: isEdit ? 'PUT' : 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      });
       const data = await res.json();
-      if (data.base64) {
-        linkAvatarBase64 = data.base64;
-        linkAvatarChanged = true;
-        prev.src = data.base64;
-        prev.style.display = 'block';
+      if (data.success) {
+        closeReleaseModal();
+        loadReleases();
+        showToast(isEdit ? '✓ Релиз обновлён!' : '✓ Релиз добавлен!');
       } else {
-        showToast('Не удалось загрузить картинку');
+        showToast('Ошибка: ' + data.error);
       }
-    } catch { showToast('Ошибка загрузки картинки'); }
-  }
+    }
 
-  function openEditLinkModal(card) {
-    linkAvatarBase64 = card.avatar || null; linkAvatarChanged = false;
-    document.getElementById('editLinkId').value = card.id;
-    document.getElementById('linkModalTitle').textContent = 'Изменить карточку';
-    document.getElementById('linkSaveBtn').textContent = 'Сохранить';
-    document.getElementById('linkArtist').value = card.artist || '';
-    document.getElementById('linkInstagram').value = card.instagram || '';
-    document.getElementById('linkTiktok').value = card.tiktok || '';
-    document.getElementById('linkYoutube').value = card.youtube || '';
-    document.getElementById('linkSpotify').value = card.spotify || '';
-    if (card.avatar && card.avatar.startsWith('http')) {
-      switchAvatarTab('url');
-      document.getElementById('linkAvatarUrl').value = card.avatar;
-      const urlPrev = document.getElementById('linkAvatarUrlPreview');
-      urlPrev.src = card.avatar; urlPrev.style.display = 'block';
-    } else if (card.avatar) {
-      switchAvatarTab('file');
-      const prev = document.getElementById('linkAvatarPreview');
-      prev.src = card.avatar; prev.style.display = 'block';
-      document.getElementById('linkAvatarText').style.display = 'none';
-    } else {
-      switchAvatarTab('file');
+    async function loadReleases() {
+      try {
+        const res = await fetch('/api/releases');
+        const releases = await res.json();
+        renderReleases(releases);
+      } catch { showToast('Ошибка загрузки релизов'); }
+    }
+
+    function renderReleases(releases) {
+      const list = document.getElementById('releasesList');
+      if (!releases.length) {
+        list.innerHTML = '<div class="releases-empty">Нет релизов.<br>Нажми «Добавить» чтобы создать первый.</div>';
+        return;
+      }
+      list.innerHTML = '';
+      releases.forEach(r => {
+        const TZOFF = { KST: 9, MSK: 3, ALMT: 5, UTC: 0 };
+        const offset = TZOFF[r.timezone] !== undefined ? TZOFF[r.timezone] : 0;
+        const dt = new Date(`${r.releaseDate}T${r.releaseTime || '00:00'}:00Z`);
+        dt.setHours(dt.getHours() - offset);
+        const isReleased = dt <= new Date();
+        const card = document.createElement('div');
+        card.className = 'release-card' + (isReleased ? ' released' : '');
+
+        // Обложка
+        if (r.cover) {
+          const img = document.createElement('img');
+          img.className = 'release-cover'; img.src = r.cover; img.alt = r.title;
+          card.appendChild(img);
+        } else {
+          const ph = document.createElement('div');
+          ph.className = 'release-cover-placeholder'; ph.textContent = '🎵';
+          card.appendChild(ph);
+        }
+
+        // Инфо
+        const info = document.createElement('div'); info.className = 'release-info';
+        const titleEl = document.createElement('div'); titleEl.className = 'release-title-text'; titleEl.textContent = r.title;
+        const artistEl = document.createElement('div'); artistEl.className = 'release-artist-text'; artistEl.textContent = r.artist;
+        info.appendChild(titleEl); info.appendChild(artistEl);
+        card.appendChild(info);
+
+        // Правый блок
+        const right = document.createElement('div'); right.className = 'release-right';
+        const dateBadge = document.createElement('div'); dateBadge.className = 'release-date-badge';
+        dateBadge.textContent = formatDate(r.releaseDate, r.releaseTime, r.timezone);
+        right.appendChild(dateBadge);
+        if (!isReleased) {
+          const countdown = document.createElement('div');
+          countdown.className = 'release-countdown';
+          countdown.dataset.releaseTs = dt.getTime();
+          updateCountdown(countdown, dt);
+          right.appendChild(countdown);
+        }
+        const statusBadge = document.createElement('div');
+        statusBadge.className = 'release-status ' + (isReleased ? 'out' : 'upcoming');
+        statusBadge.textContent = isReleased ? '✓ Вышел' : 'Скоро';
+        right.appendChild(statusBadge);
+        card.appendChild(right);
+
+        // Кнопка удалить
+        // Кнопки действий
+        const actions = document.createElement('div'); actions.style.cssText = 'display:flex;flex-direction:column;gap:6px;margin-left:4px;';
+        const editBtn = document.createElement('button'); editBtn.className = 'btn-delete-release';
+        editBtn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>`;
+        editBtn.title = 'Изменить'; editBtn.style.opacity = '0.6';
+        editBtn.onclick = () => openEditModal(r);
+        const delBtn = document.createElement('button'); delBtn.className = 'btn-delete-release';
+        delBtn.innerHTML = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="3,6 5,6 21,6"/><path d="M19,6l-1,14a2,2,0,0,1-2,2H8a2,2,0,0,1-2-2L5,6"/><path d="M10,11v6"/><path d="M14,11v6"/></svg>`;
+        delBtn.title = 'Удалить'; delBtn.onclick = () => deleteRelease(r.id);
+        actions.appendChild(editBtn); actions.appendChild(delBtn);
+        card.appendChild(actions);
+
+        list.appendChild(card);
+      });
+    }
+
+    async function deleteRelease(id) {
+      await fetch(`/api/releases/${id}`, { method: 'DELETE' });
+      loadReleases();
+      showToast('Удалено');
+    }
+
+    function updateCountdown(el, targetDate) {
+      const diff = targetDate - new Date();
+      if (diff <= 0) { el.textContent = ''; return; }
+      const d = Math.floor(diff / 86400000);
+      const h = Math.floor((diff % 86400000) / 3600000);
+      const m = Math.floor((diff % 3600000) / 60000);
+      const s = Math.floor((diff % 60000) / 1000);
+      if (d > 0) el.textContent = d + 'д ' + String(h).padStart(2,'0') + ':' + String(m).padStart(2,'0') + ':' + String(s).padStart(2,'0');
+      else el.textContent = String(h).padStart(2,'0') + ':' + String(m).padStart(2,'0') + ':' + String(s).padStart(2,'0');
+    }
+
+    // Тикаем каждую секунду
+    setInterval(() => {
+      document.querySelectorAll('.release-countdown[data-release-ts]').forEach(el => {
+        const ts = Number(el.dataset.releaseTs);
+        updateCountdown(el, new Date(ts));
+      });
+    }, 1000);
+
+    function formatDate(dateStr, timeStr, tz) {
+      if (!dateStr) return '';
+      const [y, m, d] = dateStr.split('-');
+      const months = ['янв','фев','мар','апр','май','июн','июл','авг','сен','окт','ноя','дек'];
+      let base = `${parseInt(d)} ${months[parseInt(m)-1]} ${y}`;
+      if (timeStr && timeStr !== '00:00') base += ` · ${timeStr}`;
+      if (tz && tz !== 'UTC') base += ` ${tz}`;
+      return base;
+    }
+
+    // Инициализация
+    checkSiteStatus();
+    setInterval(checkSiteStatus, 30000);
+
+    // ── LINKS ──────────────────────────────────────────────────────────────────
+    let linkAvatarBase64 = null;
+    let linkAvatarChanged = false;
+
+    function openLinkModal() {
+      linkAvatarBase64 = null; linkAvatarChanged = false;
+      document.getElementById('editLinkId').value = '';
+      document.getElementById('linkModalTitle').textContent = 'Добавить карточку';
+      document.getElementById('linkSaveBtn').textContent = 'Добавить';
+      document.getElementById('linkArtist').value = '';
+      document.getElementById('linkInstagram').value = '';
+      document.getElementById('linkTiktok').value = '';
+      document.getElementById('linkYoutube').value = '';
+      document.getElementById('linkSpotify').value = '';
+      document.getElementById('linkAvatarInput').value = '';
       document.getElementById('linkAvatarPreview').style.display = 'none';
       document.getElementById('linkAvatarText').style.display = 'block';
-    }
-    document.getElementById('linkModalOverlay').classList.add('show');
-  }
-
-  async function saveLink() {
-    const artist = document.getElementById('linkArtist').value.trim();
-    const instagram = document.getElementById('linkInstagram').value.trim();
-    const tiktok = document.getElementById('linkTiktok').value.trim();
-    const youtube = document.getElementById('linkYoutube').value.trim();
-    const spotify = document.getElementById('linkSpotify').value.trim();
-    if (!artist) { showToast('Укажи имя артиста!'); return; }
-    const editId = document.getElementById('editLinkId').value;
-    const avatar = linkAvatarChanged ? linkAvatarBase64 : null;
-    const res = await fetch(editId ? `/api/links/${editId}` : '/api/links', {
-      method: editId ? 'PUT' : 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ artist, instagram, tiktok, youtube, spotify, avatar })
-    });
-    const data = await res.json();
-    if (data.success) { closeLinkModal(); loadLinks(); showToast(editId ? '✓ Обновлено!' : '✓ Добавлено!'); }
-    else showToast('Ошибка: ' + data.error);
-  }
-
-  async function deleteLink(id) {
-    await fetch(`/api/links/${id}`, { method: 'DELETE' });
-    loadLinks(); showToast('Удалено');
-  }
-
-  async function loadLinks() {
-    try {
-      const res = await fetch('/api/links');
-      const links = await res.json();
-      renderLinks(links);
-    } catch { showToast('Ошибка загрузки карточек'); }
-  }
-
-  const SOCIAL_ICONS = {
-    instagram: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none"/></svg>`,
-    tiktok:    `<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-2.88 2.5 2.89 2.89 0 01-2.89-2.89 2.89 2.89 0 012.89-2.89c.28 0 .54.04.79.1V9.01a6.32 6.32 0 00-.79-.05 6.34 6.34 0 00-6.34 6.34 6.34 6.34 0 006.34 6.34 6.34 6.34 0 006.33-6.34V8.69a8.18 8.18 0 004.78 1.52V6.75a4.85 4.85 0 01-1.01-.06z"/></svg>`,
-    youtube:   `<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M23 7s-.3-2-1.2-2.8c-1.1-1.2-2.4-1.2-3-1.3C16.6 2.8 12 2.8 12 2.8s-4.6 0-6.8.1c-.6.1-1.9.1-3 1.3C1.3 5 1 7 1 7S.7 9.2.7 11.4v2.1c0 2.2.3 4.4.3 4.4s.3 2 1.2 2.8c1.1 1.2 2.6 1.1 3.3 1.2C7.5 22 12 22 12 22s4.6 0 6.8-.2c.6-.1 1.9-.1 3-1.2.9-.8 1.2-2.8 1.2-2.8s.3-2.2.3-4.4v-2.1C23.3 9.2 23 7 23 7zM9.7 15.5V8.4l8.1 3.6-8.1 3.5z"/></svg>`,
-    spotify:   `<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2zm4.586 14.424a.622.622 0 01-.857.207c-2.348-1.435-5.304-1.76-8.785-.964a.622.622 0 11-.277-1.215c3.809-.87 7.076-.496 9.712 1.115.294.181.387.564.207.857zm1.224-2.722a.78.78 0 01-1.072.257c-2.687-1.652-6.785-2.131-9.965-1.166a.78.78 0 01-.973-.519.781.781 0 01.52-.973c3.632-1.102 8.147-.568 11.233 1.329a.78.78 0 01.257 1.072zm.105-2.835c-3.223-1.914-8.54-2.09-11.618-1.156a.935.935 0 11-.542-1.79c3.532-1.072 9.404-.865 13.115 1.338a.935.935 0 01-.955 1.608z"/></svg>`
-  };
-
-  let linksData = [];
-
-  function renderLinks(links) {
-    linksData = links || [];
-    const list = document.getElementById('linksList');
-    if (!linksData.length) {
-      list.innerHTML = '<div class="links-empty">Нет карточек.<br>Нажми «Добавить» чтобы создать первую.</div>';
-      return;
-    }
-    list.innerHTML = '';
-    linksData.forEach(card => {
-      const el = document.createElement('div');
-      el.className = 'link-card';
-      el.dataset.id = card.id;
-
-      // Аватарка
-      if (card.avatar) {
-        const img = document.createElement('img');
-        img.className = 'link-avatar'; img.src = card.avatar;
-        img.onerror = () => img.replaceWith(makePlaceholder());
-        el.appendChild(img);
-      } else { el.appendChild(makePlaceholder()); }
-
-      // Имя
-      const info = document.createElement('div'); info.className = 'link-info';
-      const name = document.createElement('div'); name.className = 'link-name'; name.textContent = card.artist;
-      info.appendChild(name); el.appendChild(info);
-
-      // Иконки справа (цветные)
-      const right = document.createElement('div'); right.className = 'link-right';
-      const icons = document.createElement('div'); icons.className = 'link-icons';
-      if (card.instagram) icons.appendChild(makeLinkIcon('instagram', card.instagram.startsWith('http') ? card.instagram : 'https://instagram.com/' + card.instagram));
-      if (card.tiktok) icons.appendChild(makeLinkIcon('tiktok', card.tiktok));
-      if (card.youtube) icons.appendChild(makeLinkIcon('youtube', card.youtube));
-      if (card.spotify) icons.appendChild(makeLinkIcon('spotify', card.spotify));
-      right.appendChild(icons); el.appendChild(right);
-
-      // Кнопки (без handle — drag через long press)
-      const actions = document.createElement('div'); actions.className = 'link-actions';
-
-      const editBtn = document.createElement('button'); editBtn.className = 'btn-delete-release';
-      editBtn.style.opacity = '0.6';
-      editBtn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>`;
-      editBtn.onclick = (e) => { e.stopPropagation(); openEditLinkModal(card); };
-
-      const delBtn = document.createElement('button'); delBtn.className = 'btn-delete-release';
-      delBtn.innerHTML = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="3,6 5,6 21,6"/><path d="M19,6l-1,14a2,2,0,0,1-2,2H8a2,2,0,0,1-2-2L5,6"/><path d="M10,11v6"/><path d="M14,11v6"/></svg>`;
-      delBtn.onclick = (e) => { e.stopPropagation(); deleteLink(card.id); };
-
-      actions.appendChild(editBtn); actions.appendChild(delBtn);
-      el.appendChild(actions);
-
-      // ── Long press drag ──
-      setupLongPressDrag(el, card.id);
-
-      list.appendChild(el);
-    });
-  }
-
-  // ── Drag & Drop логика ────────────────────────────────────────────────────────
-  let dragState = null;
-
-  let longPressTimer = null;
-
-  function setupLongPressDrag(cardEl, cardId) {
-    let startY = 0;
-    const onDown = (y) => {
-      startY = y;
-      longPressTimer = setTimeout(() => {
-        if (navigator.vibrate) navigator.vibrate(40);
-        startDrag(cardEl, cardId, startY);
-      }, 500);
-    };
-    const onMove = (y) => { if (Math.abs(y - startY) > 8) clearTimeout(longPressTimer); };
-    const onUp = () => clearTimeout(longPressTimer);
-
-    cardEl.addEventListener('mousedown', e => { if (e.target.closest('.btn-delete-release, .link-icon-btn')) return; onDown(e.clientY); });
-    cardEl.addEventListener('mousemove', e => onMove(e.clientY));
-    cardEl.addEventListener('mouseup', onUp);
-    cardEl.addEventListener('touchstart', e => { if (e.target.closest('.btn-delete-release, .link-icon-btn')) return; onDown(e.touches[0].clientY); }, { passive: true });
-    cardEl.addEventListener('touchmove', e => onMove(e.touches[0].clientY), { passive: true });
-    cardEl.addEventListener('touchend', onUp);
-  }
-
-  function startDrag(cardEl, cardId, startY) {
-    const list = document.getElementById('linksList');
-    const rect = cardEl.getBoundingClientRect();
-
-    // Ghost
-    const ghost = cardEl.cloneNode(true);
-    ghost.style.cssText = `position:absolute;z-index:9999;pointer-events:none;width:${rect.width}px;left:${rect.left}px;top:${rect.top + window.scrollY}px;opacity:0.9;box-shadow:0 8px 30px rgba(0,0,0,0.5);transform:scale(1.02);transition:none;margin:0;`;
-    document.body.appendChild(ghost);
-    cardEl.style.opacity = '0.3';
-
-    dragState = { cardEl, cardId, ghost, offsetY: startY - rect.top };
-    if (navigator.vibrate) navigator.vibrate(40);
-  }
-
-  let autoScrollTimer = null;
-
-  document.addEventListener('mousemove', e => moveDrag(e.clientY));
-  document.addEventListener('touchmove', e => {
-    if (!dragState) return;
-    e.preventDefault();
-    moveDrag(e.touches[0].clientY);
-  }, { passive: false });
-
-  function moveDrag(clientY) {
-    if (!dragState) return;
-    const { ghost, offsetY } = dragState;
-    // Позиция ghost = viewport + scroll
-    ghost.style.top = (window.scrollY + clientY - offsetY) + 'px';
-    ghost.style.position = 'absolute';
-
-    // Автоскролл — большая зона (30% экрана)
-    const ZONE = Math.round(window.innerHeight * 0.30), SPEED = 15;
-    clearInterval(autoScrollTimer);
-    if (clientY < ZONE) {
-      const speed = Math.round(SPEED * (1 - clientY / ZONE));
-      autoScrollTimer = setInterval(() => { window.scrollBy(0, -speed); }, 16);
-    } else if (clientY > window.innerHeight - ZONE) {
-      const speed = Math.round(SPEED * (1 - (window.innerHeight - clientY) / ZONE));
-      autoScrollTimer = setInterval(() => { window.scrollBy(0, speed); }, 16);
+      document.getElementById('linkAvatarUrl').value = '';
+      document.getElementById('linkAvatarUrlPreview').style.display = 'none';
+      switchAvatarTab('file');
+      document.getElementById('linkModalOverlay').classList.add('show');
     }
 
-    // Подсвечиваем карточку под пальцем
-    const list = document.getElementById('linksList');
-    const cards = [...list.querySelectorAll('.link-card')];
-    cards.forEach(c => c.classList.remove('drag-over'));
-    const target = cards.find(c => {
-      if (c === dragState.cardEl) return false;
-      const r = c.getBoundingClientRect();
-      return clientY >= r.top && clientY <= r.bottom;
-    });
-    if (target) target.classList.add('drag-over');
-  }
-  document.addEventListener('mouseup', e => endDrag(e.clientY));
-  document.addEventListener('touchend', e => {
-    if (!dragState) return;
-    endDrag(e.changedTouches[0].clientY);
-  });
+    function closeLinkModal() { document.getElementById('linkModalOverlay').classList.remove('show'); }
+    document.getElementById('linkModalOverlay').addEventListener('click', e => { if (e.target.id === 'linkModalOverlay') closeLinkModal(); });
 
-  function endDrag(clientY) {
-    if (!dragState) return;
-    clearInterval(autoScrollTimer);
-    const { cardEl, cardId, ghost } = dragState;
-    ghost.remove();
-    cardEl.style.opacity = '';
-    const list = document.getElementById('linksList');
-    const cards = [...list.querySelectorAll('.link-card')];
-    cards.forEach(c => c.classList.remove('drag-over'));
-
-    const target = cards.find(c => {
-      if (c === cardEl) return false;
-      const r = c.getBoundingClientRect();
-      return clientY >= r.top && clientY <= r.bottom;
-    });
-
-    if (target) {
-      const srcIdx = linksData.findIndex(l => l.id == cardId);
-      const dstIdx = linksData.findIndex(l => l.id == Number(target.dataset.id));
-      if (srcIdx !== -1 && dstIdx !== -1) {
-        const [moved] = linksData.splice(srcIdx, 1);
-        linksData.splice(dstIdx, 0, moved);
-        saveLinkOrder();
-        renderLinks(linksData);
-      }
+    function switchAvatarTab(tab) {
+      document.getElementById('avatarFileSection').style.display = tab === 'file' ? '' : 'none';
+      document.getElementById('avatarUrlSection').style.display = tab === 'url' ? '' : 'none';
+      document.getElementById('avatarTabFile').classList.toggle('active', tab === 'file');
+      document.getElementById('avatarTabUrl').classList.toggle('active', tab === 'url');
     }
-    dragState = null;
-  }
 
-  async function saveLinkOrder() {
-    await fetch('/api/links/reorder', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ids: linksData.map(l => l.id) })
-    });
-  }
-
-  function makePlaceholder() {
-    const ph = document.createElement('div'); ph.className = 'link-avatar-placeholder'; ph.textContent = '🎤'; return ph;
-  }
-  function makeLinkIcon(type, url) {
-    const a = document.createElement('a'); a.className = 'link-icon-btn ' + type;
-    a.href = url; a.target = '_blank'; a.rel = 'noopener';
-    a.innerHTML = SOCIAL_ICONS[type]; return a;
-  }
-
-  // ── NEWS ──────────────────────────────────────────────────────────────────
-  // ── NEWS ──────────────────────────────────────────────────────────────────
-  let newsDays = 1;
-  let newsImageBase64 = null;
-  let newsDeleteMode = false;
-  let selectedNewsIds = new Set();
-
-  // ── Cropper state ─────────────────────────────────────────────────────────
-  let cropState = null; // { x, y, w, h } in display px
-  let cropDrag = null;  // { type, startX, startY, origBox }
-  const CROP_RATIO = 600/400; // 3:2
-
-  function openNewsModal() {
-    newsImageBase64 = null; newsImageOriginal = null;
-    document.getElementById('newsImgInput').value = '';
-    document.getElementById('newsImgPreview').style.display = 'none';
-    document.getElementById('newsImgText').style.display = 'block';
-    document.getElementById('cropperWrap').style.display = 'none';
-    document.getElementById('cropApplyBtn').style.display = 'none';
-    document.getElementById('newsTitle').value = 'NEW MUSIC';
-    document.getElementById('newsSpotify').value = '';
-    selectNewsDays(1);
-    document.getElementById('newsModalOverlay').classList.add('show');
-  }
-  function closeNewsModal() { document.getElementById('newsModalOverlay').classList.remove('show'); }
-  document.getElementById('newsModalOverlay').addEventListener('click', e => { if (e.target.id === 'newsModalOverlay') closeNewsModal(); });
-
-  function selectNewsDays(d) {
-    newsDays = d;
-    [1,3,7,14,30].forEach(n => { const el = document.getElementById('newsDays'+n); if(el) el.classList.toggle('active', n===d); });
-  }
-
-  function handleNewsImage(event) {
-    const file = event.target.files[0]; if (!file) return;
-    const reader = new FileReader();
-    reader.onload = e => {
-      const img = new Image();
-      img.onload = () => {
-        newsImageOriginal = img;
-        const wrap = document.getElementById('cropperWrap');
-        const cropImg = document.getElementById('cropperImg');
-        cropImg.src = e.target.result;
-        wrap.style.display = 'block';
-        document.getElementById('cropApplyBtn').style.display = 'block';
-        document.getElementById('newsImgText').style.display = 'none';
-        // Init crop box after image renders
-        cropImg.onload = () => initCropBox();
+    function handleLinkAvatar(event) {
+      const file = event.target.files[0]; if (!file) return;
+      const reader = new FileReader();
+      reader.onload = e => {
+        linkAvatarBase64 = e.target.result; linkAvatarChanged = true;
+        const prev = document.getElementById('linkAvatarPreview');
+        prev.src = linkAvatarBase64; prev.style.display = 'block';
+        document.getElementById('linkAvatarText').style.display = 'none';
       };
-      img.src = e.target.result;
-    };
-    reader.readAsDataURL(file);
-  }
-
-  function initCropBox() {
-    const wrap = document.getElementById('cropperWrap');
-    const dw = wrap.offsetWidth;
-    const cropImg = document.getElementById('cropperImg');
-    const dh = cropImg.offsetHeight || dw * (newsImageOriginal.height / newsImageOriginal.width);
-    // Default: max width crop box with 3:2 ratio
-    let bw = dw * 0.9;
-    let bh = bw / CROP_RATIO;
-    if (bh > dh * 0.9) { bh = dh * 0.9; bw = bh * CROP_RATIO; }
-    cropState = { x: (dw-bw)/2, y: (dh-bh)/2, w: bw, h: bh };
-    renderCropBox();
-  }
-
-  function renderCropBox() {
-    const box = document.getElementById('cropBox');
-    box.style.left = cropState.x + 'px';
-    box.style.top = cropState.y + 'px';
-    box.style.width = cropState.w + 'px';
-    box.style.height = cropState.h + 'px';
-  }
-
-  // Drag logic for crop box
-  const cropBox = document.getElementById('cropBox');
-  cropBox.addEventListener('mousedown', startCropDrag);
-  cropBox.addEventListener('touchstart', e => { e.preventDefault(); startCropDrag(e.touches[0]); }, { passive: false });
-  document.querySelectorAll('.crop-corner').forEach(corner => {
-    corner.addEventListener('mousedown', e => { e.stopPropagation(); startCropResize(e, corner.className.split(' ')[1]); });
-    corner.addEventListener('touchstart', e => { e.stopPropagation(); e.preventDefault(); startCropResize(e.touches[0], corner.className.split(' ')[1]); }, { passive: false });
-  });
-
-  function startCropDrag(e) {
-    if (e.target.classList.contains('crop-corner')) return;
-    cropDrag = { type: 'move', startX: e.clientX, startY: e.clientY, origBox: { ...cropState } };
-  }
-  function startCropResize(e, corner) {
-    cropDrag = { type: 'resize', corner, startX: e.clientX, startY: e.clientY, origBox: { ...cropState } };
-  }
-
-  function onCropMove(clientX, clientY) {
-    if (!cropDrag || !cropState) return;
-    const wrap = document.getElementById('cropperWrap');
-    const ww = wrap.offsetWidth, wh = document.getElementById('cropperImg').offsetHeight;
-    const dx = clientX - cropDrag.startX, dy = clientY - cropDrag.startY;
-    const ob = cropDrag.origBox;
-
-    if (cropDrag.type === 'move') {
-      cropState.x = Math.max(0, Math.min(ww - ob.w, ob.x + dx));
-      cropState.y = Math.max(0, Math.min(wh - ob.h, ob.y + dy));
-    } else {
-      let nx = ob.x, ny = ob.y, nw = ob.w, nh = ob.h;
-      const c = cropDrag.corner;
-      if (c === 'br') { nw = Math.max(60, ob.w + dx); nh = nw / CROP_RATIO; }
-      else if (c === 'bl') { nw = Math.max(60, ob.w - dx); nh = nw / CROP_RATIO; nx = ob.x + ob.w - nw; }
-      else if (c === 'tr') { nw = Math.max(60, ob.w + dx); nh = nw / CROP_RATIO; ny = ob.y + ob.h - nh; }
-      else if (c === 'tl') { nw = Math.max(60, ob.w - dx); nh = nw / CROP_RATIO; nx = ob.x + ob.w - nw; ny = ob.y + ob.h - nh; }
-      // Clamp
-      nx = Math.max(0, nx); ny = Math.max(0, ny);
-      if (nx + nw > ww) nw = ww - nx;
-      if (ny + nh > wh) nh = wh - ny;
-      cropState = { x: nx, y: ny, w: nw, h: nh };
+      reader.readAsDataURL(file);
     }
-    renderCropBox();
-  }
 
-  document.addEventListener('mousemove', e => onCropMove(e.clientX, e.clientY));
-  document.addEventListener('touchmove', e => { if (cropDrag) { e.preventDefault(); onCropMove(e.touches[0].clientX, e.touches[0].clientY); } }, { passive: false });
-  document.addEventListener('mouseup', () => cropDrag = null);
-  document.addEventListener('touchend', () => cropDrag = null);
-
-  function applyCropSelection() {
-    if (!newsImageOriginal || !cropState) return;
-    const wrap = document.getElementById('cropperWrap');
-    const cropImg = document.getElementById('cropperImg');
-    const dispW = cropImg.offsetWidth;
-    const dispH = cropImg.offsetHeight;
-    const scaleX = newsImageOriginal.width / dispW;
-    const scaleY = newsImageOriginal.height / dispH;
-    const sx = cropState.x * scaleX;
-    const sy = cropState.y * scaleY;
-    const sw = cropState.w * scaleX;
-    const sh = cropState.h * scaleY;
-    const canvas = document.getElementById('newsCanvas');
-    canvas.width = 600; canvas.height = 400;
-    const ctx = canvas.getContext('2d');
-    ctx.drawImage(newsImageOriginal, sx, sy, sw, sh, 0, 0, 600, 400);
-    newsImageBase64 = canvas.toDataURL('image/jpeg', 0.92);
-    // Show small preview
-    const prev = document.getElementById('newsImgPreview');
-    prev.src = newsImageBase64; prev.style.display = 'block';
-    wrap.style.display = 'none';
-    document.getElementById('cropApplyBtn').style.display = 'none';
-    showToast('✓ Обрезка применена');
-  }
-
-  async function saveNews() {
-    const title = document.getElementById('newsTitle').value.trim() || 'NEW MUSIC';
-    const spotify = document.getElementById('newsSpotify').value.trim();
-    if (!newsImageBase64) { showToast('Выбери изображение!'); return; }
-    const deleteAt = Date.now() + newsDays * 24 * 60 * 60 * 1000;
-    const res = await fetch('/api/news', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ title, spotify, image: newsImageBase64, deleteAt })
-    });
-    const data = await res.json();
-    if (data.success) { closeNewsModal(); loadNews(); showToast('✓ Опубликовано!'); }
-    else showToast('Ошибка: ' + data.error);
-  }
-
-  // ── Delete mode with checkboxes ────────────────────────────────────────────
-  function toggleNewsDeleteMode() {
-    newsDeleteMode = !newsDeleteMode;
-    selectedNewsIds.clear();
-    const btn = document.getElementById('newsDeleteModeBtn');
-    btn.style.background = newsDeleteMode ? 'var(--danger)' : 'transparent';
-    btn.style.color = newsDeleteMode ? '#fff' : 'var(--danger)';
-    btn.textContent = newsDeleteMode ? '✕ Отмена' : '🗑 Удалить';
-    document.getElementById('newsList').classList.toggle('delete-mode-active', newsDeleteMode);
-    document.getElementById('newsDeleteBar').classList.remove('visible');
-    // Reset all checkboxes
-    document.querySelectorAll('.news-checkbox').forEach(cb => cb.classList.remove('checked'));
-  }
-
-  function toggleNewsSelect(id, el) {
-    if (selectedNewsIds.has(id)) {
-      selectedNewsIds.delete(id);
-      el.classList.remove('checked');
-    } else {
-      selectedNewsIds.add(id);
-      el.classList.add('checked');
+    async function handleLinkAvatarUrl(val) {
+      const prev = document.getElementById('linkAvatarUrlPreview');
+      if (!val.startsWith('http')) { prev.style.display = 'none'; return; }
+      prev.src = ''; prev.style.display = 'none';
+      try {
+        const res = await fetch('/api/download-image?url=' + encodeURIComponent(val));
+        const data = await res.json();
+        if (data.base64) {
+          linkAvatarBase64 = data.base64;
+          linkAvatarChanged = true;
+          prev.src = data.base64;
+          prev.style.display = 'block';
+        } else {
+          showToast('Не удалось загрузить картинку');
+        }
+      } catch { showToast('Ошибка загрузки картинки'); }
     }
-    const bar = document.getElementById('newsDeleteBar');
-    const count = selectedNewsIds.size;
-    if (count > 0) {
-      bar.classList.add('visible');
-      document.getElementById('newsDeleteBarText').textContent = `Удалить (${count})`;
-    } else {
-      bar.classList.remove('visible');
-    }
-  }
 
-  function confirmDeleteSelected() {
-    if (!selectedNewsIds.size) return;
-    showConfirm(`Удалить ${selectedNewsIds.size} новост${selectedNewsIds.size===1?'ь':'и'}?`, async () => {
-      for (const id of selectedNewsIds) {
-        await fetch('/api/news/' + id, { method: 'DELETE' });
-      }
-      selectedNewsIds.clear();
-      newsDeleteMode = false;
-      document.getElementById('newsDeleteBar').classList.remove('visible');
-      loadNews(); showToast('Удалено');
-    });
-  }
-
-  function showConfirm(text, onYes) {
-    document.getElementById('confirmText').textContent = text;
-    document.getElementById('confirmOverlay').classList.add('show');
-    document.getElementById('confirmYes').onclick = () => { closeConfirm(); onYes(); };
-  }
-  function closeConfirm() { document.getElementById('confirmOverlay').classList.remove('show'); }
-  document.getElementById('confirmOverlay').addEventListener('click', e => { if (e.target.id === 'confirmOverlay') closeConfirm(); });
-
-  async function loadNews() {
-    try {
-      const res = await fetch('/api/news');
-      renderNews(await res.json());
-    } catch {}
-  }
-
-  function renderNews(news) {
-    const btn = document.getElementById('newsDeleteModeBtn');
-    if (btn) {
-      newsDeleteMode = false; selectedNewsIds.clear();
-      btn.style.background = 'transparent'; btn.style.color = 'var(--danger)';
-      btn.textContent = '🗑 Удалить';
-    }
-    document.getElementById('newsDeleteBar')?.classList.remove('visible');
-    const list = document.getElementById('newsList');
-    list.classList.remove('delete-mode-active');
-    if (!news || !news.length) {
-      list.innerHTML = '<div class="news-empty">Нет новостей.<br>Нажми «Добавить» чтобы создать первую.</div>';
-      return;
-    }
-    list.innerHTML = '';
-    news.forEach(n => {
-      const card = document.createElement('div');
-      card.className = 'news-card';
-
-      if (n.image) {
-        const img = document.createElement('img');
-        img.className = 'news-poster'; img.src = n.image; img.alt = n.title;
-        card.appendChild(img);
+    function openEditLinkModal(card) {
+      linkAvatarBase64 = card.avatar || null; linkAvatarChanged = false;
+      document.getElementById('editLinkId').value = card.id;
+      document.getElementById('linkModalTitle').textContent = 'Изменить карточку';
+      document.getElementById('linkSaveBtn').textContent = 'Сохранить';
+      document.getElementById('linkArtist').value = card.artist || '';
+      document.getElementById('linkInstagram').value = card.instagram || '';
+      document.getElementById('linkTiktok').value = card.tiktok || '';
+      document.getElementById('linkYoutube').value = card.youtube || '';
+      document.getElementById('linkSpotify').value = card.spotify || '';
+      if (card.avatar && card.avatar.startsWith('http')) {
+        switchAvatarTab('url');
+        document.getElementById('linkAvatarUrl').value = card.avatar;
+        const urlPrev = document.getElementById('linkAvatarUrlPreview');
+        urlPrev.src = card.avatar; urlPrev.style.display = 'block';
+      } else if (card.avatar) {
+        switchAvatarTab('file');
+        const prev = document.getElementById('linkAvatarPreview');
+        prev.src = card.avatar; prev.style.display = 'block';
+        document.getElementById('linkAvatarText').style.display = 'none';
       } else {
-        const ph = document.createElement('div'); ph.className = 'news-poster-placeholder'; ph.textContent = '🎵';
-        card.appendChild(ph);
+        switchAvatarTab('file');
+        document.getElementById('linkAvatarPreview').style.display = 'none';
+        document.getElementById('linkAvatarText').style.display = 'block';
+      }
+      document.getElementById('linkModalOverlay').classList.add('show');
+    }
+
+    async function saveLink() {
+      const artist = document.getElementById('linkArtist').value.trim();
+      const instagram = document.getElementById('linkInstagram').value.trim();
+      const tiktok = document.getElementById('linkTiktok').value.trim();
+      const youtube = document.getElementById('linkYoutube').value.trim();
+      const spotify = document.getElementById('linkSpotify').value.trim();
+      if (!artist) { showToast('Укажи имя артиста!'); return; }
+      const editId = document.getElementById('editLinkId').value;
+      const avatar = linkAvatarChanged ? linkAvatarBase64 : null;
+      const res = await fetch(editId ? `/api/links/${editId}` : '/api/links', {
+        method: editId ? 'PUT' : 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ artist, instagram, tiktok, youtube, spotify, avatar })
+      });
+      const data = await res.json();
+      if (data.success) { closeLinkModal(); loadLinks(); showToast(editId ? '✓ Обновлено!' : '✓ Добавлено!'); }
+      else showToast('Ошибка: ' + data.error);
+    }
+
+    async function deleteLink(id) {
+      await fetch(`/api/links/${id}`, { method: 'DELETE' });
+      loadLinks(); showToast('Удалено');
+    }
+
+    async function loadLinks() {
+      try {
+        const res = await fetch('/api/links');
+        const links = await res.json();
+        renderLinks(links);
+      } catch { showToast('Ошибка загрузки карточек'); }
+    }
+
+    const SOCIAL_ICONS = {
+      instagram: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none"/></svg>`,
+      tiktok:    `<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-2.88 2.5 2.89 2.89 0 01-2.89-2.89 2.89 2.89 0 012.89-2.89c.28 0 .54.04.79.1V9.01a6.32 6.32 0 00-.79-.05 6.34 6.34 0 00-6.34 6.34 6.34 6.34 0 006.34 6.34 6.34 6.34 0 006.33-6.34V8.69a8.18 8.18 0 004.78 1.52V6.75a4.85 4.85 0 01-1.01-.06z"/></svg>`,
+      youtube:   `<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M23 7s-.3-2-1.2-2.8c-1.1-1.2-2.4-1.2-3-1.3C16.6 2.8 12 2.8 12 2.8s-4.6 0-6.8.1c-.6.1-1.9.1-3 1.3C1.3 5 1 7 1 7S.7 9.2.7 11.4v2.1c0 2.2.3 4.4.3 4.4s.3 2 1.2 2.8c1.1 1.2 2.6 1.1 3.3 1.2C7.5 22 12 22 12 22s4.6 0 6.8-.2c.6-.1 1.9-.1 3-1.2.9-.8 1.2-2.8 1.2-2.8s.3-2.2.3-4.4v-2.1C23.3 9.2 23 7 23 7zM9.7 15.5V8.4l8.1 3.6-8.1 3.5z"/></svg>`,
+      spotify:   `<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2zm4.586 14.424a.622.622 0 01-.857.207c-2.348-1.435-5.304-1.76-8.785-.964a.622.622 0 11-.277-1.215c3.809-.87 7.076-.496 9.712 1.115.294.181.387.564.207.857zm1.224-2.722a.78.78 0 01-1.072.257c-2.687-1.652-6.785-2.131-9.965-1.166a.78.78 0 01-.973-.519.781.781 0 01.52-.973c3.632-1.102 8.147-.568 11.233 1.329a.78.78 0 01.257 1.072zm.105-2.835c-3.223-1.914-8.54-2.09-11.618-1.156a.935.935 0 11-.542-1.79c3.532-1.072 9.404-.865 13.115 1.338a.935.935 0 01-.955 1.608z"/></svg>`
+    };
+
+    let linksData = [];
+
+    function renderLinks(links) {
+      linksData = links || [];
+      const list = document.getElementById('linksList');
+      if (!linksData.length) {
+        list.innerHTML = '<div class="links-empty">Нет карточек.<br>Нажми «Добавить» чтобы создать первую.</div>';
+        return;
+      }
+      list.innerHTML = '';
+      linksData.forEach(card => {
+        const el = document.createElement('div');
+        el.className = 'link-card';
+        el.dataset.id = card.id;
+
+        // Аватарка
+        if (card.avatar) {
+          const img = document.createElement('img');
+          img.className = 'link-avatar'; img.src = card.avatar;
+          img.onerror = () => img.replaceWith(makePlaceholder());
+          el.appendChild(img);
+        } else { el.appendChild(makePlaceholder()); }
+
+        // Имя
+        const info = document.createElement('div'); info.className = 'link-info';
+        const name = document.createElement('div'); name.className = 'link-name'; name.textContent = card.artist;
+        info.appendChild(name); el.appendChild(info);
+
+        // Иконки справа (цветные)
+        const right = document.createElement('div'); right.className = 'link-right';
+        const icons = document.createElement('div'); icons.className = 'link-icons';
+        if (card.instagram) icons.appendChild(makeLinkIcon('instagram', card.instagram.startsWith('http') ? card.instagram : 'https://instagram.com/' + card.instagram));
+        if (card.tiktok) icons.appendChild(makeLinkIcon('tiktok', card.tiktok));
+        if (card.youtube) icons.appendChild(makeLinkIcon('youtube', card.youtube));
+        if (card.spotify) icons.appendChild(makeLinkIcon('spotify', card.spotify));
+        right.appendChild(icons); el.appendChild(right);
+
+        // Кнопки (без handle — drag через long press)
+        const actions = document.createElement('div'); actions.className = 'link-actions';
+
+        const editBtn = document.createElement('button'); editBtn.className = 'btn-delete-release';
+        editBtn.style.opacity = '0.6';
+        editBtn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>`;
+        editBtn.onclick = (e) => { e.stopPropagation(); openEditLinkModal(card); };
+
+        const delBtn = document.createElement('button'); delBtn.className = 'btn-delete-release';
+        delBtn.innerHTML = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="3,6 5,6 21,6"/><path d="M19,6l-1,14a2,2,0,0,1-2,2H8a2,2,0,0,1-2-2L5,6"/><path d="M10,11v6"/><path d="M14,11v6"/></svg>`;
+        delBtn.onclick = (e) => { e.stopPropagation(); deleteLink(card.id); };
+
+        actions.appendChild(editBtn); actions.appendChild(delBtn);
+        el.appendChild(actions);
+
+        // ── Long press drag ──
+        setupLongPressDrag(el, card.id);
+
+        list.appendChild(el);
+      });
+    }
+
+    // ── Drag & Drop логика ────────────────────────────────────────────────────────
+    let dragState = null;
+
+    let longPressTimer = null;
+
+    function setupLongPressDrag(cardEl, cardId) {
+      let startY = 0;
+      const onDown = (y) => {
+        startY = y;
+        longPressTimer = setTimeout(() => {
+          if (navigator.vibrate) navigator.vibrate(40);
+          startDrag(cardEl, cardId, startY);
+        }, 500);
+      };
+      const onMove = (y) => { if (Math.abs(y - startY) > 8) clearTimeout(longPressTimer); };
+      const onUp = () => clearTimeout(longPressTimer);
+
+      cardEl.addEventListener('mousedown', e => { if (e.target.closest('.btn-delete-release, .link-icon-btn')) return; onDown(e.clientY); });
+      cardEl.addEventListener('mousemove', e => onMove(e.clientY));
+      cardEl.addEventListener('mouseup', onUp);
+      cardEl.addEventListener('touchstart', e => { if (e.target.closest('.btn-delete-release, .link-icon-btn')) return; onDown(e.touches[0].clientY); }, { passive: true });
+      cardEl.addEventListener('touchmove', e => onMove(e.touches[0].clientY), { passive: true });
+      cardEl.addEventListener('touchend', onUp);
+    }
+
+    function startDrag(cardEl, cardId, startY) {
+      const list = document.getElementById('linksList');
+      const rect = cardEl.getBoundingClientRect();
+
+      // Ghost
+      const ghost = cardEl.cloneNode(true);
+      ghost.style.cssText = `position:absolute;z-index:9999;pointer-events:none;width:${rect.width}px;left:${rect.left}px;top:${rect.top + window.scrollY}px;opacity:0.9;box-shadow:0 8px 30px rgba(0,0,0,0.5);transform:scale(1.02);transition:none;margin:0;`;
+      document.body.appendChild(ghost);
+      cardEl.style.opacity = '0.3';
+
+      dragState = { cardEl, cardId, ghost, offsetY: startY - rect.top };
+      if (navigator.vibrate) navigator.vibrate(40);
+    }
+
+    let autoScrollTimer = null;
+
+    document.addEventListener('mousemove', e => moveDrag(e.clientY));
+    document.addEventListener('touchmove', e => {
+      if (!dragState) return;
+      e.preventDefault();
+      moveDrag(e.touches[0].clientY);
+    }, { passive: false });
+
+    function moveDrag(clientY) {
+      if (!dragState) return;
+      const { ghost, offsetY } = dragState;
+      // Позиция ghost = viewport + scroll
+      ghost.style.top = (window.scrollY + clientY - offsetY) + 'px';
+      ghost.style.position = 'absolute';
+
+      // Автоскролл — большая зона (30% экрана)
+      const ZONE = Math.round(window.innerHeight * 0.30), SPEED = 15;
+      clearInterval(autoScrollTimer);
+      if (clientY < ZONE) {
+        const speed = Math.round(SPEED * (1 - clientY / ZONE));
+        autoScrollTimer = setInterval(() => { window.scrollBy(0, -speed); }, 16);
+      } else if (clientY > window.innerHeight - ZONE) {
+        const speed = Math.round(SPEED * (1 - (window.innerHeight - clientY) / ZONE));
+        autoScrollTimer = setInterval(() => { window.scrollBy(0, speed); }, 16);
       }
 
-      card.appendChild(Object.assign(document.createElement('div'), { className: 'news-overlay' }));
-
-      const label = document.createElement('div'); label.className = 'news-label';
-      label.textContent = n.title || 'NEW MUSIC';
-      card.appendChild(label);
-
-      if (n.spotify) {
-        const btn = document.createElement('a'); btn.className = 'news-listen-btn';
-        btn.href = n.spotify; btn.target = '_blank'; btn.rel = 'noopener';
-        btn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="#1DB954"><path d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2zm4.586 14.424a.622.622 0 01-.857.207c-2.348-1.435-5.304-1.76-8.785-.964a.622.622 0 11-.277-1.215c3.809-.87 7.076-.496 9.712 1.115.294.181.387.564.207.857zm1.224-2.722a.78.78 0 01-1.072.257c-2.687-1.652-6.785-2.131-9.965-1.166a.78.78 0 01-.973-.519.781.781 0 01.52-.973c3.632-1.102 8.147-.568 11.233 1.329a.78.78 0 01.257 1.072zm.105-2.835c-3.223-1.914-8.54-2.09-11.618-1.156a.935.935 0 11-.542-1.79c3.532-1.072 9.404-.865 13.115 1.338a.935.935 0 01-.955 1.608z"/></svg> LISTEN`;
-        btn.onclick = e => e.stopPropagation();
-        card.appendChild(btn);
-      }
-
-      // Чекбокс
-      const cb = document.createElement('div'); cb.className = 'news-checkbox';
-      cb.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round"><polyline points="20,6 9,17 4,12"/></svg>`;
-      cb.onclick = e => { e.stopPropagation(); toggleNewsSelect(n.id, cb); };
-      card.appendChild(cb);
-
-      list.appendChild(card);
+      // Подсвечиваем карточку под пальцем
+      const list = document.getElementById('linksList');
+      const cards = [...list.querySelectorAll('.link-card')];
+      cards.forEach(c => c.classList.remove('drag-over'));
+      const target = cards.find(c => {
+        if (c === dragState.cardEl) return false;
+        const r = c.getBoundingClientRect();
+        return clientY >= r.top && clientY <= r.bottom;
+      });
+      if (target) target.classList.add('drag-over');
+    }
+    document.addEventListener('mouseup', e => endDrag(e.clientY));
+    document.addEventListener('touchend', e => {
+      if (!dragState) return;
+      endDrag(e.changedTouches[0].clientY);
     });
-  }
-  // ── THEME ──────────────────────────────────────────────────────────────────
-  function applyTheme(theme) {
-    document.body.classList.toggle('light', theme === 'light');
-    document.getElementById('themeBtn').textContent = theme === 'light' ? '🌙' : '☀️';
-  }
-  function toggleTheme() {
-    const next = document.body.classList.contains('light') ? 'dark' : 'light';
-    localStorage.setItem('theme', next);
-    applyTheme(next);
-  }
-  applyTheme(localStorage.getItem('theme') || 'dark');
 
-</script>
-<button class="theme-btn" id="themeBtn" onclick="toggleTheme()" title="Сменить тему">🌙</button>
-</body>
-</html>
+    function endDrag(clientY) {
+      if (!dragState) return;
+      clearInterval(autoScrollTimer);
+      const { cardEl, cardId, ghost } = dragState;
+      ghost.remove();
+      cardEl.style.opacity = '';
+      const list = document.getElementById('linksList');
+      const cards = [...list.querySelectorAll('.link-card')];
+      cards.forEach(c => c.classList.remove('drag-over'));
+
+      const target = cards.find(c => {
+        if (c === cardEl) return false;
+        const r = c.getBoundingClientRect();
+        return clientY >= r.top && clientY <= r.bottom;
+      });
+
+      if (target) {
+        const srcIdx = linksData.findIndex(l => l.id == cardId);
+        const dstIdx = linksData.findIndex(l => l.id == Number(target.dataset.id));
+        if (srcIdx !== -1 && dstIdx !== -1) {
+          const [moved] = linksData.splice(srcIdx, 1);
+          linksData.splice(dstIdx, 0, moved);
+          saveLinkOrder();
+          renderLinks(linksData);
+        }
+      }
+      dragState = null;
+    }
+
+    async function saveLinkOrder() {
+      await fetch('/api/links/reorder', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ids: linksData.map(l => l.id) })
+      });
+    }
+
+    function makePlaceholder() {
+      const ph = document.createElement('div'); ph.className = 'link-avatar-placeholder'; ph.textContent = '🎤'; return ph;
+    }
+    function makeLinkIcon(type, url) {
+      const a = document.createElement('a'); a.className = 'link-icon-btn ' + type;
+      a.href = url; a.target = '_blank'; a.rel = 'noopener';
+      a.innerHTML = SOCIAL_ICONS[type]; return a;
+    }
+
+    // ── NEWS ──────────────────────────────────────────────────────────────────
+    // ── NEWS ──────────────────────────────────────────────────────────────────
+    let newsDays = 1;
+    let newsImageBase64 = null;
+    let newsDeleteMode = false;
+    let selectedNewsIds = new Set();
+
+    // ── Cropper state ─────────────────────────────────────────────────────────
+    let cropState = null; // { x, y, w, h } in display px
+    let cropDrag = null;  // { type, startX, startY, origBox }
+    const CROP_RATIO = 600/400; // 3:2
+
+    function openNewsModal() {
+      newsImageBase64 = null; newsImageOriginal = null;
+      document.getElementById('newsImgInput').value = '';
+      document.getElementById('newsImgPreview').style.display = 'none';
+      document.getElementById('newsImgText').style.display = 'block';
+      document.getElementById('cropperWrap').style.display = 'none';
+      document.getElementById('cropApplyBtn').style.display = 'none';
+      document.getElementById('newsTitle').value = 'NEW MUSIC';
+      document.getElementById('newsSpotify').value = '';
+      selectNewsDays(1);
+      document.getElementById('newsModalOverlay').classList.add('show');
+    }
+    function closeNewsModal() { document.getElementById('newsModalOverlay').classList.remove('show'); }
+    document.getElementById('newsModalOverlay').addEventListener('click', e => { if (e.target.id === 'newsModalOverlay') closeNewsModal(); });
+
+    function selectNewsDays(d) {
+      newsDays = d;
+      [1,3,7,14,30].forEach(n => { const el = document.getElementById('newsDays'+n); if(el) el.classList.toggle('active', n===d); });
+    }
+
+    function handleNewsImage(event) {
+      const file = event.target.files[0]; if (!file) return;
+      const reader = new FileReader();
+      reader.onload = e => {
+        const img = new Image();
+        img.onload = () => {
+          newsImageOriginal = img;
+          const wrap = document.getElementById('cropperWrap');
+          const cropImg = document.getElementById('cropperImg');
+          cropImg.src = e.target.result;
+          wrap.style.display = 'block';
+          document.getElementById('cropApplyBtn').style.display = 'block';
+          document.getElementById('newsImgText').style.display = 'none';
+          // Init crop box after image renders
+          cropImg.onload = () => initCropBox();
+        };
+        img.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function initCropBox() {
+      const wrap = document.getElementById('cropperWrap');
+      const dw = wrap.offsetWidth;
+      const cropImg = document.getElementById('cropperImg');
+      const dh = cropImg.offsetHeight || dw * (newsImageOriginal.height / newsImageOriginal.width);
+      // Default: max width crop box with 3:2 ratio
+      let bw = dw * 0.9;
+      let bh = bw / CROP_RATIO;
+      if (bh > dh * 0.9) { bh = dh * 0.9; bw = bh * CROP_RATIO; }
+      cropState = { x: (dw-bw)/2, y: (dh-bh)/2, w: bw, h: bh };
+      renderCropBox();
+    }
+
+    function renderCropBox() {
+      const box = document.getElementById('cropBox');
+      box.style.left = cropState.x + 'px';
+      box.style.top = cropState.y + 'px';
+      box.style.width = cropState.w + 'px';
+      box.style.height = cropState.h + 'px';
+    }
+
+    // Drag logic for crop box
+    const cropBox = document.getElementById('cropBox');
+    cropBox.addEventListener('mousedown', startCropDrag);
+    cropBox.addEventListener('touchstart', e => { e.preventDefault(); startCropDrag(e.touches[0]); }, { passive: false });
+    document.querySelectorAll('.crop-corner').forEach(corner => {
+      corner.addEventListener('mousedown', e => { e.stopPropagation(); startCropResize(e, corner.className.split(' ')[1]); });
+      corner.addEventListener('touchstart', e => { e.stopPropagation(); e.preventDefault(); startCropResize(e.touches[0], corner.className.split(' ')[1]); }, { passive: false });
+    });
+
+    function startCropDrag(e) {
+      if (e.target.classList.contains('crop-corner')) return;
+      cropDrag = { type: 'move', startX: e.clientX, startY: e.clientY, origBox: { ...cropState } };
+    }
+    function startCropResize(e, corner) {
+      cropDrag = { type: 'resize', corner, startX: e.clientX, startY: e.clientY, origBox: { ...cropState } };
+    }
+
+    function onCropMove(clientX, clientY) {
+      if (!cropDrag || !cropState) return;
+      const wrap = document.getElementById('cropperWrap');
+      const ww = wrap.offsetWidth, wh = document.getElementById('cropperImg').offsetHeight;
+      const dx = clientX - cropDrag.startX, dy = clientY - cropDrag.startY;
+      const ob = cropDrag.origBox;
+
+      if (cropDrag.type === 'move') {
+        cropState.x = Math.max(0, Math.min(ww - ob.w, ob.x + dx));
+        cropState.y = Math.max(0, Math.min(wh - ob.h, ob.y + dy));
+      } else {
+        let nx = ob.x, ny = ob.y, nw = ob.w, nh = ob.h;
+        const c = cropDrag.corner;
+        if (c === 'br') { nw = Math.max(60, ob.w + dx); nh = nw / CROP_RATIO; }
+        else if (c === 'bl') { nw = Math.max(60, ob.w - dx); nh = nw / CROP_RATIO; nx = ob.x + ob.w - nw; }
+        else if (c === 'tr') { nw = Math.max(60, ob.w + dx); nh = nw / CROP_RATIO; ny = ob.y + ob.h - nh; }
+        else if (c === 'tl') { nw = Math.max(60, ob.w - dx); nh = nw / CROP_RATIO; nx = ob.x + ob.w - nw; ny = ob.y + ob.h - nh; }
+        // Clamp
+        nx = Math.max(0, nx); ny = Math.max(0, ny);
+        if (nx + nw > ww) nw = ww - nx;
+        if (ny + nh > wh) nh = wh - ny;
+        cropState = { x: nx, y: ny, w: nw, h: nh };
+      }
+      renderCropBox();
+    }
+
+    document.addEventListener('mousemove', e => onCropMove(e.clientX, e.clientY));
+    document.addEventListener('touchmove', e => { if (cropDrag) { e.preventDefault(); onCropMove(e.touches[0].clientX, e.touches[0].clientY); } }, { passive: false });
+    document.addEventListener('mouseup', () => cropDrag = null);
+    document.addEventListener('touchend', () => cropDrag = null);
+
+    function applyCropSelection() {
+      if (!newsImageOriginal || !cropState) return;
+      const wrap = document.getElementById('cropperWrap');
+      const cropImg = document.getElementById('cropperImg');
+      const dispW = cropImg.offsetWidth;
+      const dispH = cropImg.offsetHeight;
+      const scaleX = newsImageOriginal.width / dispW;
+      const scaleY = newsImageOriginal.height / dispH;
+      const sx = cropState.x * scaleX;
+      const sy = cropState.y * scaleY;
+      const sw = cropState.w * scaleX;
+      const sh = cropState.h * scaleY;
+      const canvas = document.getElementById('newsCanvas');
+      canvas.width = 600; canvas.height = 400;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(newsImageOriginal, sx, sy, sw, sh, 0, 0, 600, 400);
+      newsImageBase64 = canvas.toDataURL('image/jpeg', 0.92);
+      // Show small preview
+      const prev = document.getElementById('newsImgPreview');
+      prev.src = newsImageBase64; prev.style.display = 'block';
+      wrap.style.display = 'none';
+      document.getElementById('cropApplyBtn').style.display = 'none';
+      showToast('✓ Обрезка применена');
+    }
+
+    async function saveNews() {
+      const title = document.getElementById('newsTitle').value.trim() || 'NEW MUSIC';
+      const spotify = document.getElementById('newsSpotify').value.trim();
+      if (!newsImageBase64) { showToast('Выбери изображение!'); return; }
+      const deleteAt = Date.now() + newsDays * 24 * 60 * 60 * 1000;
+      const res = await fetch('/api/news', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title, spotify, image: newsImageBase64, deleteAt })
+      });
+      const data = await res.json();
+      if (data.success) { closeNewsModal(); loadNews(); showToast('✓ Опубликовано!'); }
+      else showToast('Ошибка: ' + data.error);
+    }
+
+    // ── Delete mode with checkboxes ────────────────────────────────────────────
+    function toggleNewsDeleteMode() {
+      newsDeleteMode = !newsDeleteMode;
+      selectedNewsIds.clear();
+      const btn = document.getElementById('newsDeleteModeBtn');
+      btn.style.background = newsDeleteMode ? 'var(--danger)' : 'transparent';
+      btn.style.color = newsDeleteMode ? '#fff' : 'var(--danger)';
+      btn.textContent = newsDeleteMode ? '✕ Отмена' : '🗑 Удалить';
+      document.getElementById('newsList').classList.toggle('delete-mode-active', newsDeleteMode);
+      document.getElementById('newsDeleteBar').classList.remove('visible');
+      // Reset all checkboxes
+      document.querySelectorAll('.news-checkbox').forEach(cb => cb.classList.remove('checked'));
+    }
+
+    function toggleNewsSelect(id, el) {
+      if (selectedNewsIds.has(id)) {
+        selectedNewsIds.delete(id);
+        el.classList.remove('checked');
+      } else {
+        selectedNewsIds.add(id);
+        el.classList.add('checked');
+      }
+      const bar = document.getElementById('newsDeleteBar');
+      const count = selectedNewsIds.size;
+      if (count > 0) {
+        bar.classList.add('visible');
+        document.getElementById('newsDeleteBarText').textContent = `Удалить (${count})`;
+      } else {
+        bar.classList.remove('visible');
+      }
+    }
+
+    function confirmDeleteSelected() {
+      if (!selectedNewsIds.size) return;
+      showConfirm(`Удалить ${selectedNewsIds.size} новост${selectedNewsIds.size===1?'ь':'и'}?`, async () => {
+        for (const id of selectedNewsIds) {
+          await fetch('/api/news/' + id, { method: 'DELETE' });
+        }
+        selectedNewsIds.clear();
+        newsDeleteMode = false;
+        document.getElementById('newsDeleteBar').classList.remove('visible');
+        loadNews(); showToast('Удалено');
+      });
+    }
+
+    function showConfirm(text, onYes) {
+      document.getElementById('confirmText').textContent = text;
+      document.getElementById('confirmOverlay').classList.add('show');
+      document.getElementById('confirmYes').onclick = () => { closeConfirm(); onYes(); };
+    }
+    function closeConfirm() { document.getElementById('confirmOverlay').classList.remove('show'); }
+    document.getElementById('confirmOverlay').addEventListener('click', e => { if (e.target.id === 'confirmOverlay') closeConfirm(); });
+
+    async function loadNews() {
+      try {
+        const res = await fetch('/api/news');
+        renderNews(await res.json());
+      } catch {}
+    }
+
+    function renderNews(news) {
+      const btn = document.getElementById('newsDeleteModeBtn');
+      if (btn) {
+        newsDeleteMode = false; selectedNewsIds.clear();
+        btn.style.background = 'transparent'; btn.style.color = 'var(--danger)';
+        btn.textContent = '🗑 Удалить';
+      }
+      document.getElementById('newsDeleteBar')?.classList.remove('visible');
+      const list = document.getElementById('newsList');
+      list.classList.remove('delete-mode-active');
+      if (!news || !news.length) {
+        list.innerHTML = '<div class="news-empty">Нет новостей.<br>Нажми «Добавить» чтобы создать первую.</div>';
+        return;
+      }
+      list.innerHTML = '';
+      news.forEach(n => {
+        const card = document.createElement('div');
+        card.className = 'news-card';
+
+        if (n.image) {
+          const img = document.createElement('img');
+          img.className = 'news-poster'; img.src = n.image; img.alt = n.title;
+          card.appendChild(img);
+        } else {
+          const ph = document.createElement('div'); ph.className = 'news-poster-placeholder'; ph.textContent = '🎵';
+          card.appendChild(ph);
+        }
+
+        card.appendChild(Object.assign(document.createElement('div'), { className: 'news-overlay' }));
+
+        const label = document.createElement('div'); label.className = 'news-label';
+        label.textContent = n.title || 'NEW MUSIC';
+        card.appendChild(label);
+
+        if (n.spotify) {
+          const btn = document.createElement('a'); btn.className = 'news-listen-btn';
+          btn.href = n.spotify; btn.target = '_blank'; btn.rel = 'noopener';
+          btn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="#1DB954"><path d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2zm4.586 14.424a.622.622 0 01-.857.207c-2.348-1.435-5.304-1.76-8.785-.964a.622.622 0 11-.277-1.215c3.809-.87 7.076-.496 9.712 1.115.294.181.387.564.207.857zm1.224-2.722a.78.78 0 01-1.072.257c-2.687-1.652-6.785-2.131-9.965-1.166a.78.78 0 01-.973-.519.781.781 0 01.52-.973c3.632-1.102 8.147-.568 11.233 1.329a.78.78 0 01.257 1.072zm.105-2.835c-3.223-1.914-8.54-2.09-11.618-1.156a.935.935 0 11-.542-1.79c3.532-1.072 9.404-.865 13.115 1.338a.935.935 0 01-.955 1.608z"/></svg> LISTEN`;
+          btn.onclick = e => e.stopPropagation();
+          card.appendChild(btn);
+        }
+
+        // Чекбокс
+        const cb = document.createElement('div'); cb.className = 'news-checkbox';
+        cb.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round"><polyline points="20,6 9,17 4,12"/></svg>`;
+        cb.onclick = e => { e.stopPropagation(); toggleNewsSelect(n.id, cb); };
+        card.appendChild(cb);
+
+        list.appendChild(card);
+      });
+    }
+    // ── THEME ──────────────────────────────────────────────────────────────────
+    function applyTheme(theme) {
+      document.body.classList.toggle('light', theme === 'light');
+      document.getElementById('themeBtn').textContent = theme === 'light' ? '🌙' : '☀️';
+    }
+    function toggleTheme() {
+      const next = document.body.classList.contains('light') ? 'dark' : 'light';
+      localStorage.setItem('theme', next);
+      applyTheme(next);
+    }
+    applyTheme(localStorage.getItem('theme') || 'dark');
+
+  </script>
+  <button class="theme-btn" id="themeBtn" onclick="toggleTheme()" title="Сменить тему">🌙</button>
+  </body>
+  </html>
