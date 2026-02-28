@@ -17,7 +17,7 @@ if (!fs.existsSync(DATA_DIR)) {
 const CONFIG_FILE = path.join(DATA_DIR, 'config.json');
 const RELEASES_FILE = path.join(DATA_DIR, 'releases.json');
 const LINKS_FILE = path.join(DATA_DIR, 'links.json');
-const NEWS_FILE = path.join(DATA_DIR, 'news.json');
+const POSTS_FILE = path.join(DATA_DIR, 'posts.json');
 
 // При первом запуске на Railway — копируем config.json из репо в volume
 if (process.env.RAILWAY_ENVIRONMENT && !fs.existsSync(CONFIG_FILE)) {
@@ -67,20 +67,14 @@ function saveLinks(links) {
   } catch (e) { console.error('[Links] Save error:', e.message); }
 }
 
-// ─── News ────────────────────────────────────────────────────────────────────
-function loadNews() {
-  try { return JSON.parse(fs.readFileSync(NEWS_FILE, 'utf8')); }
+// ─── Posts ───────────────────────────────────────────────────────────────────
+function loadPosts() {
+  try { return JSON.parse(fs.readFileSync(POSTS_FILE, 'utf8')); }
   catch { return []; }
 }
-function saveNews(news) {
-  try { fs.writeFileSync(NEWS_FILE, JSON.stringify(news, null, 2)); }
-  catch (e) { console.error('[News] Save error:', e.message); }
-}
-function cleanExpiredNews() {
-  const news = loadNews();
-  const now = Date.now();
-  const filtered = news.filter(n => !n.deleteAt || n.deleteAt > now);
-  if (filtered.length !== news.length) saveNews(filtered);
+function savePosts(posts) {
+  try { fs.writeFileSync(POSTS_FILE, JSON.stringify(posts, null, 2)); }
+  catch (e) { console.error('[Posts] Save error:', e.message); }
 }
 
 // ─── Telegram Bot ─────────────────────────────────────────────────────────────
@@ -89,7 +83,7 @@ const TG_API = `https://api.telegram.org/bot${TG_TOKEN}`;
 let lastUpdateId = 0;
 const awaitingCookie = new Set();
 const awaitingMessage = new Set();
-const awaitingNews = new Map(); // chatId -> { step, data }
+const awaitingPost = new Map(); // chatId -> { step, data }
 
 async function tgSend(chatId, text, opts = {}) {
   await axios.post(`${TG_API}/sendMessage`, { chat_id: chatId, text, ...opts });
@@ -261,21 +255,40 @@ async function handleTgMessage(msg) {
 
   // /cancel — сброс любого ожидания
   if (text === '/cancel') {
-    awaitingNews.delete(chatId);
+    awaitingPost.delete(chatId);
     awaitingCookie.delete(chatId);
     awaitingMessage.delete(chatId);
     await tgSend(chatId, '❌ Отменено.');
     return;
   }
 
-  // /news flow
-  if (awaitingNews.has(chatId)) {
-    const state = awaitingNews.get(chatId);
+  // /post flow
+  if (awaitingPost.has(chatId)) {
+    const state = awaitingPost.get(chatId);
+
+    if (state.step === 'text') {
+      if (!msg.text) { await tgSend(chatId, '❌ Отправь текст поста'); return; }
+      state.data.text = text;
+      state.step = 'photo';
+      awaitingPost.set(chatId, state);
+      await tgSend(chatId, '✅ Текст сохранён!\n\n📸 Шаг 2/2: Отправь фото (или /skip чтобы без фото):\n\n/cancel — отменить');
+      return;
+    }
 
     if (state.step === 'photo') {
+      if (msg.text === '/skip' || text === '/skip') {
+        // без фото
+        const post = { id: Date.now(), text: state.data.text, image: null, likes: 0, createdAt: new Date().toISOString() };
+        const posts = loadPosts();
+        posts.unshift(post);
+        savePosts(posts);
+        awaitingPost.delete(chatId);
+        await tgSend(chatId, `✅ Пост опубликован!\n\n📝 ${post.text}`);
+        return;
+      }
       const photo = msg.photo;
       if (!photo) {
-        await tgSend(chatId, '❌ Нужно фото! Отправь изображение постера.\n\n/cancel — отменить');
+        await tgSend(chatId, '❌ Нужно фото или /skip!\n\n/cancel — отменить');
         return;
       }
       const fileId = photo[photo.length - 1].file_id;
@@ -285,49 +298,16 @@ async function handleTgMessage(msg) {
         const fileUrl = `https://api.telegram.org/file/bot${TG_TOKEN}/${filePath}`;
         const imgRes = await axios.get(fileUrl, { responseType: 'arraybuffer', timeout: 30000 });
         const base64 = 'data:image/jpeg;base64,' + Buffer.from(imgRes.data).toString('base64');
-        state.data.image = base64;
-        state.step = 'title';
-        awaitingNews.set(chatId, state);
-        await tgSend(chatId, '✅ Фото получено!\n\n✏️ Шаг 2/4: Отправь заголовок новости:\n\n/cancel — отменить');
+        const post = { id: Date.now(), text: state.data.text, image: base64, likes: 0, createdAt: new Date().toISOString() };
+        const posts = loadPosts();
+        posts.unshift(post);
+        savePosts(posts);
+        awaitingPost.delete(chatId);
+        await tgSend(chatId, `✅ Пост с фото опубликован!\n\n📝 ${post.text}`);
       } catch (e) {
-        awaitingNews.delete(chatId);
-        await tgSend(chatId, '❌ Ошибка загрузки фото. Попробуй снова /news');
+        awaitingPost.delete(chatId);
+        await tgSend(chatId, '❌ Ошибка загрузки фото. Попробуй снова /post');
       }
-      return;
-    }
-
-    if (state.step === 'title') {
-      if (!msg.text) { await tgSend(chatId, '❌ Отправь текст заголовка'); return; }
-      state.data.title = text;
-      state.step = 'spotify';
-      awaitingNews.set(chatId, state);
-      await tgSend(chatId, '✅ Заголовок сохранён!\n\n🎵 Шаг 3/4: Отправь ссылку на Spotify:\n\n/cancel — отменить');
-      return;
-    }
-
-    if (state.step === 'spotify') {
-      if (!msg.text) { await tgSend(chatId, '❌ Отправь ссылку текстом'); return; }
-      state.data.spotify = text;
-      state.step = 'days';
-      awaitingNews.set(chatId, state);
-      await tgSend(chatId, '✅ Ссылка сохранена!\n\n⏳ Шаг 4/4: Через сколько дней удалить?\n\nОтправь число (1, 2, 3, 7...)\n\n/cancel — отменить');
-      return;
-    }
-
-    if (state.step === 'days') {
-      if (!msg.text) { await tgSend(chatId, '❌ Отправь число'); return; }
-      const days = parseInt(text);
-      if (isNaN(days) || days < 1 || days > 30) {
-        await tgSend(chatId, '❌ Введи число от 1 до 30');
-        return;
-      }
-      const deleteAt = Date.now() + days * 24 * 60 * 60 * 1000;
-      const newsItem = { id: Date.now(), ...state.data, deleteAt, createdAt: new Date().toISOString() };
-      const news = loadNews();
-      news.unshift(newsItem);
-      saveNews(news);
-      awaitingNews.delete(chatId);
-      await tgSend(chatId, `✅ Новость опубликована!\n\n📰 ${newsItem.title}\n🗓 Удалится через ${days} дн.`);
       return;
     }
   }
@@ -355,7 +335,8 @@ async function handleTgMessage(msg) {
       `/message — показать сообщение\n` +
       `/unmessage — убрать сообщение\n` +
       `/cookie — обновить куки\n` +
-      `/news — добавить новость`
+      `/post — создать пост\n` +
+      `/delposts — список постов для удаления`
     );
     return;
   }
@@ -396,25 +377,24 @@ async function handleTgMessage(msg) {
     return;
   }
 
-  if (text === '/news') {
-    awaitingNews.set(chatId, { step: 'photo', data: {} });
-    await tgSend(chatId, '📰 Создаём новость!\n\n📸 Шаг 1/4: Отправь фото постера трека:');
+  if (text === '/post') {
+    awaitingPost.set(chatId, { step: 'text', data: {} });
+    await tgSend(chatId, '📝 Создаём пост!\n\n✏️ Шаг 1/2: Отправь текст поста:\n\n/cancel — отменить');
     return;
   }
 
-  if (text === '/delnews') {
-    const news = loadNews();
-    if (!news.length) { await tgSend(chatId, 'Нет новостей'); return; }
-    const list = news.map((n, i) => `${i+1}. ${n.title} (ID: ${n.id})`).join('\n');
-    await tgSend(chatId, `📰 Новости:\n\n${list}\n\nОтправь /delnews_ID для удаления`);
+  if (text === '/delposts') {
+    const posts = loadPosts();
+    if (!posts.length) { await tgSend(chatId, 'Нет постов'); return; }
+    const list = posts.map((p, i) => `${i+1}. ${p.text.substring(0, 40)}... (ID: ${p.id})`).join('\n');
+    await tgSend(chatId, `📝 Посты:\n\n${list}\n\nОтправь /delpost_ID для удаления`);
     return;
   }
 
-  if (text.startsWith('/delnews_')) {
-    const id = Number(text.replace('/delnews_', ''));
-    const news = loadNews().filter(n => n.id !== id);
-    saveNews(news);
-    await tgSend(chatId, '✅ Новость удалена');
+  if (text.startsWith('/delpost_')) {
+    const id = Number(text.replace('/delpost_', ''));
+    savePosts(loadPosts().filter(p => p.id !== id));
+    await tgSend(chatId, '✅ Пост удалён');
     return;
   }
 }
@@ -802,25 +782,38 @@ app.delete('/api/links/:id', (req, res) => {
   res.json({ success: true });
 });
 
-// ─── News API ────────────────────────────────────────────────────────────────
-app.get('/api/news', (req, res) => {
-  cleanExpiredNews();
-  res.json(loadNews());
+// ─── Posts API ────────────────────────────────────────────────────────────────
+app.get('/api/posts', (req, res) => res.json(loadPosts()));
+
+app.post('/api/posts', (req, res) => {
+  const { text, image } = req.body;
+  if (!text || !text.trim()) return res.status(400).json({ error: 'Текст поста обязателен' });
+  const posts = loadPosts();
+  const post = {
+    id: Date.now(),
+    text: text.trim(),
+    image: image || null,
+    likes: 0,
+    createdAt: new Date().toISOString()
+  };
+  posts.unshift(post);
+  savePosts(posts);
+  res.json({ success: true, post });
 });
 
-app.post('/api/news', (req, res) => {
-  const { title, spotify, image, deleteAt } = req.body;
-  if (!image) return res.status(400).json({ error: 'Нет изображения' });
-  const news = loadNews();
-  const item = { id: Date.now(), title: title || 'NEW MUSIC', spotify: spotify || '', image, deleteAt: deleteAt || null, createdAt: new Date().toISOString() };
-  news.unshift(item);
-  saveNews(news);
-  res.json({ success: true, item });
-});
-
-app.delete('/api/news/:id', (req, res) => {
+app.post('/api/posts/:id/like', (req, res) => {
   const id = Number(req.params.id);
-  saveNews(loadNews().filter(n => n.id !== id));
+  const posts = loadPosts();
+  const idx = posts.findIndex(p => p.id === id);
+  if (idx === -1) return res.status(404).json({ error: 'Не найден' });
+  posts[idx].likes = (posts[idx].likes || 0) + 1;
+  savePosts(posts);
+  res.json({ success: true, likes: posts[idx].likes });
+});
+
+app.delete('/api/posts/:id', (req, res) => {
+  const id = Number(req.params.id);
+  savePosts(loadPosts().filter(p => p.id !== id));
   res.json({ success: true });
 });
 
@@ -865,7 +858,7 @@ const server = app.listen(PORT, () => {
   console.log(config.adminUsername ? `👤 Admin: @${config.adminUsername}` : '⚠️  adminUsername не задан.');
   if (!fs.existsSync(RELEASES_FILE)) saveReleases([]);
   if (!fs.existsSync(LINKS_FILE)) saveLinks([]);
-  if (!fs.existsSync(NEWS_FILE)) saveNews([]);
+  if (!fs.existsSync(POSTS_FILE)) savePosts([]);
 });
 
 // Запускаем фоновые задачи через setImmediate — только после того как listen завершился
@@ -876,7 +869,6 @@ server.on('listening', () => {
 
   // Проверяем релизы каждый час
   setInterval(checkReleaseDates, 60 * 60 * 1000);
-  setInterval(cleanExpiredNews, 60 * 60 * 1000);
   // Первая проверка через 10 секунд после старта
   setTimeout(checkReleaseDates, 10000);
 });
