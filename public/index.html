@@ -335,6 +335,11 @@
     <button class="nav-btn" id="navLinks" onclick="switchPage('links')">LINKS</button>
     <button class="nav-btn" id="navPosts" onclick="switchPage('posts')">POSTS</button>
   </nav>
+  <div id="userBar" style="width:100%;max-width:640px;display:flex;align-items:center;justify-content:flex-end;gap:10px;padding:8px 20px 0;font-size:0.72rem;color:var(--text-muted);">
+    <img id="userAvatar" style="width:24px;height:24px;border-radius:50%;display:none;" alt=""/>
+    <span id="userName"></span>
+    <a href="/auth/logout" style="color:var(--text-muted);text-decoration:none;border:1px solid var(--border);border-radius:6px;padding:3px 9px;font-family:'Space Mono',monospace;transition:color 0.15s,border-color 0.15s;" onmouseover="this.style.color='var(--text)';this.style.borderColor='#666'" onmouseout="this.style.color='var(--text-muted)';this.style.borderColor='var(--border)'">Выйти</a>
+  </div>
 
   <!-- PAGE: INSTTIK -->
   <div class="page active" id="pageInsttik">
@@ -930,6 +935,22 @@
     checkSiteStatus();
     setInterval(checkSiteStatus, 30000);
 
+    // ── User info ─────────────────────────────────────────────────────────────
+    (async () => {
+      try {
+        const res = await fetch('/api/me');
+        const data = await res.json();
+        if (data.loggedIn && data.user) {
+          document.getElementById('userName').textContent = data.user.name || data.user.email || '';
+          if (data.user.photo) {
+            const av = document.getElementById('userAvatar');
+            av.src = data.user.photo;
+            av.style.display = 'block';
+          }
+        }
+      } catch {}
+    })();
+
     // ── LINKS ──────────────────────────────────────────────────────────────────
     let linkAvatarBase64 = null;
     let linkAvatarChanged = false;
@@ -1306,9 +1327,9 @@
       const m = Math.floor(diff / 60000);
       const h = Math.floor(m / 60);
       const d = Math.floor(h / 24);
-      if (d > 0) return d + ' д назад';
-      if (h > 0) return h + ' ч назад';
-      if (m > 0) return m + ' мин назад';
+      if (d > 0) return d + 'д назад';
+      if (h > 0) return h + 'ч назад';
+      if (m > 0) return m + 'мин назад';
       return 'только что';
     }
 
@@ -1327,7 +1348,7 @@
         const header = document.createElement('div'); header.className = 'post-card-header';
         const avatar = document.createElement('div'); avatar.className = 'post-avatar'; avatar.textContent = '✦';
         const meta = document.createElement('div');
-        const author = document.createElement('div'); author.className = 'post-author'; author.textContent = 'ZHANGELDI';
+        const author = document.createElement('div'); author.className = 'post-author'; author.textContent = 'ZHANSAVER';
         const time = document.createElement('div'); time.className = 'post-time'; time.textContent = timeAgo(p.createdAt);
         meta.appendChild(author); meta.appendChild(time);
         header.appendChild(avatar); header.appendChild(meta);
