@@ -749,18 +749,21 @@ app.get('/api/posts', (req, res) => {
 });
 
 app.post('/api/posts', (req, res) => {
-  const { text, images } = req.body;
+  const { text, images, overrideAuthor } = req.body;
   if (!text || !text.trim()) return res.status(400).json({ error: 'Текст поста обязателен' });
   const user = req.user || {};
   const posts = loadPosts();
-  // images — массив URL вида /uploads/filename.jpg
   const imageUrls = (Array.isArray(images) ? images : (images ? [images] : []))
     .filter(u => u && typeof u === 'string' && u.startsWith('/uploads/'));
+  // overrideAuthor — для постов из Instagram, где автор не текущий пользователь
+  const author = overrideAuthor
+    ? { name: overrideAuthor, photo: null, email: '' }
+    : { name: user.name || 'ZHANSAVER', photo: user.photo || null, email: user.email || '' };
   const post = {
     id: Date.now(),
     text: text.trim(),
     images: imageUrls,
-    author: { name: user.name || 'ZHANSAVER', photo: user.photo || null, email: user.email || '' },
+    author,
     likes: 0,
     likedBy: [],
     comments: [],
@@ -768,7 +771,7 @@ app.post('/api/posts', (req, res) => {
   };
   posts.unshift(post);
   savePosts(posts);
-  sseNotify({ type: 'post', user: user.name || 'ZHANSAVER' });
+  sseNotify({ type: 'post', user: author.name });
   res.json({ success: true, post });
 });
 

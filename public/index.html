@@ -1453,6 +1453,7 @@
 
     // ── POSTS ──────────────────────────────────────────────────────────────────
     let postImages = []; // массив {file, preview, uploaded}
+    let postOverrideAuthor = null; // Instagram username как автор
     let currentUser = null;
 
     // Загружаем текущего юзера
@@ -1471,6 +1472,7 @@
     function openPostModal() {
       postImages.forEach(item => URL.revokeObjectURL(item.preview));
       postImages = [];
+      postOverrideAuthor = null;
       document.getElementById('postText').value = '';
       document.getElementById('postCharCount').textContent = '0';
       document.getElementById('postImgInput').value = '';
@@ -1549,7 +1551,7 @@
       const res = await fetch('/api/posts', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text, images: imageUrls })
+        body: JSON.stringify({ text, images: imageUrls, overrideAuthor: postOverrideAuthor || undefined })
       });
       const data = await res.json();
       if (data.success) {
@@ -1576,6 +1578,7 @@
         if (!uploadedUrls.length) { showToast('Не удалось загрузить фото'); return; }
 
         openPostModal();
+        postOverrideAuthor = username || null;
 
         // Текст: caption из поста, если нет — подпись с username
         let text = '';
