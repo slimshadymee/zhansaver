@@ -325,6 +325,21 @@ function extractMedia(item) {
   return results;
 }
 
+// Извлекает username, full_name и caption из item Instagram
+function extractInfo(item) {
+  if (!item) return {};
+  const owner = item.owner || item.user || {};
+  const username = owner.username || owner.login || '';
+  const fullName = owner.full_name || owner.fullName || '';
+  // caption может быть строкой или объектом edges
+  let caption = '';
+  if (typeof item.caption === 'string') caption = item.caption;
+  else if (item.caption?.text) caption = item.caption.text;
+  else if (item.edge_media_to_caption?.edges?.[0]?.node?.text) caption = item.edge_media_to_caption.edges[0].node.text;
+  else if (item.accessibility_caption) caption = item.accessibility_caption;
+  return { username, fullName, caption };
+}
+
 function findMediaInJson(obj, results, depth = 0) {
   if (depth > 20 || !obj || typeof obj !== 'object') return;
   if (typeof obj.video_url === 'string' && obj.video_url.startsWith('http')) {
@@ -350,7 +365,7 @@ async function tryApiA1(shortcode) {
   if (!item) throw new Error('Empty response');
   const media = extractMedia(item);
   if (!media.length) throw new Error('No media extracted');
-  return media;
+  return { media, info: extractInfo(item) };
 }
 
 async function tryGraphQL(shortcode) {
@@ -360,7 +375,7 @@ async function tryGraphQL(shortcode) {
   if (!item) throw new Error('No shortcode_media');
   const media = extractMedia(item);
   if (!media.length) throw new Error('No media');
-  return media;
+  return { media, info: extractInfo(item) };
 }
 
 async function tryGraphQL2(shortcode) {
@@ -373,7 +388,10 @@ async function tryGraphQL2(shortcode) {
   const media = [];
   findMediaInJson(res.data, media);
   if (!media.length) throw new Error('No media found');
-  return media;
+  // Пробуем вытащить info из данных
+  let info = {};
+  try { const d = res.data?.data; if (d) { const item = d.xdt_api__v1__media__shortcode__web_info?.items?.[0] || Object.values(d)[0]; info = extractInfo(item || {}); } } catch {}
+  return { media, info };
 }
 
 async function tryHtmlParse(shortcode) {
@@ -382,6 +400,16 @@ async function tryHtmlParse(shortcode) {
     timeout: 12000,
   });
   const html = res.data;
+  // Извлекаем username и caption из og-тегов и JSON
+  let username = '', caption = '';
+  const titleMatch = html.match(/property="og:title"\s+content="([^"]+)"/);
+  if (titleMatch) {
+    // og:title обычно: "Full Name (@username) on Instagram: ..."
+    const um = titleMatch[1].match(/@([\w.]+)/);
+    if (um) username = um[1];
+    const cm = titleMatch[1].match(/on Instagram:\s*"?(.+?)"?\s*$/);
+    if (cm) caption = cm[1];
+  }
   const videoUrls = new Set();
   for (const m of html.matchAll(/property="og:video(?::url)?"\s+content="([^"]+)"/g)) videoUrls.add(m[1].replace(/&amp;/g, '&'));
   const imageUrls = [];
@@ -396,7 +424,7 @@ async function tryHtmlParse(shortcode) {
   const addData = html.match(/window\.__additionalDataLoaded\s*\([^,]+,\s*({.+?})\s*\);/s);
   if (addData) { try { findMediaInJson(JSON.parse(addData[1]), media); } catch {} }
   if (!media.length) throw new Error('No media in HTML');
-  return media;
+  return { media, info: { username, caption } };
 }
 
 // ─── API Routes ───────────────────────────────────────────────────────────────
@@ -512,8 +540,15 @@ app.post('/api/fetch', async (req, res) => {
   for (const method of methods) {
     try {
       console.log(`[${shortcode}] Trying: ${method.name}`);
-      const media = await method.fn();
-      if (media?.length > 0) { console.log(`[${shortcode}] ✅ ${method.name}: ${media.length} items`); return res.json({ success: true, media, shortcode, username }); }
+      const result = await method.fn();
+      const media = result.media || result; // обратная совместимость
+      const info = result.info || {};
+      if (media?.length > 0) {
+        const finalUsername = info.username || username;
+        const caption = info.caption || '';
+        console.log(`[${shortcode}] ✅ ${method.name}: ${media.length} items, user: ${finalUsername}`);
+        return res.json({ success: true, media, shortcode, username: finalUsername, caption });
+      }
     } catch (err) { console.log(`[${shortcode}] ❌ ${method.name}: ${err.message}`); errors.push(`${method.name}: ${err.message}`); }
   }
   res.status(404).json({ error: hasCookie ? 'Не удалось получить медиа. Пост приватный или куки устарели.' : 'Не удалось получить медиа. Добавь куки Instagram.', details: errors, hasCookie });
