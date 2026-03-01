@@ -751,11 +751,40 @@ app.get('/proxy', async (req, res) => {
       res.setHeader('Content-Disposition', `attachment; filename="media_${Date.now()}.${ext}"`);
     } else {
       res.setHeader('Content-Disposition', 'inline');
+      // Кешируем картинки в браузере на 7 дней
+      if (ct.startsWith('image/')) res.setHeader('Cache-Control', 'public, max-age=604800, immutable');
     }
     response.data.pipe(res);
   } catch (err) {
     console.error('[Proxy] Error for URL:', url.substring(0, 80), '-', err.message);
     res.status(500).send(err.message);
+  }
+});
+
+// ─── Image cache endpoint — сохраняет внешние картинки на диск ───────────────
+const imgCacheDir = path.join(UPLOADS_DIR, 'cache');
+if (!fs.existsSync(imgCacheDir)) { try { fs.mkdirSync(imgCacheDir, { recursive: true }); } catch {} }
+
+app.get('/api/imgcache', async (req, res) => {
+  const { url } = req.query;
+  if (!url || (!url.startsWith('http://') && !url.startsWith('https://'))) return res.status(400).send('bad url');
+  // Создаём имя файла из хеша URL
+  const hash = require('crypto').createHash('md5').update(url).digest('hex');
+  const ext = url.includes('.webp') ? '.webp' : url.includes('.png') ? '.png' : '.jpg';
+  const filePath = path.join(imgCacheDir, hash + ext);
+  // Если уже есть — отдаём с кешем
+  if (fs.existsSync(filePath)) {
+    res.setHeader('Cache-Control', 'public, max-age=2592000, immutable');
+    return res.sendFile(filePath);
+  }
+  try {
+    const r = await axios.get(url, { responseType: 'arraybuffer', timeout: 15000, headers: { 'User-Agent': 'Mozilla/5.0', 'Referer': 'https://www.instagram.com/' } });
+    fs.writeFileSync(filePath, r.data);
+    res.setHeader('Cache-Control', 'public, max-age=2592000, immutable');
+    res.setHeader('Content-Type', r.headers['content-type'] || 'image/jpeg');
+    res.send(r.data);
+  } catch (e) {
+    res.redirect(url); // fallback на оригинал
   }
 });
 
