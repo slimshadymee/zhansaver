@@ -1522,14 +1522,13 @@
       if (!text) { showToast('Напиши текст поста!'); return; }
 
       let imageUrls = [];
+      const btn = document.querySelector('#postModalOverlay .btn-save');
 
       if (postImages.length > 0) {
-        const btn = document.querySelector('#postModalOverlay .btn-save');
         btn.textContent = 'Загрузка...'; btn.disabled = true;
         try {
           const toUpload = postImages.filter(i => !i.uploaded);
           const alreadyUploaded = postImages.filter(i => i.uploaded).map(i => i.uploaded);
-
           if (toUpload.length > 0) {
             const formData = new FormData();
             toUpload.forEach(item => formData.append('images', item.file));
@@ -1542,11 +1541,9 @@
           }
         } catch (e) {
           showToast('Ошибка загрузки фото');
-          const btn = document.querySelector('#postModalOverlay .btn-save');
           btn.textContent = 'Опубликовать'; btn.disabled = false;
           return;
         }
-        const btn = document.querySelector('#postModalOverlay .btn-save');
         btn.textContent = 'Опубликовать'; btn.disabled = false;
       }
 
