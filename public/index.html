@@ -783,7 +783,7 @@
           return;
         }
         hideStatus();
-        renderResults(data.media, data.shortcode);
+        renderResults(data.media, data.shortcode, data.username || '');
       } catch { showStatus('Ошибка соединения с сервером', 'error'); }
       finally { btn.disabled = !siteEnabled; btn.textContent = 'Найти'; }
     }
@@ -794,10 +794,21 @@
       document.body.appendChild(a); a.click(); document.body.removeChild(a);
     }
 
-    function renderResults(media, shortcode) {
+    function renderResults(media, shortcode, username) {
       const results = document.getElementById('results');
       const divider = document.getElementById('divider');
       results.innerHTML = '';
+
+      // ── Кнопка «Отправить фото в пост» (только фото, не видео) ──
+      const photos = media.filter(m => m.type !== 'video');
+      if (photos.length > 0) {
+        const sendBtn = document.createElement('button');
+        sendBtn.className = 'btn-fetch';
+        sendBtn.style.cssText = 'width:100%;margin-bottom:12px;background:var(--surface);color:var(--text);border:1.5px solid var(--border);';
+        sendBtn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" style="margin-right:6px"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>Отправить фото в пост`;
+        sendBtn.onclick = () => sendInstagramToPost(photos, username, shortcode);
+        results.appendChild(sendBtn);
+      }
 
       if (media.length === 1) {
         const item = media[0];
@@ -967,19 +978,22 @@
     function closeReleaseModal() { document.getElementById('releaseModalOverlay').classList.remove('show'); }
     document.getElementById('releaseModalOverlay').addEventListener('click', e => { if (e.target.id === 'releaseModalOverlay') closeReleaseModal(); });
 
-    function handleCoverUpload(event) {
+    async function handleCoverUpload(event) {
       const file = event.target.files[0];
       if (!file) return;
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        coverBase64 = e.target.result;
-        coverChanged = true;
-        const preview = document.getElementById('coverPreview');
-        preview.src = coverBase64;
-        preview.style.display = 'block';
-        document.getElementById('uploadText').style.display = 'none';
-      };
-      reader.readAsDataURL(file);
+      // Показываем превью сразу
+      const preview = document.getElementById('coverPreview');
+      preview.src = URL.createObjectURL(file);
+      preview.style.display = 'block';
+      document.getElementById('uploadText').style.display = 'none';
+      // Загружаем на сервер
+      const fd = new FormData(); fd.append('image', file);
+      try {
+        const r = await fetch('/api/upload-single', { method: 'POST', body: fd });
+        const d = await r.json();
+        if (d.success) { coverBase64 = d.url; coverChanged = true; }
+        else showToast('Ошибка загрузки обложки');
+      } catch { showToast('Ошибка загрузки обложки'); }
     }
 
     async function saveRelease() {
@@ -1160,34 +1174,26 @@
       document.getElementById('avatarTabUrl').classList.toggle('active', tab === 'url');
     }
 
-    function handleLinkAvatar(event) {
+    async function handleLinkAvatar(event) {
       const file = event.target.files[0]; if (!file) return;
-      const reader = new FileReader();
-      reader.onload = e => {
-        linkAvatarBase64 = e.target.result; linkAvatarChanged = true;
-        const prev = document.getElementById('linkAvatarPreview');
-        prev.src = linkAvatarBase64; prev.style.display = 'block';
-        document.getElementById('linkAvatarText').style.display = 'none';
-      };
-      reader.readAsDataURL(file);
+      const prev = document.getElementById('linkAvatarPreview');
+      prev.src = URL.createObjectURL(file); prev.style.display = 'block';
+      document.getElementById('linkAvatarText').style.display = 'none';
+      const fd = new FormData(); fd.append('image', file);
+      try {
+        const r = await fetch('/api/upload-single', { method: 'POST', body: fd });
+        const d = await r.json();
+        if (d.success) { linkAvatarBase64 = d.url; linkAvatarChanged = true; }
+        else showToast('Ошибка загрузки фото');
+      } catch { showToast('Ошибка загрузки фото'); }
     }
 
     async function handleLinkAvatarUrl(val) {
       const prev = document.getElementById('linkAvatarUrlPreview');
       if (!val.startsWith('http')) { prev.style.display = 'none'; return; }
-      prev.src = ''; prev.style.display = 'none';
-      try {
-        const res = await fetch('/api/download-image?url=' + encodeURIComponent(val));
-        const data = await res.json();
-        if (data.base64) {
-          linkAvatarBase64 = data.base64;
-          linkAvatarChanged = true;
-          prev.src = data.base64;
-          prev.style.display = 'block';
-        } else {
-          showToast('Не удалось загрузить картинку');
-        }
-      } catch { showToast('Ошибка загрузки картинки'); }
+      // Для URL — сохраняем как есть (через imgcache отдастся)
+      linkAvatarBase64 = val; linkAvatarChanged = true;
+      prev.src = cachedImg(val); prev.style.display = 'block';
     }
 
     function openEditLinkModal(card) {
@@ -1496,11 +1502,12 @@
       grid.innerHTML = '';
       postImages.forEach((item, i) => {
         const el = document.createElement('div'); el.className = 'post-img-preview-item';
-        const img = document.createElement('img'); img.src = item.preview;
+        const img = document.createElement('img');
+        img.src = item.uploaded ? item.uploaded : item.preview;
         const rm = document.createElement('button'); rm.className = 'post-img-remove'; rm.textContent = '✕';
         rm.onclick = (e) => {
           e.stopPropagation();
-          URL.revokeObjectURL(item.preview);
+          if (!item.uploaded) URL.revokeObjectURL(item.preview);
           postImages.splice(i, 1);
           renderPostImagePreviews();
           if (!postImages.length) document.getElementById('postImgText').style.display = 'block';
@@ -1515,23 +1522,30 @@
 
       let imageUrls = [];
 
-      // Если есть файлы — загружаем на сервер
       if (postImages.length > 0) {
         const btn = document.querySelector('#postModalOverlay .btn-save');
         btn.textContent = 'Загрузка...'; btn.disabled = true;
         try {
-          const formData = new FormData();
-          postImages.forEach(item => formData.append('images', item.file));
-          const r = await fetch('/api/upload', { method: 'POST', body: formData });
-          const d = await r.json();
-          if (!d.success) throw new Error(d.error);
-          imageUrls = d.urls;
+          const toUpload = postImages.filter(i => !i.uploaded);
+          const alreadyUploaded = postImages.filter(i => i.uploaded).map(i => i.uploaded);
+
+          if (toUpload.length > 0) {
+            const formData = new FormData();
+            toUpload.forEach(item => formData.append('images', item.file));
+            const r = await fetch('/api/upload', { method: 'POST', body: formData });
+            const d = await r.json();
+            if (!d.success) throw new Error(d.error);
+            imageUrls = [...alreadyUploaded, ...d.urls];
+          } else {
+            imageUrls = alreadyUploaded;
+          }
         } catch (e) {
-          showToast('Ошибка загрузки фото'); 
+          showToast('Ошибка загрузки фото');
           const btn = document.querySelector('#postModalOverlay .btn-save');
           btn.textContent = 'Опубликовать'; btn.disabled = false;
           return;
         }
+        const btn = document.querySelector('#postModalOverlay .btn-save');
         btn.textContent = 'Опубликовать'; btn.disabled = false;
       }
 
@@ -1542,14 +1556,47 @@
       });
       const data = await res.json();
       if (data.success) {
-        // Cleanup object URLs
-        postImages.forEach(item => URL.revokeObjectURL(item.preview));
+        postImages.forEach(item => { if (!item.uploaded) URL.revokeObjectURL(item.preview); });
         closePostModal(); loadPosts(); showToast('✓ Опубликовано!');
       } else showToast('Ошибка: ' + data.error);
     }
 
-    // Возвращает URL через сервер-кеш для внешних картинок
-    function cachedImg(url) {
+    // ── Отправить фото из Instagram в пост ────────────────────────────────────
+    async function sendInstagramToPost(photos, username, shortcode) {
+      showToast('Загружаем фото...', 4000);
+      try {
+        // Скачиваем каждое фото через сервер и загружаем как файл
+        const uploadedUrls = [];
+        for (let i = 0; i < Math.min(photos.length, 20); i++) {
+          const item = photos[i];
+          // Получаем blob через proxy
+          const r = await fetch(`/proxy?url=${encodeURIComponent(item.url)}`);
+          const blob = await r.blob();
+          const fd = new FormData();
+          fd.append('image', blob, `insta_${shortcode}_${i+1}.jpg`);
+          const up = await fetch('/api/upload-single', { method: 'POST', body: fd });
+          const d = await up.json();
+          if (d.success) uploadedUrls.push(d.url);
+        }
+        if (!uploadedUrls.length) { showToast('Не удалось загрузить фото'); return; }
+
+        // Открываем модалку поста с предзаполненными данными
+        openPostModal();
+        const text = username ? `от @${username}` : `instagram.com/p/${shortcode}`;
+        document.getElementById('postText').value = text;
+        document.getElementById('postCharCount').textContent = text.length;
+
+        // Добавляем фото как уже загруженные
+        postImages = uploadedUrls.map(url => ({ file: null, preview: url, uploaded: url }));
+        renderPostImagePreviews();
+        document.getElementById('postImgText').style.display = 'none';
+        showToast(`✓ ${uploadedUrls.length} фото готово`);
+      } catch (e) {
+        showToast('Ошибка: ' + e.message);
+      }
+    }
+
+    async function loadPosts() {
       if (!url) return '';
       if (url.startsWith('/') || url.startsWith('data:')) return url; // уже локальный
       return `/api/imgcache?url=${encodeURIComponent(url)}`;

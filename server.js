@@ -239,73 +239,7 @@ function savePosts(posts) {
   catch (e) { console.error('[Posts] Save error:', e.message); }
 }
 
-// ─── Telegram Bot ─────────────────────────────────────────────────────────────
-const TG_TOKEN = process.env.TG_TOKEN || '8252644018:AAGOkyp67N0Myv0o-_LWfSpieGtYba6if0w';
-const TG_API = `https://api.telegram.org/bot${TG_TOKEN}`;
-let lastUpdateId = 0;
-const awaitingCookie = new Set();
-const awaitingMessage = new Set();
-const awaitingPost = new Map(); // chatId -> { step, data }
-
-async function tgSend(chatId, text, opts = {}) {
-  await axios.post(`${TG_API}/sendMessage`, { chat_id: chatId, text, ...opts });
-}
-
-async function tgSendPhoto(chatId, url) {
-  const response = await axios.get(url, { headers: { ...getHeaders(), 'Accept': 'image/*, */*' }, responseType: 'arraybuffer', timeout: 60000 });
-  const FormData = require('form-data');
-  const form = new FormData();
-  form.append('chat_id', String(chatId));
-  form.append('photo', Buffer.from(response.data), { filename: 'photo.jpg', contentType: 'image/jpeg' });
-  await axios.post(`${TG_API}/sendPhoto`, form, { headers: form.getHeaders(), timeout: 60000 });
-}
-
-async function tgSendVideo(chatId, url) {
-  const response = await axios.get(url, { headers: { ...getHeaders(), 'Accept': 'video/*, */*' }, responseType: 'arraybuffer', timeout: 120000 });
-  const FormData = require('form-data');
-  const form = new FormData();
-  form.append('chat_id', String(chatId));
-  form.append('video', Buffer.from(response.data), { filename: 'video.mp4', contentType: 'video/mp4' });
-  await axios.post(`${TG_API}/sendVideo`, form, { headers: form.getHeaders(), timeout: 120000 });
-}
-
-async function tgSendMediaGroup(chatId, mediaItems) {
-  const FormData = require('form-data');
-  const chunks = [];
-  for (let i = 0; i < mediaItems.length; i += 10) chunks.push(mediaItems.slice(i, i + 10));
-  for (const chunk of chunks) {
-    const form = new FormData();
-    const mediaJson = [];
-    for (let i = 0; i < chunk.length; i++) {
-      const item = chunk[i];
-      const response = await axios.get(item.url, { headers: { ...getHeaders(), 'Accept': '*/*' }, responseType: 'arraybuffer', timeout: 120000 });
-      const fieldName = `file${i}`;
-      const ext = item.type === 'video' ? 'mp4' : 'jpg';
-      const ct = item.type === 'video' ? 'video/mp4' : 'image/jpeg';
-      form.append(fieldName, Buffer.from(response.data), { filename: `media_${i+1}.${ext}`, contentType: ct });
-      mediaJson.push({ type: item.type === 'video' ? 'video' : 'photo', media: `attach://${fieldName}` });
-    }
-    form.append('chat_id', String(chatId));
-    form.append('media', JSON.stringify(mediaJson));
-    await axios.post(`${TG_API}/sendMediaGroup`, form, { headers: form.getHeaders(), timeout: 180000 });
-  }
-}
-
-function isAdmin(username) {
-  if (!username) return false;
-  const config = loadConfig();
-  const adminUser = (config.adminUsername || '').replace('@', '').toLowerCase();
-  return adminUser && username.toLowerCase() === adminUser;
-}
-
-async function checkCookieValid() {
-  try {
-    const res = await axios.get('https://www.instagram.com/api/v1/accounts/current_user/?edit=true', { headers: getHeaders(), timeout: 10000 });
-    return res.status === 200;
-  } catch { return false; }
-}
-
-// ─── Проверка дат релизов и уведомление в TG ─────────────────────────────────
+// ─── Проверка дат релизов ─────────────────────────────────────────────────────
 const TIMEZONES = { 'KST': 9, 'MSK': 3, 'ALMT': 5, 'UTC': 0 };
 
 function getReleaseUTCDate(release) {
@@ -313,273 +247,30 @@ function getReleaseUTCDate(release) {
   const time = release.releaseTime || '00:00';
   const tz = release.timezone || 'UTC';
   const offsetHours = TIMEZONES[tz] !== undefined ? TIMEZONES[tz] : 0;
-  // Парсим дату и время как локальное время зоны, конвертируем в UTC
   const [y, mo, d] = date.split('-').map(Number);
   const [h, mi] = time.split(':').map(Number);
-  // UTC = локальное - смещение
   return new Date(Date.UTC(y, mo - 1, d, h - offsetHours, mi, 0));
 }
 
 async function checkReleaseDates() {
-  const config = loadConfig();
-  const adminChatId = config.adminChatId;
   const now = new Date();
-  console.log(`[Releases] Checking at ${now.toISOString()}, adminChatId=${adminChatId}`);
-
   const releases = loadReleases();
-  if (!releases.length) { console.log('[Releases] Нет релизов'); return; }
-
+  if (!releases.length) return;
   let changed = false;
   const remaining = [];
-
   for (const release of releases) {
     const releaseUTC = getReleaseUTCDate(release);
     const msSinceRelease = now - releaseUTC;
-    console.log(`[Releases] "${release.title}": releaseUTC=${releaseUTC.toISOString()}, msSince=${Math.round(msSinceRelease/1000)}s, notified=${release.notified}`);
-
-    // Удаляем через сутки после выхода
-    if (msSinceRelease > 24 * 60 * 60 * 1000) {
-      console.log(`[Releases] Удаляем "${release.title}"`);
-      changed = true;
-      continue;
-    }
-
-    // Уведомляем если вышел и ещё не уведомляли
+    if (msSinceRelease > 24 * 60 * 60 * 1000) { changed = true; continue; }
     if (msSinceRelease >= 0 && !release.notified) {
       release.notified = true;
       release.notifiedAt = now.toISOString();
       changed = true;
-      console.log(`[Releases] Ставим notified=true для "${release.title}"`);
-
-      // Отправляем уведомление только если прошло меньше 2 часов (не перезапуск)
-      const hoursSince = msSinceRelease / (1000 * 60 * 60);
-      if (adminChatId && hoursSince < 2) {
-        const tz = release.timezone || 'UTC';
-        const timeStr = (release.releaseTime && release.releaseTime !== '00:00') ? ` в ${release.releaseTime} (${tz})` : '';
-        try {
-          const lines = ['\u{1F3B5} \u0420\u0435\u043B\u0438\u0437 \u0432\u044B\u0448\u0435\u043B!', `\u{1F464} \u0410\u0440\u0442\u0438\u0441\u0442: ${release.artist}`, `\u{1F4BF} \u041D\u0430\u0437\u0432\u0430\u043D\u0438\u0435: ${release.title}`, `\u{1F4C5} \u0414\u0430\u0442\u0430: ${release.releaseDate}${timeStr}`, '', '\u0422\u0440\u0435\u043A \u0443\u0436\u0435 \u0434\u043E\u043B\u0436\u0435\u043D \u0431\u044B\u0442\u044C \u043D\u0430 \u043F\u043B\u043E\u0449\u0430\u0434\u043A\u0430\u0445!'];
-          await tgSend(adminChatId, lines.join('\n'));
-          console.log(`[Releases] ✅ Уведомление отправлено: ${release.title}`);
-        } catch (e) {
-          console.error('[TG] Notify error:', e.message);
-        }
-      } else if (!adminChatId) {
-        console.log('[Releases] ⚠️ adminChatId не задан');
-      } else {
-        console.log(`[Releases] Пропуск уведомления — ${hoursSince.toFixed(1)}ч (перезапуск)`);
-      }
+      sseNotify({ type: 'release', title: release.title, artist: release.artist });
     }
-
     remaining.push(release);
   }
-
-  if (changed) {
-    saveReleases(remaining);
-    console.log(`[Releases] ✅ Сохранено. Релизов: ${remaining.length}`);
-  }
-}
-// ─── Обработчик сообщений Telegram ───────────────────────────────────────────
-async function handleTgMessage(msg) {
-  const chatId = msg.chat.id;
-  const text = (msg.text || '').trim();
-  const username = (msg.from?.username || '').toLowerCase();
-
-  // Сохраняем chatId админа для уведомлений
-  if (isAdmin(username)) {
-    const config = loadConfig();
-    if (config.adminChatId !== chatId) saveConfig({ adminChatId: chatId });
-  }
-
-  // Ожидание куки
-  if (awaitingCookie.has(chatId)) {
-    awaitingCookie.delete(chatId);
-    if (text.length < 20) { await tgSend(chatId, '❌ Не похоже на куки. Отправь /start и попробуй снова.'); return; }
-    saveConfig({ cookie: text });
-    await tgSend(chatId, '✅ Куки сохранены! Проверяю...');
-    const valid = await checkCookieValid();
-    await tgSend(chatId, valid
-      ? '✅ Куки рабочие!\n\n/onsite — включить сайт\n/offsite — выключить сайт\n/message — сообщение\n/unmessage — убрать'
-      : '⚠️ Куки сохранены, но Instagram не принял. Возможно устарели.'
-    );
-    return;
-  }
-
-  // Ожидание текста /message
-  if (awaitingMessage.has(chatId)) {
-    awaitingMessage.delete(chatId);
-    const parts = text.split('|');
-    const title = parts[0]?.trim() || 'Внимание';
-    const body = parts[1]?.trim() || text;
-    saveConfig({ siteMessage: { active: true, title, body } });
-    await tgSend(chatId, `✅ Сообщение установлено!\n\n📌 ${title}\n📝 ${body}\n\nУбрать — /unmessage`);
-    return;
-  }
-
-  // /cancel — сброс любого ожидания
-  if (text === '/cancel') {
-    awaitingPost.delete(chatId);
-    awaitingCookie.delete(chatId);
-    awaitingMessage.delete(chatId);
-    await tgSend(chatId, '❌ Отменено.');
-    return;
-  }
-
-  // /post flow
-  if (awaitingPost.has(chatId)) {
-    const state = awaitingPost.get(chatId);
-
-    if (state.step === 'text') {
-      if (!msg.text) { await tgSend(chatId, '❌ Отправь текст поста'); return; }
-      state.data.text = text;
-      state.step = 'photo';
-      awaitingPost.set(chatId, state);
-      await tgSend(chatId, '✅ Текст сохранён!\n\n📸 Шаг 2/2: Отправь фото (или /skip чтобы без фото):\n\n/cancel — отменить');
-      return;
-    }
-
-    if (state.step === 'photo') {
-      if (msg.text === '/skip' || text === '/skip') {
-        // без фото
-        const post = { id: Date.now(), text: state.data.text, image: null, likes: 0, createdAt: new Date().toISOString() };
-        const posts = loadPosts();
-        posts.unshift(post);
-        savePosts(posts);
-        awaitingPost.delete(chatId);
-        await tgSend(chatId, `✅ Пост опубликован!\n\n📝 ${post.text}`);
-        return;
-      }
-      const photo = msg.photo;
-      if (!photo) {
-        await tgSend(chatId, '❌ Нужно фото или /skip!\n\n/cancel — отменить');
-        return;
-      }
-      const fileId = photo[photo.length - 1].file_id;
-      try {
-        const fileRes = await axios.get(`${TG_API}/getFile?file_id=${fileId}`);
-        const filePath = fileRes.data.result.file_path;
-        const fileUrl = `https://api.telegram.org/file/bot${TG_TOKEN}/${filePath}`;
-        const imgRes = await axios.get(fileUrl, { responseType: 'arraybuffer', timeout: 30000 });
-        const base64 = 'data:image/jpeg;base64,' + Buffer.from(imgRes.data).toString('base64');
-        const post = { id: Date.now(), text: state.data.text, image: base64, likes: 0, createdAt: new Date().toISOString() };
-        const posts = loadPosts();
-        posts.unshift(post);
-        savePosts(posts);
-        awaitingPost.delete(chatId);
-        await tgSend(chatId, `✅ Пост с фото опубликован!\n\n📝 ${post.text}`);
-      } catch (e) {
-        awaitingPost.delete(chatId);
-        await tgSend(chatId, '❌ Ошибка загрузки фото. Попробуй снова /post');
-      }
-      return;
-    }
-  }
-  // /start
-  if (text === '/start') {
-    if (!isAdmin(username)) return;
-    await tgSend(chatId, '🔐 Добро пожаловать! Проверяю куки...');
-    const hasCookie = !!getCookie();
-    if (!hasCookie) {
-      await tgSend(chatId, '⚠️ Куки не найдены! Отправь строку куки от Instagram:');
-      awaitingCookie.add(chatId);
-      return;
-    }
-    const valid = await checkCookieValid();
-    const config = loadConfig();
-    const releases = loadReleases();
-    await tgSend(chatId,
-      `✅ Панель управления ZHANSAVER\n\n` +
-      `🍪 Куки: ${valid ? '✅ Рабочие' : '❌ Не работают'}\n` +
-      `🌐 Сайт: ${config.siteEnabled !== false ? '✅ Включён' : '🔴 Выключен'}\n` +
-      `📢 Сообщение: ${config.siteMessage?.active ? '✅ Активно' : '—'}\n` +
-      `🎵 Релизов: ${releases.length}\n\n` +
-      `/onsite — включить сайт\n` +
-      `/offsite — выключить сайт\n` +
-      `/message — показать сообщение\n` +
-      `/unmessage — убрать сообщение\n` +
-      `/cookie — обновить куки\n` +
-      `/post — создать пост\n` +
-      `/delposts — список постов для удаления`
-    );
-    return;
-  }
-
-  // Не админ — игнорируем
-  if (!isAdmin(username)) return;
-
-  if (text === '/onsite') {
-    if (loadConfig().siteEnabled !== false) { await tgSend(chatId, 'ℹ️ Сайт уже включён.'); return; }
-    saveConfig({ siteEnabled: true });
-    await tgSend(chatId, '✅ Сайт включён!');
-    return;
-  }
-
-  if (text === '/offsite') {
-    if (loadConfig().siteEnabled === false) { await tgSend(chatId, 'ℹ️ Сайт уже выключен.'); return; }
-    saveConfig({ siteEnabled: false });
-    await tgSend(chatId, '🔴 Сайт выключен.');
-    return;
-  }
-
-  if (text === '/message') {
-    await tgSend(chatId, '📢 Введи заголовок и текст через |\n\nПример:\nВнимание!|Сайт на техобслуживании.\n\nОтправь:');
-    awaitingMessage.add(chatId);
-    return;
-  }
-
-  if (text === '/unmessage') {
-    if (!loadConfig().siteMessage?.active) { await tgSend(chatId, 'ℹ️ Сообщение и так не активно.'); return; }
-    saveConfig({ siteMessage: { active: false, title: '', body: '' } });
-    await tgSend(chatId, '✅ Сообщение убрано.');
-    return;
-  }
-
-  if (text === '/cookie') {
-    await tgSend(chatId, '🍪 Отправь новую строку куки от Instagram:');
-    awaitingCookie.add(chatId);
-    return;
-  }
-
-  if (text === '/post') {
-    awaitingPost.set(chatId, { step: 'text', data: {} });
-    await tgSend(chatId, '📝 Создаём пост!\n\n✏️ Шаг 1/2: Отправь текст поста:\n\n/cancel — отменить');
-    return;
-  }
-
-  if (text === '/delposts') {
-    const posts = loadPosts();
-    if (!posts.length) { await tgSend(chatId, 'Нет постов'); return; }
-    const list = posts.map((p, i) => `${i+1}. ${p.text.substring(0, 40)}... (ID: ${p.id})`).join('\n');
-    await tgSend(chatId, `📝 Посты:\n\n${list}\n\nОтправь /delpost_ID для удаления`);
-    return;
-  }
-
-  if (text.startsWith('/delpost_')) {
-    const id = Number(text.replace('/delpost_', ''));
-    savePosts(loadPosts().filter(p => p.id !== id));
-    await tgSend(chatId, '✅ Пост удалён');
-    return;
-  }
-}
-
-async function pollTelegram() {
-  while (true) {
-    try {
-      const res = await axios.get(`${TG_API}/getUpdates`, {
-        params: { offset: lastUpdateId + 1, timeout: 30, allowed_updates: ['message'] },
-        timeout: 35000,
-      });
-      for (const update of (res.data.result || [])) {
-        lastUpdateId = update.update_id;
-        const msg = update.message;
-        if (!msg) continue;
-        if (!msg.text && !msg.photo) continue;
-        handleTgMessage(msg).catch(e => console.error('[TG] Error:', e.message));
-      }
-    } catch (err) {
-      if (!err.message.includes('timeout')) console.error('[TG] Poll error:', err.message);
-      await new Promise(r => setTimeout(r, 3000));
-    }
-  }
+  if (changed) saveReleases(remaining);
 }
 
 app.use(requireAuth);
@@ -803,9 +494,12 @@ app.post('/api/fetch', async (req, res) => {
   const { url } = req.body;
   if (!url) return res.status(400).json({ error: 'Укажи ссылку' });
 
-  // Instagram
   const shortcode = getShortcode(url);
   if (!shortcode) return res.status(400).json({ error: 'Неверная ссылка Instagram' });
+
+  // Извлекаем username из URL если есть (instagram.com/username/p/...)
+  const usernameMatch = url.match(/instagram\.com\/([^\/\?]+)\/p\//);
+  const username = usernameMatch ? usernameMatch[1] : '';
 
   const hasCookie = !!getCookie();
   const errors = [];
@@ -819,7 +513,7 @@ app.post('/api/fetch', async (req, res) => {
     try {
       console.log(`[${shortcode}] Trying: ${method.name}`);
       const media = await method.fn();
-      if (media?.length > 0) { console.log(`[${shortcode}] ✅ ${method.name}: ${media.length} items`); return res.json({ success: true, media, shortcode }); }
+      if (media?.length > 0) { console.log(`[${shortcode}] ✅ ${method.name}: ${media.length} items`); return res.json({ success: true, media, shortcode, username }); }
     } catch (err) { console.log(`[${shortcode}] ❌ ${method.name}: ${err.message}`); errors.push(`${method.name}: ${err.message}`); }
   }
   res.status(404).json({ error: hasCookie ? 'Не удалось получить медиа. Пост приватный или куки устарели.' : 'Не удалось получить медиа. Добавь куки Instagram.', details: errors, hasCookie });
@@ -991,8 +685,15 @@ function sseNotify(data) {
   sseClients.forEach(res => { try { res.write(msg); } catch {} });
 }
 
+// ─── Upload single image (cover / avatar) ────────────────────────────────────
+const uploadSingle = multer({ storage, limits: { fileSize: 10 * 1024 * 1024 } });
+app.post('/api/upload-single', uploadSingle.single('image'), (req, res) => {
+  if (!req.file) return res.status(400).json({ error: 'Нет файла' });
+  res.json({ success: true, url: `/uploads/${req.file.filename}` });
+});
+
 // ─── Upload images ────────────────────────────────────────────────────────────
-app.post('/api/upload', upload.array('images', 10), (req, res) => {
+app.post('/api/upload', upload.array('images', 20), (req, res) => {
   if (!req.files || !req.files.length) return res.status(400).json({ error: 'Нет файлов' });
   const urls = req.files.map(f => `/uploads/${f.filename}`);
   res.json({ success: true, urls });
@@ -1140,12 +841,7 @@ const server = app.listen(PORT, () => {
 
 // Запускаем фоновые задачи через setImmediate — только после того как listen завершился
 server.on('listening', () => {
-  // Telegram polling в отдельном "потоке" — не блокирует HTTP
-  setImmediate(() => pollTelegram().catch(console.error));
-  console.log('🤖 Telegram бот запущен!');
-
   // Проверяем релизы каждый час
   setInterval(checkReleaseDates, 60 * 60 * 1000);
-  // Первая проверка через 10 секунд после старта
   setTimeout(checkReleaseDates, 10000);
 });
