@@ -45,6 +45,25 @@
       }
       .nav-btn:hover { border-color: #444; color: var(--text); }
       .nav-btn.active { background: var(--btn-bg); color: var(--btn-text); border-color: var(--btn-bg); }
+      /* Bell button */
+      .nav-btn-bell { flex: 0 0 42px; min-width: 42px; display: flex; align-items: center; justify-content: center; position: relative; }
+      .notif-badge { position: absolute; top: 4px; right: 4px; min-width: 15px; height: 15px; border-radius: 8px; background: #e0245e; color: #fff; font-size: 0.58rem; font-family: 'Space Mono', monospace; display: flex; align-items: center; justify-content: center; padding: 0 3px; border: 2px solid var(--bg); pointer-events: none; line-height: 1; }
+      /* Notification panel */
+      .notif-panel { position: fixed; top: 0; right: 0; width: min(360px, 100vw); height: 100vh; background: var(--surface); border-left: 1px solid var(--border); z-index: 2500; display: flex; flex-direction: column; box-shadow: -6px 0 32px rgba(0,0,0,0.5); transform: translateX(100%); transition: transform 0.28s cubic-bezier(0.4,0,0.2,1); }
+      .notif-panel.open { transform: translateX(0); }
+      .notif-panel-header { display: flex; align-items: center; justify-content: space-between; padding: 20px 20px 14px; border-bottom: 1px solid var(--border); }
+      .notif-panel-title { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 1.1rem; }
+      .notif-panel-close { background: transparent; border: none; color: var(--text-muted); cursor: pointer; font-size: 1.3rem; line-height: 1; padding: 4px; }
+      .notif-list { flex: 1; overflow-y: auto; padding: 12px; display: flex; flex-direction: column; gap: 8px; }
+      .notif-empty { text-align: center; color: var(--text-muted); font-size: 0.8rem; padding: 40px 0; }
+      .notif-item { display: flex; align-items: flex-start; gap: 10px; padding: 10px 12px; background: var(--surface2); border-radius: 10px; }
+      .notif-item.unread { border-left: 3px solid #e0245e; }
+      .notif-icon { font-size: 1.1rem; flex-shrink: 0; }
+      .notif-body { flex: 1; font-size: 0.78rem; line-height: 1.5; color: var(--text-dim); }
+      .notif-body strong { color: var(--text); }
+      .notif-time { font-size: 0.64rem; color: var(--text-muted); margin-top: 2px; }
+      .notif-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 2400; display: none; }
+      .notif-overlay.open { display: block; }
 
       /* ── PAGES ── */
       .page { display: none; width: 100%; flex-direction: column; align-items: center; padding-bottom: 60px; }
@@ -216,22 +235,91 @@
       .post-card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 16px; margin-bottom: 12px; transition: border-color 0.2s; }
       .post-card:hover { border-color: #444; }
       .post-card-header { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
-      .post-avatar { width: 40px; height: 40px; border-radius: 50%; background: var(--surface2); display: flex; align-items: center; justify-content: center; font-size: 1.1rem; flex-shrink: 0; border: 1.5px solid var(--border); }
-      .post-author { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 0.88rem; }
+      .post-avatar { width: 40px; height: 40px; border-radius: 50%; background: var(--surface2); display: flex; align-items: center; justify-content: center; font-size: 1.1rem; flex-shrink: 0; border: 1.5px solid var(--border); object-fit: cover; }
+      .post-author-name { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 0.88rem; }
       .post-time { font-size: 0.72rem; color: var(--text-muted); margin-top: 1px; }
       .post-text { font-size: 0.9rem; line-height: 1.65; margin-bottom: 12px; white-space: pre-wrap; word-break: break-word; }
-      .post-image { width: 100%; border-radius: 12px; object-fit: cover; max-height: 400px; display: block; margin-bottom: 12px; border: 1px solid var(--border); }
-      .post-footer { display: flex; align-items: center; justify-content: space-between; }
+      /* ── Carousel / Photo grid ── */
+      /* ── Carousel / Photo grid ── */
+      .post-carousel { position: relative; margin-bottom: 12px; border-radius: 12px; overflow: hidden; background: var(--surface2); }
+      .post-carousel-track { display: flex; transition: transform 0.3s cubic-bezier(0.4,0,0.2,1); will-change: transform; }
+      .post-carousel-slide { min-width: 100%; }
+      .post-carousel-slide img { width: 100%; height: 320px; object-fit: contain; background: #000; display: block; cursor: pointer; }
+      .post-carousel-counter { position: absolute; top: 10px; right: 10px; background: rgba(0,0,0,0.65); color: #fff; font-size: 0.7rem; padding: 3px 8px; border-radius: 20px; font-family: 'Space Mono', monospace; backdrop-filter: blur(4px); pointer-events: none; }
+      /* Twitter-style photo grid */
+      .post-photo-grid { display: grid; gap: 3px; border-radius: 12px; overflow: hidden; margin-bottom: 12px; }
+      .post-photo-grid.count-1 { grid-template-columns: 1fr; }
+      .post-photo-grid.count-2 { grid-template-columns: 1fr 1fr; }
+      .post-photo-grid.count-3 { grid-template-columns: 1fr 1fr; grid-template-rows: 200px 200px; }
+      .post-photo-grid.count-3 .grid-img:first-child { grid-row: 1 / 3; }
+      .post-photo-grid.count-4 { grid-template-columns: 1fr 1fr; grid-template-rows: 190px 190px; }
+      .post-photo-grid .grid-img { overflow: hidden; cursor: pointer; background: var(--surface2); position: relative; }
+      .post-photo-grid.count-1 .grid-img { height: 320px; }
+      .post-photo-grid.count-2 .grid-img { height: 220px; }
+      .post-photo-grid .grid-img img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform 0.25s; }
+      .post-photo-grid .grid-img:hover img { transform: scale(1.04); }
+      .grid-more-overlay { position: absolute; inset: 0; background: rgba(0,0,0,0.55); display: flex; align-items: center; justify-content: center; color: #fff; font-family: 'Syne', sans-serif; font-weight: 800; font-size: 1.6rem; pointer-events: none; }
+      @media (max-width: 480px) {
+        .post-photo-grid.count-1 .grid-img { height: 240px; }
+        .post-photo-grid.count-2 .grid-img { height: 170px; }
+        .post-photo-grid.count-3 { grid-template-rows: 155px 155px; }
+        .post-photo-grid.count-4 { grid-template-rows: 145px 145px; }
+        .post-carousel-slide img { height: 240px; }
+      }
+      /* ── Post footer ── */
+      .post-footer { display: flex; align-items: center; gap: 8px; }
       .post-like-btn { display: flex; align-items: center; gap: 6px; padding: 7px 14px; background: transparent; border: 1.5px solid var(--border); border-radius: 100px; color: var(--text-muted); font-size: 0.78rem; font-family: 'Space Mono', monospace; cursor: pointer; transition: all 0.15s; }
       .post-like-btn:hover { border-color: #e0245e; color: #e0245e; background: rgba(224,36,94,0.07); }
       .post-like-btn.liked { border-color: #e0245e; color: #e0245e; background: rgba(224,36,94,0.1); }
-      .post-del-btn { background: transparent; border: none; color: var(--text-muted); cursor: pointer; padding: 6px 8px; border-radius: 8px; transition: color 0.15s, background 0.15s; }
+      .post-comment-btn { display: flex; align-items: center; gap: 6px; padding: 7px 14px; background: transparent; border: 1.5px solid var(--border); border-radius: 100px; color: var(--text-muted); font-size: 0.78rem; font-family: 'Space Mono', monospace; cursor: pointer; transition: all 0.15s; }
+      .post-comment-btn:hover { border-color: var(--text-dim); color: var(--text); }
+      .post-del-btn { margin-left: auto; background: transparent; border: none; color: var(--text-muted); cursor: pointer; padding: 6px 8px; border-radius: 8px; transition: color 0.15s, background 0.15s; }
       .post-del-btn:hover { color: var(--danger); background: rgba(255,59,59,0.08); }
+      /* ── Comments ── */
+      .post-comments { margin-top: 14px; border-top: 1px solid var(--border); padding-top: 12px; display: none; }
+      .post-comments.open { display: block; }
+      .comment-item { display: flex; gap: 9px; margin-bottom: 10px; }
+      .comment-avatar { width: 28px; height: 28px; border-radius: 50%; background: var(--surface2); flex-shrink: 0; object-fit: cover; display: flex; align-items: center; justify-content: center; font-size: 0.75rem; }
+      .comment-body { flex: 1; min-width: 0; }
+      .comment-author { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 0.75rem; }
+      .comment-text { font-size: 0.82rem; color: var(--text-dim); line-height: 1.5; margin-top: 2px; word-break: break-word; }
+      .comment-time { font-size: 0.65rem; color: var(--text-muted); margin-top: 2px; }
+      .comment-del { background: transparent; border: none; color: var(--text-muted); cursor: pointer; padding: 2px 5px; border-radius: 4px; font-size: 0.7rem; transition: color 0.15s; flex-shrink: 0; }
+      .comment-del:hover { color: var(--danger); }
+      .comment-input-row { display: flex; gap: 8px; margin-top: 8px; }
+      .comment-input { flex: 1; padding: 9px 12px; background: var(--bg); border: 1.5px solid var(--border); border-radius: 10px; color: var(--text); font-size: 0.82rem; font-family: 'Space Mono', monospace; outline: none; transition: border-color 0.2s; }
+      .comment-input:focus { border-color: var(--border-active); }
+      .comment-send-btn { padding: 9px 14px; background: var(--btn-bg); color: var(--btn-text); border: none; border-radius: 10px; font-family: 'Syne', sans-serif; font-weight: 800; font-size: 0.78rem; cursor: pointer; transition: opacity 0.15s; white-space: nowrap; }
+      .comment-send-btn:hover { opacity: 0.85; }
       .posts-empty { text-align: center; padding: 60px 20px; color: var(--text-muted); font-size: 0.82rem; line-height: 1.8; }
       /* Post modal */
       .post-modal-textarea { width: 100%; min-height: 110px; background: var(--bg); border: 1.5px solid var(--border); border-radius: var(--radius); color: var(--text); font-size: 0.9rem; padding: 14px; resize: vertical; outline: none; font-family: 'Space Mono', monospace; line-height: 1.6; transition: border-color 0.2s; }
       .post-modal-textarea:focus { border-color: var(--border-active); }
       .post-char-count { text-align: right; font-size: 0.72rem; color: var(--text-muted); margin-top: 4px; }
+      .post-img-preview-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); gap: 6px; margin-top: 10px; }
+      .post-img-preview-item { position: relative; aspect-ratio: 1; border-radius: 8px; overflow: hidden; }
+      .post-img-preview-item img { width: 100%; height: 100%; object-fit: cover; }
+      .post-img-remove { position: absolute; top: 3px; right: 3px; width: 20px; height: 20px; border-radius: 50%; background: rgba(0,0,0,0.75); border: none; color: #fff; cursor: pointer; font-size: 0.7rem; display: flex; align-items: center; justify-content: center; }
+      /* ── Lightbox ── */
+      .lightbox { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.96); z-index: 3000; align-items: center; justify-content: center; overflow: hidden; }
+      .lightbox.open { display: flex; }
+      .lightbox-track { display: flex; width: 100%; height: 100%; transition: transform 0.28s cubic-bezier(0.4,0,0.2,1); will-change: transform; }
+      .lightbox-slide { min-width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+      .lightbox-slide img { max-width: 96vw; max-height: 92vh; object-fit: contain; border-radius: 6px; user-select: none; pointer-events: none; }
+      .lightbox-close { position: fixed; top: 16px; right: 16px; background: rgba(255,255,255,0.12); border: none; color: #fff; width: 40px; height: 40px; border-radius: 50%; cursor: pointer; font-size: 1.2rem; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(8px); transition: background 0.15s; z-index: 3002; }
+      .lightbox-close:hover { background: rgba(255,255,255,0.22); }
+      .lightbox-btn { position: fixed; top: 50%; transform: translateY(-50%); background: rgba(255,255,255,0.12); border: none; color: #fff; width: 44px; height: 44px; border-radius: 50%; cursor: pointer; font-size: 1.2rem; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(8px); transition: background 0.15s; z-index: 3002; }
+      .lightbox-btn:hover { background: rgba(255,255,255,0.22); }
+      .lightbox-btn.prev { left: 14px; }
+      .lightbox-btn.next { right: 14px; }
+      .lightbox-counter { position: fixed; bottom: 22px; left: 50%; transform: translateX(-50%); color: rgba(255,255,255,0.55); font-size: 0.78rem; font-family: 'Space Mono', monospace; pointer-events: none; }
+      @media (max-width: 768px) { .lightbox-btn { display: none !important; } }
+      /* ── Post images — vertical stack, no grid ── */
+      .post-imgs-stack { display: flex; flex-direction: column; gap: 4px; margin-bottom: 12px; border-radius: 12px; overflow: hidden; }
+      .post-imgs-stack .stack-img { position: relative; cursor: pointer; overflow: hidden; background: #000; }
+      .post-imgs-stack .stack-img img { width: 100%; display: block; max-height: 480px; object-fit: contain; transition: opacity 0.15s; }
+      .post-imgs-stack .stack-img:hover img { opacity: 0.92; }
+      .stack-more-overlay { position: absolute; inset: 0; background: rgba(0,0,0,0.55); display: flex; align-items: center; justify-content: center; color: #fff; font-family: 'Syne', sans-serif; font-weight: 800; font-size: 1.8rem; }
       /* Confirm modal */
       .confirm-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 2000; display: flex; align-items: center; justify-content: center; padding: 20px; opacity: 0; pointer-events: none; transition: opacity 0.2s; }
       .confirm-overlay.show { opacity: 1; pointer-events: all; }
@@ -253,6 +341,7 @@
         .media-grid { grid-template-columns: repeat(2, 1fr); gap: 8px; }
       }
       @media (max-width: 360px) { .media-grid { grid-template-columns: 1fr; } }
+      @keyframes bellShake { 0%,100%{transform:rotate(0)} 20%{transform:rotate(-15deg)} 50%{transform:rotate(12deg)} 75%{transform:rotate(-8deg)} }
     </style>
   </head>
   <body>
@@ -334,11 +423,30 @@
     <button class="nav-btn" id="navRelease" onclick="switchPage('release')">RELEASE</button>
     <button class="nav-btn" id="navLinks" onclick="switchPage('links')">LINKS</button>
     <button class="nav-btn" id="navPosts" onclick="switchPage('posts')">POSTS</button>
+    <button class="nav-btn nav-btn-bell" id="navBell" onclick="openNotifPanel()" title="Уведомления">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+      <span class="notif-badge" id="notifBadge" style="display:none">0</span>
+    </button>
   </nav>
   <div id="userBar" style="width:100%;max-width:640px;display:flex;align-items:center;justify-content:flex-end;gap:10px;padding:8px 20px 0;font-size:0.72rem;color:var(--text-muted);">
     <img id="userAvatar" style="width:24px;height:24px;border-radius:50%;display:none;" alt=""/>
     <span id="userName"></span>
     <a href="/auth/logout" style="color:var(--text-muted);text-decoration:none;border:1px solid var(--border);border-radius:6px;padding:3px 9px;font-family:'Space Mono',monospace;transition:color 0.15s,border-color 0.15s;" onmouseover="this.style.color='var(--text)';this.style.borderColor='#666'" onmouseout="this.style.color='var(--text-muted)';this.style.borderColor='var(--border)'">Выйти</a>
+  </div>
+
+  <!-- Notification panel -->
+  <div class="notif-overlay" id="notifOverlay" onclick="closeNotifPanel()"></div>
+  <div class="notif-panel" id="notifPanel">
+    <div class="notif-panel-header">
+      <span class="notif-panel-title">Уведомления</span>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <button onclick="clearNotifs()" style="background:transparent;border:none;color:var(--text-muted);font-size:0.72rem;font-family:'Space Mono',monospace;cursor:pointer;padding:4px 8px;border:1px solid var(--border);border-radius:6px;">Очистить</button>
+        <button class="notif-panel-close" onclick="closeNotifPanel()">✕</button>
+      </div>
+    </div>
+    <div class="notif-list" id="notifList">
+      <div class="notif-empty">Нет уведомлений</div>
+    </div>
   </div>
 
   <!-- PAGE: INSTTIK -->
@@ -478,18 +586,28 @@
         <div class="post-char-count"><span id="postCharCount">0</span> / 500</div>
       </div>
       <div class="release-form-field">
-        <label class="release-form-label">Фото (необязательно)</label>
-        <div class="cover-upload-area" id="postImgArea">
-          <input type="file" id="postImgInput" accept="image/*" onchange="handlePostImage(event)"/>
-          <img class="cover-preview" id="postImgPreview" alt="фото" style="display:none;max-height:160px;object-fit:cover;"/>
+        <label class="release-form-label">Фото (можно несколько)</label>
+        <div class="cover-upload-area" id="postImgArea" onclick="document.getElementById('postImgInput').click()" style="cursor:pointer;">
+          <input type="file" id="postImgInput" accept="image/*" multiple onchange="handlePostImages(event)" style="display:none"/>
           <div class="upload-text" id="postImgText">Нажми чтобы добавить фото</div>
         </div>
+        <div class="post-img-preview-grid" id="postImgPreviewGrid"></div>
       </div>
       <div class="modal-actions">
         <button class="btn-save" onclick="savePost()">Опубликовать</button>
         <button class="btn-cancel" onclick="closePostModal()">Отмена</button>
       </div>
     </div>
+  </div>
+
+  <!-- Lightbox -->
+  <div class="lightbox" id="lightbox">
+    <button class="lightbox-close" onclick="closeLightboxBtn()">✕</button>
+    <button class="lightbox-btn prev" id="lbPrev" onclick="lightboxNav(-1)">‹</button>
+    <div class="lightbox-track" id="lightboxTrack"></div>
+    <button class="lightbox-btn next" id="lbNext" onclick="lightboxNav(1)">›</button>
+    <div class="lightbox-counter" id="lightboxCounter"></div>
+  </div>
   </div>
 
   <!-- Confirm delete -->
@@ -935,22 +1053,6 @@
     checkSiteStatus();
     setInterval(checkSiteStatus, 30000);
 
-    // ── User info ─────────────────────────────────────────────────────────────
-    (async () => {
-      try {
-        const res = await fetch('/api/me');
-        const data = await res.json();
-        if (data.loggedIn && data.user) {
-          document.getElementById('userName').textContent = data.user.name || data.user.email || '';
-          if (data.user.photo) {
-            const av = document.getElementById('userAvatar');
-            av.src = data.user.photo;
-            av.style.display = 'block';
-          }
-        }
-      } catch {}
-    })();
-
     // ── LINKS ──────────────────────────────────────────────────────────────────
     let linkAvatarBase64 = null;
     let linkAvatarChanged = false;
@@ -1270,49 +1372,106 @@
     }
 
     // ── POSTS ──────────────────────────────────────────────────────────────────
-    let postImageBase64 = null;
-    const likedPosts = new Set(JSON.parse(localStorage.getItem('likedPosts') || '[]'));
+    let postImages = []; // массив {file, preview, uploaded}
+    let currentUser = null;
+
+    // Загружаем текущего юзера
+    (async () => {
+      try {
+        const res = await fetch('/api/me');
+        const data = await res.json();
+        if (data.loggedIn) {
+          currentUser = data.user;
+          document.getElementById('userName').textContent = data.user.name || data.user.email || '';
+          if (data.user.photo) { const av = document.getElementById('userAvatar'); av.src = data.user.photo; av.style.display = 'block'; }
+        }
+      } catch {}
+    })();
 
     function openPostModal() {
-      postImageBase64 = null;
+      postImages.forEach(item => URL.revokeObjectURL(item.preview));
+      postImages = [];
       document.getElementById('postText').value = '';
       document.getElementById('postCharCount').textContent = '0';
       document.getElementById('postImgInput').value = '';
-      document.getElementById('postImgPreview').style.display = 'none';
       document.getElementById('postImgText').style.display = 'block';
+      document.getElementById('postImgPreviewGrid').innerHTML = '';
       document.getElementById('postModalOverlay').classList.add('show');
     }
     function closePostModal() { document.getElementById('postModalOverlay').classList.remove('show'); }
     document.getElementById('postModalOverlay').addEventListener('click', e => { if (e.target.id === 'postModalOverlay') closePostModal(); });
 
     function updateCharCount() {
-      const len = document.getElementById('postText').value.length;
-      document.getElementById('postCharCount').textContent = len;
+      document.getElementById('postCharCount').textContent = document.getElementById('postText').value.length;
     }
 
-    function handlePostImage(event) {
-      const file = event.target.files[0]; if (!file) return;
-      const reader = new FileReader();
-      reader.onload = e => {
-        postImageBase64 = e.target.result;
-        const prev = document.getElementById('postImgPreview');
-        prev.src = postImageBase64; prev.style.display = 'block';
-        document.getElementById('postImgText').style.display = 'none';
-      };
-      reader.readAsDataURL(file);
+    function handlePostImages(event) {
+      const files = Array.from(event.target.files);
+      if (!files.length) return;
+      document.getElementById('postImgText').style.display = 'none';
+      files.forEach(file => {
+        // Превью локально через ObjectURL (быстро, не грузит память)
+        const url = URL.createObjectURL(file);
+        postImages.push({ file, preview: url, uploaded: null });
+        renderPostImagePreviews();
+      });
+    }
+
+    function renderPostImagePreviews() {
+      const grid = document.getElementById('postImgPreviewGrid');
+      grid.innerHTML = '';
+      postImages.forEach((item, i) => {
+        const el = document.createElement('div'); el.className = 'post-img-preview-item';
+        const img = document.createElement('img'); img.src = item.preview;
+        const rm = document.createElement('button'); rm.className = 'post-img-remove'; rm.textContent = '✕';
+        rm.onclick = (e) => {
+          e.stopPropagation();
+          URL.revokeObjectURL(item.preview);
+          postImages.splice(i, 1);
+          renderPostImagePreviews();
+          if (!postImages.length) document.getElementById('postImgText').style.display = 'block';
+        };
+        el.appendChild(img); el.appendChild(rm); grid.appendChild(el);
+      });
     }
 
     async function savePost() {
       const text = document.getElementById('postText').value.trim();
       if (!text) { showToast('Напиши текст поста!'); return; }
+
+      let imageUrls = [];
+
+      // Если есть файлы — загружаем на сервер
+      if (postImages.length > 0) {
+        const btn = document.querySelector('#postModalOverlay .btn-save');
+        btn.textContent = 'Загрузка...'; btn.disabled = true;
+        try {
+          const formData = new FormData();
+          postImages.forEach(item => formData.append('images', item.file));
+          const r = await fetch('/api/upload', { method: 'POST', body: formData });
+          const d = await r.json();
+          if (!d.success) throw new Error(d.error);
+          imageUrls = d.urls;
+        } catch (e) {
+          showToast('Ошибка загрузки фото'); 
+          const btn = document.querySelector('#postModalOverlay .btn-save');
+          btn.textContent = 'Опубликовать'; btn.disabled = false;
+          return;
+        }
+        btn.textContent = 'Опубликовать'; btn.disabled = false;
+      }
+
       const res = await fetch('/api/posts', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text, image: postImageBase64 })
+        body: JSON.stringify({ text, images: imageUrls })
       });
       const data = await res.json();
-      if (data.success) { closePostModal(); loadPosts(); showToast('✓ Опубликовано!'); }
-      else showToast('Ошибка: ' + data.error);
+      if (data.success) {
+        // Cleanup object URLs
+        postImages.forEach(item => URL.revokeObjectURL(item.preview));
+        closePostModal(); loadPosts(); showToast('✓ Опубликовано!');
+      } else showToast('Ошибка: ' + data.error);
     }
 
     async function loadPosts() {
@@ -1324,13 +1483,113 @@
 
     function timeAgo(iso) {
       const diff = Date.now() - new Date(iso).getTime();
-      const m = Math.floor(diff / 60000);
+      const s = Math.floor(diff / 1000);
+      const m = Math.floor(s / 60);
       const h = Math.floor(m / 60);
       const d = Math.floor(h / 24);
-      if (d > 0) return d + 'д назад';
-      if (h > 0) return h + 'ч назад';
-      if (m > 0) return m + 'мин назад';
+      if (d >= 7) {
+        const date = new Date(iso);
+        return date.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short', year: date.getFullYear() !== new Date().getFullYear() ? 'numeric' : undefined });
+      }
+      if (d === 1) return '1 день назад';
+      if (d >= 2 && d <= 4) return d + ' дня назад';
+      if (d >= 5) return d + ' дней назад';
+      if (h === 1) return '1 час назад';
+      if (h >= 2 && h <= 4) return h + ' часа назад';
+      if (h >= 5) return h + ' часов назад';
+      if (m === 1) return '1 минуту назад';
+      if (m >= 2 && m <= 4) return m + ' минуты назад';
+      if (m >= 5) return m + ' минут назад';
       return 'только что';
+    }
+
+    // ── Lightbox (track-based swipe) ──────────────────────────────────────────
+    let lbImages = [], lbIndex = 0;
+
+    function openLightbox(images, index) {
+      lbImages = images; lbIndex = index;
+      const track = document.getElementById('lightboxTrack');
+      track.innerHTML = '';
+      track.style.transition = 'none';
+      images.forEach(src => {
+        const slide = document.createElement('div'); slide.className = 'lightbox-slide';
+        const img = document.createElement('img'); img.src = src; img.alt = '';
+        slide.appendChild(img); track.appendChild(slide);
+      });
+      track.style.transform = `translateX(-${index * 100}%)`;
+      document.getElementById('lightboxCounter').textContent = images.length > 1 ? `${index + 1} / ${images.length}` : '';
+      document.getElementById('lbPrev').style.display = images.length > 1 ? 'flex' : 'none';
+      document.getElementById('lbNext').style.display = images.length > 1 ? 'flex' : 'none';
+      document.getElementById('lightbox').classList.add('open');
+      document.body.style.overflow = 'hidden';
+
+      // Swipe
+      let tx = 0, dragging = false, startX = 0, currentX = 0;
+      const lb = document.getElementById('lightbox');
+      const onStart = e => { startX = (e.touches ? e.touches[0].clientX : e.clientX); currentX = startX; dragging = true; track.style.transition = 'none'; };
+      const onMove = e => {
+        if (!dragging) return;
+        currentX = (e.touches ? e.touches[0].clientX : e.clientX);
+        const dx = currentX - startX;
+        track.style.transform = `translateX(calc(-${lbIndex * 100}% + ${dx}px))`;
+      };
+      const onEnd = e => {
+        if (!dragging) return; dragging = false;
+        const dx = currentX - startX;
+        track.style.transition = 'transform 0.28s cubic-bezier(0.4,0,0.2,1)';
+        if (Math.abs(dx) > 60) lightboxNav(dx < 0 ? 1 : -1);
+        else track.style.transform = `translateX(-${lbIndex * 100}%)`;
+      };
+      lb._lbCleanup && lb._lbCleanup();
+      lb.addEventListener('touchstart', onStart, { passive: true });
+      lb.addEventListener('touchmove', onMove, { passive: true });
+      lb.addEventListener('touchend', onEnd);
+      lb._lbCleanup = () => { lb.removeEventListener('touchstart', onStart); lb.removeEventListener('touchmove', onMove); lb.removeEventListener('touchend', onEnd); };
+    }
+
+    function lightboxNav(dir) {
+      if (lbImages.length < 2) return;
+      lbIndex = Math.max(0, Math.min(lbImages.length - 1, lbIndex + dir));
+      const track = document.getElementById('lightboxTrack');
+      track.style.transition = 'transform 0.28s cubic-bezier(0.4,0,0.2,1)';
+      track.style.transform = `translateX(-${lbIndex * 100}%)`;
+      document.getElementById('lightboxCounter').textContent = `${lbIndex + 1} / ${lbImages.length}`;
+    }
+
+    function closeLightboxBtn() {
+      document.getElementById('lightbox').classList.remove('open');
+      document.body.style.overflow = '';
+    }
+
+    document.getElementById('lightbox').addEventListener('click', e => {
+      if (e.target === document.getElementById('lightbox')) closeLightboxBtn();
+    });
+
+    document.addEventListener('keydown', e => {
+      if (!document.getElementById('lightbox').classList.contains('open')) return;
+      if (e.key === 'Escape') closeLightboxBtn();
+      if (e.key === 'ArrowLeft') lightboxNav(-1);
+      if (e.key === 'ArrowRight') lightboxNav(1);
+    });
+
+    // ── Post images — vertical stack, no grid ────────────────────────────────
+    function buildCarousel(images, postId) {
+      if (!images || !images.length) return null;
+      const stack = document.createElement('div'); stack.className = 'post-imgs-stack';
+      const show = images.slice(0, 4);
+      const extra = images.length - 4;
+      show.forEach((src, i) => {
+        const wrap = document.createElement('div'); wrap.className = 'stack-img';
+        const img = document.createElement('img'); img.src = src; img.alt = ''; img.loading = 'lazy';
+        wrap.appendChild(img);
+        if (i === 3 && extra > 0) {
+          const ov = document.createElement('div'); ov.className = 'stack-more-overlay';
+          ov.textContent = '+' + extra; wrap.appendChild(ov);
+        }
+        wrap.onclick = () => openLightbox(images, i);
+        stack.appendChild(wrap);
+      });
+      return stack;
     }
 
     function renderPosts(posts) {
@@ -1341,24 +1600,31 @@
       }
       list.innerHTML = '';
       posts.forEach(p => {
-        const card = document.createElement('div');
-        card.className = 'post-card';
+        const card = document.createElement('div'); card.className = 'post-card';
 
-        // Header
+        // Header — автор из Google
         const header = document.createElement('div'); header.className = 'post-card-header';
-        const avatar = document.createElement('div'); avatar.className = 'post-avatar'; avatar.textContent = '✦';
+        const author = p.author || {};
+        let avatarEl;
+        if (author.photo) {
+          avatarEl = document.createElement('img');
+          avatarEl.className = 'post-avatar'; avatarEl.src = author.photo; avatarEl.alt = '';
+        } else {
+          avatarEl = document.createElement('div');
+          avatarEl.className = 'post-avatar'; avatarEl.textContent = (author.name || 'Z')[0].toUpperCase();
+        }
         const meta = document.createElement('div');
-        const author = document.createElement('div'); author.className = 'post-author'; author.textContent = 'ZHANSAVER';
-        const time = document.createElement('div'); time.className = 'post-time'; time.textContent = timeAgo(p.createdAt);
-        meta.appendChild(author); meta.appendChild(time);
-        header.appendChild(avatar); header.appendChild(meta);
+        const nameEl = document.createElement('div'); nameEl.className = 'post-author-name'; nameEl.textContent = author.name || 'ZHANSAVER';
+        const timeEl = document.createElement('div'); timeEl.className = 'post-time'; timeEl.textContent = timeAgo(p.createdAt);
+        meta.appendChild(nameEl); meta.appendChild(timeEl);
+        header.appendChild(avatarEl); header.appendChild(meta);
         card.appendChild(header);
 
-        // Image
-        if (p.image) {
-          const img = document.createElement('img');
-          img.className = 'post-image'; img.src = p.image; img.alt = '';
-          card.appendChild(img);
+        // Carousel / single image
+        const images = p.images?.length ? p.images : (p.image ? [p.image] : []);
+        if (images.length) {
+          const carousel = buildCarousel(images, p.id);
+          if (carousel) card.appendChild(carousel);
         }
 
         // Text
@@ -1368,34 +1634,90 @@
         // Footer
         const footer = document.createElement('div'); footer.className = 'post-footer';
 
-        const liked = likedPosts.has(p.id);
+        // Like — с сервера знаем liked через likedBy
+        const myId = currentUser?.id || currentUser?.email || '';
+        const liked = (p.likedBy || []).includes(myId);
         const likeBtn = document.createElement('button');
         likeBtn.className = 'post-like-btn' + (liked ? ' liked' : '');
-        likeBtn.innerHTML = `<svg width="15" height="15" viewBox="0 0 24 24" fill="${liked ? '#e0245e' : 'none'}" stroke="${liked ? '#e0245e' : 'currentColor'}" stroke-width="2" stroke-linecap="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg> <span>${p.likes || 0}</span>`;
+        const heartSvg = (fill) => `<svg width="15" height="15" viewBox="0 0 24 24" fill="${fill}" stroke="${fill || 'currentColor'}" stroke-width="2" stroke-linecap="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>`;
+        const likeCnt = document.createElement('span'); likeCnt.textContent = p.likes || 0;
+        likeBtn.appendChild(document.createRange().createContextualFragment(heartSvg(liked ? '#e0245e' : 'none')));
+        likeBtn.appendChild(likeCnt);
         likeBtn.onclick = async () => {
-          if (likedPosts.has(p.id)) return;
-          likedPosts.add(p.id);
-          localStorage.setItem('likedPosts', JSON.stringify([...likedPosts]));
+          likeBtn.disabled = true;
           const r = await fetch(`/api/posts/${p.id}/like`, { method: 'POST' });
+          likeBtn.disabled = false;
           const d = await r.json();
-          likeBtn.classList.add('liked');
-          likeBtn.querySelector('span').textContent = d.likes;
-          likeBtn.querySelector('svg').setAttribute('fill', '#e0245e');
-          likeBtn.querySelector('svg').setAttribute('stroke', '#e0245e');
+          likeBtn.innerHTML = '';
+          likeBtn.appendChild(document.createRange().createContextualFragment(heartSvg(d.liked ? '#e0245e' : 'none')));
+          const nc = document.createElement('span'); nc.textContent = d.likes; likeBtn.appendChild(nc);
+          likeBtn.className = 'post-like-btn' + (d.liked ? ' liked' : '');
         };
         footer.appendChild(likeBtn);
 
-        const delBtn = document.createElement('button');
-        delBtn.className = 'post-del-btn';
-        delBtn.title = 'Удалить';
+        // Comment button
+        const commentBtn = document.createElement('button'); commentBtn.className = 'post-comment-btn';
+        const cCount = (p.comments || []).length;
+        commentBtn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg> <span>${cCount}</span>`;
+        const commentsSection = document.createElement('div'); commentsSection.className = 'post-comments';
+        commentBtn.onclick = () => { commentsSection.classList.toggle('open'); };
+        footer.appendChild(commentBtn);
+
+        // Delete btn
+        const delBtn = document.createElement('button'); delBtn.className = 'post-del-btn'; delBtn.title = 'Удалить';
         delBtn.innerHTML = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="3,6 5,6 21,6"/><path d="M19,6l-1,14a2,2,0,0,1-2,2H8a2,2,0,0,1-2-2L5,6"/><path d="M10,11v6"/><path d="M14,11v6"/></svg>`;
-        delBtn.onclick = () => showConfirm('Удалить этот пост?', async () => {
-          await fetch(`/api/posts/${p.id}`, { method: 'DELETE' });
-          loadPosts(); showToast('Удалено');
-        });
+        delBtn.onclick = () => showConfirm('Удалить этот пост?', async () => { await fetch(`/api/posts/${p.id}`, { method: 'DELETE' }); loadPosts(); showToast('Удалено'); });
         footer.appendChild(delBtn);
 
         card.appendChild(footer);
+
+        // Comments section
+        const renderComments = (comments) => {
+          commentsSection.innerHTML = '';
+          (comments || []).forEach(c => {
+            const ci = document.createElement('div'); ci.className = 'comment-item';
+            let cavEl;
+            if (c.author?.photo) { cavEl = document.createElement('img'); cavEl.className = 'comment-avatar'; cavEl.src = c.author.photo; }
+            else { cavEl = document.createElement('div'); cavEl.className = 'comment-avatar'; cavEl.textContent = (c.author?.name || 'A')[0].toUpperCase(); }
+            const cb = document.createElement('div'); cb.className = 'comment-body';
+            const can = document.createElement('div'); can.className = 'comment-author'; can.textContent = c.author?.name || 'Аноним';
+            const ct = document.createElement('div'); ct.className = 'comment-text'; ct.textContent = c.text;
+            const ctm = document.createElement('div'); ctm.className = 'comment-time'; ctm.textContent = timeAgo(c.createdAt);
+            cb.appendChild(can); cb.appendChild(ct); cb.appendChild(ctm);
+            const cdel = document.createElement('button'); cdel.className = 'comment-del'; cdel.textContent = '✕';
+            cdel.onclick = async () => {
+              await fetch(`/api/posts/${p.id}/comments/${c.id}`, { method: 'DELETE' });
+              p.comments = (p.comments || []).filter(x => x.id !== c.id);
+              renderComments(p.comments);
+            };
+            ci.appendChild(cavEl); ci.appendChild(cb); ci.appendChild(cdel);
+            commentsSection.appendChild(ci);
+          });
+          // Input row
+          const inputRow = document.createElement('div'); inputRow.className = 'comment-input-row';
+          const inp = document.createElement('input'); inp.className = 'comment-input'; inp.placeholder = 'Написать комментарий...'; inp.maxLength = 300;
+          const sendBtn = document.createElement('button'); sendBtn.className = 'comment-send-btn'; sendBtn.textContent = 'Отправить';
+          const send = async () => {
+            const txt = inp.value.trim(); if (!txt) return;
+            const optimistic = { id: Date.now(), text: txt, author: currentUser ? { name: currentUser.name, photo: currentUser.photo } : { name: 'Аноним' }, createdAt: new Date().toISOString() };
+            inp.value = ''; inp.disabled = true; sendBtn.disabled = true;
+            const r = await fetch(`/api/posts/${p.id}/comments`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text: optimistic.text }) });
+            inp.disabled = false; sendBtn.disabled = false;
+            if (r.ok) {
+              const d = await r.json();
+              p.comments = [...(p.comments || []), d.comment];
+              renderComments(p.comments);
+            } else showToast('Ошибка');
+          };
+          sendBtn.onclick = send;
+          inp.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); } });
+          inputRow.appendChild(inp); inputRow.appendChild(sendBtn);
+          commentsSection.appendChild(inputRow);
+          // Update counter
+          const span = commentBtn.querySelector('span'); if (span) span.textContent = (comments || []).length;
+        };
+        renderComments(p.comments || []);
+        card.appendChild(commentsSection);
         list.appendChild(card);
       });
     }
@@ -1407,6 +1729,80 @@
     }
     function closeConfirm() { document.getElementById('confirmOverlay').classList.remove('show'); }
     document.getElementById('confirmOverlay').addEventListener('click', e => { if (e.target.id === 'confirmOverlay') closeConfirm(); });
+    // ── NOTIFICATIONS ──────────────────────────────────────────────────────────
+    let notifs = JSON.parse(localStorage.getItem('zhansaver_notifs') || '[]');
+    let unreadCount = 0;
+
+    function saveNotifs() { localStorage.setItem('zhansaver_notifs', JSON.stringify(notifs.slice(0, 50))); }
+
+    function updateBadge() {
+      unreadCount = notifs.filter(n => n.unread).length;
+      const badge = document.getElementById('notifBadge');
+      if (unreadCount > 0) { badge.style.display = 'flex'; badge.textContent = unreadCount > 9 ? '9+' : unreadCount; }
+      else badge.style.display = 'none';
+    }
+
+    function addNotif(icon, text) {
+      const n = { id: Date.now(), icon, text, time: new Date().toISOString(), unread: true };
+      notifs.unshift(n);
+      saveNotifs();
+      updateBadge();
+      renderNotifList();
+      // Bell shake animation
+      const bell = document.getElementById('navBell');
+      bell.style.animation = 'none';
+      setTimeout(() => bell.style.animation = 'bellShake 0.4s ease', 10);
+    }
+
+    function renderNotifList() {
+      const list = document.getElementById('notifList');
+      if (!notifs.length) { list.innerHTML = '<div class="notif-empty">Нет уведомлений</div>'; return; }
+      list.innerHTML = '';
+      notifs.forEach(n => {
+        const item = document.createElement('div'); item.className = 'notif-item' + (n.unread ? ' unread' : '');
+        item.innerHTML = `<div class="notif-icon">${n.icon}</div><div class="notif-body"><div>${n.text}</div><div class="notif-time">${timeAgo(n.time)}</div></div>`;
+        list.appendChild(item);
+      });
+    }
+
+    function openNotifPanel() {
+      document.getElementById('notifPanel').classList.add('open');
+      document.getElementById('notifOverlay').classList.add('open');
+      notifs.forEach(n => n.unread = false);
+      saveNotifs(); updateBadge(); renderNotifList();
+    }
+    function closeNotifPanel() {
+      document.getElementById('notifPanel').classList.remove('open');
+      document.getElementById('notifOverlay').classList.remove('open');
+    }
+    function clearNotifs() { notifs = []; saveNotifs(); updateBadge(); renderNotifList(); }
+
+    // SSE — real-time events
+    function initSSE() {
+      const es = new EventSource('/api/events');
+      es.onmessage = e => {
+        try {
+          const data = JSON.parse(e.data);
+          if (data.type === 'like') {
+            addNotif('❤️', `<strong>${data.user || 'Кто-то'}</strong> поставил лайк посту`);
+            if (document.getElementById('pagePosts').classList.contains('active')) loadPosts();
+          } else if (data.type === 'comment') {
+            addNotif('💬', `<strong>${data.user || 'Кто-то'}</strong> прокомментировал: «${data.text?.slice(0,40)}»`);
+            if (document.getElementById('pagePosts').classList.contains('active')) loadPosts();
+          } else if (data.type === 'login') {
+            addNotif('👤', `<strong>${data.user || 'Новый пользователь'}</strong> вошёл на сайт`);
+          } else if (data.type === 'post') {
+            addNotif('📝', `<strong>${data.user || 'Кто-то'}</strong> опубликовал пост`);
+            if (document.getElementById('pagePosts').classList.contains('active')) loadPosts();
+          }
+        } catch {}
+      };
+      es.onerror = () => { es.close(); setTimeout(initSSE, 5000); };
+    }
+    initSSE();
+    updateBadge();
+    renderNotifList();
+
     // ── THEME ──────────────────────────────────────────────────────────────────
     function applyTheme(theme) {
       document.body.classList.toggle('light', theme === 'light');
