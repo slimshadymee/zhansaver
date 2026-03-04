@@ -28,8 +28,8 @@ const r2 = new S3Client({
   credentials: { accessKeyId: R2_ACCESS_KEY, secretAccessKey: R2_SECRET_KEY },
 });
 
-async function uploadToR2(buffer, filename, contentType) {
-  const key = `uploads/${filename}`;
+async function uploadToR2(buffer, filename, contentType, folder) {
+  const key = `${folder || "uploads"}/${filename}`;
   console.log(`[R2] Uploading: ${key} (${buffer.length} bytes)`);
   await r2.send(new PutObjectCommand({
     Bucket:       R2_BUCKET,
@@ -135,9 +135,10 @@ app.get('/api/me', (req, res) => {
 app.use(requireAuth);
 
 // ─── R2 прокси (если нет публичного URL) ─────────────────────────────────────
-app.get('/r2/uploads/:filename', async (req, res) => {
+app.get('/r2/*', async (req, res) => {
   try {
-    const r = await r2.send(new GetObjectCommand({ Bucket: R2_BUCKET, Key: `uploads/${req.params.filename}` }));
+    const key = req.params[0];
+    const r = await r2.send(new GetObjectCommand({ Bucket: R2_BUCKET, Key: key }));
     res.setHeader('Content-Type',  r.ContentType || 'image/jpeg');
     res.setHeader('Cache-Control', 'public, max-age=2592000, immutable');
     r.Body.pipe(res);
@@ -173,9 +174,10 @@ app.get('/api/status', (req, res) => {
 app.post('/api/upload-single', uploadSingle.single('image'), async (req, res) => {
   if (!req.file) return res.status(400).json({ error: 'Нет файла' });
   try {
+    const folder   = req.query.folder || 'posts';
     const ext      = path.extname(req.file.originalname).toLowerCase() || '.jpg';
     const filename = `${Date.now()}-${Math.random().toString(36).slice(2)}${ext}`;
-    const url      = await uploadToR2(req.file.buffer, filename, req.file.mimetype);
+    const url      = await uploadToR2(req.file.buffer, filename, req.file.mimetype, folder);
     res.json({ success: true, url });
   } catch (e) { console.error('[Upload-single]', e.message); res.status(500).json({ error: e.message }); }
 });
@@ -184,11 +186,12 @@ app.post('/api/upload-single', uploadSingle.single('image'), async (req, res) =>
 app.post('/api/upload', upload.array('images', 20), async (req, res) => {
   if (!req.files?.length) return res.status(400).json({ error: 'Нет файлов' });
   try {
+    const folder = req.query.folder || 'posts';
     const urls = [];
     for (const file of req.files) {
       const ext      = path.extname(file.originalname).toLowerCase() || '.jpg';
       const filename = `${Date.now()}-${Math.random().toString(36).slice(2)}${ext}`;
-      urls.push(await uploadToR2(file.buffer, filename, file.mimetype));
+      urls.push(await uploadToR2(file.buffer, filename, file.mimetype, folder));
     }
     res.json({ success: true, urls });
   } catch (e) { console.error('[Upload]', e.message); res.status(500).json({ error: e.message }); }
@@ -241,6 +244,31 @@ app.get('/api/download-image', async (req, res) => {
     const mime = r.headers['content-type'] || 'image/jpeg';
     res.json({ base64: `data:${mime};base64,${Buffer.from(r.data).toString('base64')}` });
   } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// ─── Proxy avatar (Instagram profile pic → загружаем в R2) ───────────────────
+// Кешируем в памяти чтобы не загружать одно фото дважды
+const avatarCache = new Map();
+app.get('/api/avatar', async (req, res) => {
+  const { url } = req.query;
+  if (!url) return res.status(400).send('No url');
+  // Если уже закешировали — отдаём R2 URL
+  if (avatarCache.has(url)) {
+    return res.json({ url: avatarCache.get(url) });
+  }
+  try {
+    const r        = await axios.get(url, { responseType: 'arraybuffer', timeout: 10000, headers: { 'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) AppleWebKit/605.1.15', 'Referer': 'https://www.instagram.com/', 'Accept': 'image/*,*/*' } });
+    const mime     = r.headers['content-type'] || 'image/jpeg';
+    const ext      = mime.includes('png') ? '.png' : mime.includes('webp') ? '.webp' : '.jpg';
+    const filename = `avatar_${Date.now()}-${Math.random().toString(36).slice(2)}${ext}`;
+    const r2url    = await uploadToR2(Buffer.from(r.data), filename, mime, 'avatars');
+    avatarCache.set(url, r2url);
+    res.json({ url: r2url });
+  } catch (e) {
+    console.error('[Avatar]', e.message);
+    // Фолбэк — отдаём оригинальный URL
+    res.json({ url });
+  }
 });
 
 // ─── Cookie ───────────────────────────────────────────────────────────────────
