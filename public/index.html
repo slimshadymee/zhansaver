@@ -1588,17 +1588,10 @@
         if (!uploadedUrls.length) { showToast('Не удалось загрузить фото'); return; }
 
         openPostModal();
-        // Устанавливаем автора: username + аватарка загруженная в R2
+        // Устанавливаем автора: username + аватарка из инсты
         postOverrideAuthor = username || null;
         if (profilePicUrl) {
-          try {
-            // Загружаем аватарку через наш сервер в R2 чтобы не терять при редеплое
-            const avRes = await fetch(`/api/avatar?url=${encodeURIComponent(profilePicUrl)}`);
-            const avData = await avRes.json();
-            postOverrideAuthorPhoto = avData.url || profilePicUrl;
-          } catch {
-            postOverrideAuthorPhoto = profilePicUrl;
-          }
+          postOverrideAuthorPhoto = profilePicUrl;
         }
 
         // Текст: только caption из поста (без username)
