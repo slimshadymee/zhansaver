@@ -28,8 +28,8 @@ const r2 = new S3Client({
   credentials: { accessKeyId: R2_ACCESS_KEY, secretAccessKey: R2_SECRET_KEY },
 });
 
-async function uploadToR2(buffer, filename, contentType) {
-  const key = `uploads/${filename}`;
+async function uploadToR2(buffer, filename, contentType, folder) {
+  const key = `${folder || "uploads"}/${filename}`;
   console.log(`[R2] Uploading: ${key} (${buffer.length} bytes)`);
   await r2.send(new PutObjectCommand({
     Bucket:       R2_BUCKET,
@@ -42,6 +42,22 @@ async function uploadToR2(buffer, filename, contentType) {
   console.log(`[R2] OK: ${url}`);
   return url;
 }
+async function deleteFromR2(url) {
+  // Вытаскиваем key из URL
+  let key = '';
+  if (url.startsWith('/r2/')) {
+    key = url.slice(4); // убираем '/r2/'
+  } else if (R2_PUBLIC_URL && url.startsWith(R2_PUBLIC_URL)) {
+    key = url.slice(R2_PUBLIC_URL.length + 1); // убираем домен и слэш
+  } else {
+    return; // внешний URL — не трогаем
+  }
+  if (!key) return;
+  const { DeleteObjectCommand } = require('@aws-sdk/client-s3');
+  await r2.send(new DeleteObjectCommand({ Bucket: R2_BUCKET, Key: key }));
+  console.log(`[R2] Deleted: ${key}`);
+}
+
 
 const upload       = multer({ storage: multer.memoryStorage(), limits: { fileSize: 15 * 1024 * 1024 } });
 const uploadSingle = multer({ storage: multer.memoryStorage(), limits: { fileSize: 15 * 1024 * 1024 } });
@@ -174,9 +190,10 @@ app.get('/api/status', (req, res) => {
 app.post('/api/upload-single', uploadSingle.single('image'), async (req, res) => {
   if (!req.file) return res.status(400).json({ error: 'Нет файла' });
   try {
+    const folder   = req.query.folder || 'uploads';
     const ext      = path.extname(req.file.originalname).toLowerCase() || '.jpg';
     const filename = `${Date.now()}-${Math.random().toString(36).slice(2)}${ext}`;
-    const url      = await uploadToR2(req.file.buffer, filename, req.file.mimetype);
+    const url      = await uploadToR2(req.file.buffer, filename, req.file.mimetype, folder);
     res.json({ success: true, url });
   } catch (e) { console.error('[Upload-single]', e.message); res.status(500).json({ error: e.message }); }
 });
@@ -185,11 +202,12 @@ app.post('/api/upload-single', uploadSingle.single('image'), async (req, res) =>
 app.post('/api/upload', upload.array('images', 20), async (req, res) => {
   if (!req.files?.length) return res.status(400).json({ error: 'Нет файлов' });
   try {
+    const folder = req.query.folder || 'posts';
     const urls = [];
     for (const file of req.files) {
       const ext      = path.extname(file.originalname).toLowerCase() || '.jpg';
       const filename = `${Date.now()}-${Math.random().toString(36).slice(2)}${ext}`;
-      urls.push(await uploadToR2(file.buffer, filename, file.mimetype));
+      urls.push(await uploadToR2(file.buffer, filename, file.mimetype, folder));
     }
     res.json({ success: true, urls });
   } catch (e) { console.error('[Upload]', e.message); res.status(500).json({ error: e.message }); }
@@ -471,7 +489,18 @@ app.delete('/api/posts/:id/comments/:cid', (req, res) => {
   res.json({ success: true });
 });
 
-app.delete('/api/posts/:id', (req, res) => { savePosts(loadPosts().filter(p => p.id !== Number(req.params.id))); res.json({ success: true }); });
+app.delete('/api/posts/:id', async (req, res) => {
+  const id    = Number(req.params.id);
+  const posts = loadPosts();
+  const post  = posts.find(p => p.id === id);
+  if (post?.images?.length) {
+    for (const url of post.images) {
+      try { await deleteFromR2(url); } catch(e) { console.error('[R2 delete]', e.message); }
+    }
+  }
+  savePosts(posts.filter(p => p.id !== id));
+  res.json({ success: true });
+});
 
 // ─── Releases ─────────────────────────────────────────────────────────────────
 app.get('/api/releases', (req, res) => res.json(loadReleases()));
@@ -496,7 +525,16 @@ app.put('/api/releases/:id', (req, res) => {
   res.json({ success: true, release: releases[idx] });
 });
 
-app.delete('/api/releases/:id', (req, res) => { saveReleases(loadReleases().filter(r => r.id !== Number(req.params.id))); res.json({ success: true }); });
+app.delete('/api/releases/:id', async (req, res) => {
+  const id       = Number(req.params.id);
+  const releases = loadReleases();
+  const release  = releases.find(r => r.id === id);
+  if (release?.cover) {
+    try { await deleteFromR2(release.cover); } catch(e) { console.error('[R2 delete]', e.message); }
+  }
+  saveReleases(releases.filter(r => r.id !== id));
+  res.json({ success: true });
+});
 
 // ─── Links ────────────────────────────────────────────────────────────────────
 app.get('/api/links', (req, res) => res.json(loadLinks()));
@@ -530,7 +568,16 @@ app.post('/api/links/reorder', (req, res) => {
   res.json({ success: true });
 });
 
-app.delete('/api/links/:id', (req, res) => { saveLinks(loadLinks().filter(l => l.id !== Number(req.params.id))); res.json({ success: true }); });
+app.delete('/api/links/:id', async (req, res) => {
+  const id    = Number(req.params.id);
+  const links = loadLinks();
+  const link  = links.find(l => l.id === id);
+  if (link?.avatar) {
+    try { await deleteFromR2(link.avatar); } catch(e) { console.error('[R2 delete]', e.message); }
+  }
+  saveLinks(links.filter(l => l.id !== id));
+  res.json({ success: true });
+});
 
 // ─── Admin ────────────────────────────────────────────────────────────────────
 app.get('/admin/releases', (req, res) => {
