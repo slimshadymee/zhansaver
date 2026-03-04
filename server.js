@@ -6,11 +6,43 @@ const session = require('express-session');
 const passport = require('passport');
 const { Strategy: GoogleStrategy } = require('passport-google-oauth20');
 const multer = require('multer');
+const { S3Client, PutObjectCommand, DeleteObjectCommand } = require('@aws-sdk/client-s3');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 app.use(express.json({ limit: '1mb' }));
 app.use(express.urlencoded({ extended: true, limit: '1mb' }));
+
+// ─── Cloudflare R2 Client ─────────────────────────────────────────────────────
+const R2_ACCOUNT_ID = process.env.CF_ACCOUNT_ID || '';
+const R2_ACCESS_KEY = process.env.CF_ACCESS_KEY_ID || '';
+const R2_SECRET_KEY = process.env.CF_SECRET_ACCESS_KEY || '';
+const R2_BUCKET     = process.env.CF_BUCKET_NAME || 'zhansaver';
+const R2_PUBLIC_URL = process.env.CF_PUBLIC_URL || ''; // e.g. https://pub-xxx.r2.dev
+
+const r2 = new S3Client({
+  region: 'auto',
+  endpoint: `https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com`,
+  credentials: { accessKeyId: R2_ACCESS_KEY, secretAccessKey: R2_SECRET_KEY },
+});
+
+async function uploadToR2(buffer, filename, contentType) {
+  const key = `uploads/${filename}`;
+  await r2.send(new PutObjectCommand({
+    Bucket: R2_BUCKET,
+    Key: key,
+    Body: buffer,
+    ContentType: contentType || 'image/jpeg',
+    CacheControl: 'public, max-age=31536000, immutable',
+  }));
+  // Если задан публичный URL — используем его, иначе отдаём через наш прокси
+  if (R2_PUBLIC_URL) return `${R2_PUBLIC_URL}/${key}`;
+  return `/r2/${key}`;
+}
+
+// Multer — храним в памяти, потом льём в R2
+const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } });
+const uploadSingle = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } });
 
 // ─── Session & Auth ───────────────────────────────────────────────────────────
 app.use(session({
@@ -156,26 +188,12 @@ app.get('/api/me', (req, res) => {
   res.json({ loggedIn: true, user: req.user });
 });
 
-// ─── Пути к файлам ───────────────────────────────────────────────────────────
+// ─── Пути к данным (только JSON-файлы конфигурации) ─────────────────────────
 // Все данные в Railway Volume (/app/data) или локально рядом с кодом
 const DATA_DIR = process.env.RAILWAY_ENVIRONMENT ? '/app/data' : __dirname;
 if (!fs.existsSync(DATA_DIR)) {
   try { fs.mkdirSync(DATA_DIR, { recursive: true }); } catch {}
 }
-const UPLOADS_DIR = path.join(DATA_DIR, 'uploads');
-if (!fs.existsSync(UPLOADS_DIR)) {
-  try { fs.mkdirSync(UPLOADS_DIR, { recursive: true }); } catch {}
-}
-
-// multer — сохраняем файлы на диск
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, UPLOADS_DIR),
-  filename: (req, file, cb) => {
-    const ext = path.extname(file.originalname).toLowerCase() || '.jpg';
-    cb(null, `${Date.now()}-${Math.random().toString(36).slice(2)}${ext}`);
-  }
-});
-const upload = multer({ storage, limits: { fileSize: 10 * 1024 * 1024 } }); // 10MB per file
 const CONFIG_FILE = path.join(DATA_DIR, 'config.json');
 const RELEASES_FILE = path.join(DATA_DIR, 'releases.json');
 const LINKS_FILE = path.join(DATA_DIR, 'links.json');
@@ -274,7 +292,21 @@ async function checkReleaseDates() {
 }
 
 app.use(requireAuth);
-app.use('/uploads', express.static(UPLOADS_DIR, { maxAge: '30d' }));
+
+// ─── R2 прокси (если нет публичного URL) ─────────────────────────────────────
+app.get('/r2/uploads/:filename', async (req, res) => {
+  const { GetObjectCommand } = require('@aws-sdk/client-s3');
+  try {
+    const key = `uploads/${req.params.filename}`;
+    const r = await r2.send(new GetObjectCommand({ Bucket: R2_BUCKET, Key: key }));
+    res.setHeader('Content-Type', r.ContentType || 'image/jpeg');
+    res.setHeader('Cache-Control', 'public, max-age=2592000, immutable');
+    r.Body.pipe(res);
+  } catch (e) {
+    res.status(404).send('Not found');
+  }
+});
+
 app.use(express.static(path.join(__dirname, 'public')));
 
 // ─── Куки / заголовки ────────────────────────────────────────────────────────
@@ -325,19 +357,20 @@ function extractMedia(item) {
   return results;
 }
 
-// Извлекает username, full_name и caption из item Instagram
+// Извлекает username, full_name, caption и profilePicUrl из item Instagram
 function extractInfo(item) {
   if (!item) return {};
   const owner = item.owner || item.user || {};
   const username = owner.username || owner.login || '';
   const fullName = owner.full_name || owner.fullName || '';
+  const profilePicUrl = owner.profile_pic_url || owner.profile_picture || owner.hd_profile_pic_url_info?.url || '';
   // caption может быть строкой или объектом edges
   let caption = '';
   if (typeof item.caption === 'string') caption = item.caption;
   else if (item.caption?.text) caption = item.caption.text;
   else if (item.edge_media_to_caption?.edges?.[0]?.node?.text) caption = item.edge_media_to_caption.edges[0].node.text;
   else if (item.accessibility_caption) caption = item.accessibility_caption;
-  return { username, fullName, caption };
+  return { username, fullName, caption, profilePicUrl };
 }
 
 function findMediaInJson(obj, results, depth = 0) {
@@ -480,8 +513,8 @@ app.get('/proxy', async (req, res) => {
   }
 });
 
-// ─── Image cache endpoint — сохраняет внешние картинки на диск ───────────────
-const imgCacheDir = path.join(UPLOADS_DIR, 'cache');
+// ─── Image cache endpoint — кешируем внешние картинки локально ───────────────
+const imgCacheDir = path.join(DATA_DIR, 'imgcache');
 if (!fs.existsSync(imgCacheDir)) { try { fs.mkdirSync(imgCacheDir, { recursive: true }); } catch {} }
 
 app.get('/api/imgcache', async (req, res) => {
@@ -546,8 +579,9 @@ app.post('/api/fetch', async (req, res) => {
       if (media?.length > 0) {
         const finalUsername = info.username || username;
         const caption = info.caption || '';
+        const profilePicUrl = info.profilePicUrl || '';
         console.log(`[${shortcode}] ✅ ${method.name}: ${media.length} items, user: ${finalUsername}`);
-        return res.json({ success: true, media, shortcode, username: finalUsername, caption });
+        return res.json({ success: true, media, shortcode, username: finalUsername, caption, profilePicUrl });
       }
     } catch (err) { console.log(`[${shortcode}] ❌ ${method.name}: ${err.message}`); errors.push(`${method.name}: ${err.message}`); }
   }
@@ -721,17 +755,35 @@ function sseNotify(data) {
 }
 
 // ─── Upload single image (cover / avatar) ────────────────────────────────────
-const uploadSingle = multer({ storage, limits: { fileSize: 10 * 1024 * 1024 } });
-app.post('/api/upload-single', uploadSingle.single('image'), (req, res) => {
+app.post('/api/upload-single', uploadSingle.single('image'), async (req, res) => {
   if (!req.file) return res.status(400).json({ error: 'Нет файла' });
-  res.json({ success: true, url: `/uploads/${req.file.filename}` });
+  try {
+    const ext = path.extname(req.file.originalname).toLowerCase() || '.jpg';
+    const filename = `${Date.now()}-${Math.random().toString(36).slice(2)}${ext}`;
+    const url = await uploadToR2(req.file.buffer, filename, req.file.mimetype);
+    res.json({ success: true, url });
+  } catch (e) {
+    console.error('[Upload-single R2]', e.message);
+    res.status(500).json({ error: 'Ошибка загрузки в R2: ' + e.message });
+  }
 });
 
 // ─── Upload images ────────────────────────────────────────────────────────────
-app.post('/api/upload', upload.array('images', 20), (req, res) => {
+app.post('/api/upload', upload.array('images', 20), async (req, res) => {
   if (!req.files || !req.files.length) return res.status(400).json({ error: 'Нет файлов' });
-  const urls = req.files.map(f => `/uploads/${f.filename}`);
-  res.json({ success: true, urls });
+  try {
+    const urls = [];
+    for (const file of req.files) {
+      const ext = path.extname(file.originalname).toLowerCase() || '.jpg';
+      const filename = `${Date.now()}-${Math.random().toString(36).slice(2)}${ext}`;
+      const url = await uploadToR2(file.buffer, filename, file.mimetype);
+      urls.push(url);
+    }
+    res.json({ success: true, urls });
+  } catch (e) {
+    console.error('[Upload R2]', e.message);
+    res.status(500).json({ error: 'Ошибка загрузки в R2: ' + e.message });
+  }
 });
 
 // ─── Posts API ────────────────────────────────────────────────────────────────
@@ -749,15 +801,15 @@ app.get('/api/posts', (req, res) => {
 });
 
 app.post('/api/posts', (req, res) => {
-  const { text, images, overrideAuthor } = req.body;
+  const { text, images, overrideAuthor, overrideAuthorPhoto } = req.body;
   if (!text || !text.trim()) return res.status(400).json({ error: 'Текст поста обязателен' });
   const user = req.user || {};
   const posts = loadPosts();
   const imageUrls = (Array.isArray(images) ? images : (images ? [images] : []))
-    .filter(u => u && typeof u === 'string' && u.startsWith('/uploads/'));
+    .filter(u => u && typeof u === 'string' && (u.startsWith('/uploads/') || u.startsWith('https://')));
   // overrideAuthor — для постов из Instagram, где автор не текущий пользователь
   const author = overrideAuthor
-    ? { name: overrideAuthor, photo: null, email: '' }
+    ? { name: overrideAuthor, photo: overrideAuthorPhoto || null, email: '' }
     : { name: user.name || 'ZHANSAVER', photo: user.photo || null, email: user.email || '' };
   const post = {
     id: Date.now(),
@@ -872,6 +924,7 @@ const server = app.listen(PORT, () => {
   console.log(getCookie() ? '🍪 Куки загружены!' : '⚠️  Куки не настроены.');
   const config = loadConfig();
   console.log(config.adminUsername ? `👤 Admin: @${config.adminUsername}` : '⚠️  adminUsername не задан.');
+  console.log(R2_ACCOUNT_ID && R2_ACCESS_KEY ? `☁️  Cloudflare R2: ${R2_BUCKET} (${R2_PUBLIC_URL || 'proxy mode'})` : '⚠️  R2 не настроен — установи CF_ACCOUNT_ID, CF_ACCESS_KEY_ID, CF_SECRET_ACCESS_KEY, CF_BUCKET_NAME');
   if (!fs.existsSync(RELEASES_FILE)) saveReleases([]);
   if (!fs.existsSync(LINKS_FILE)) saveLinks([]);
   if (!fs.existsSync(POSTS_FILE)) savePosts([]);
