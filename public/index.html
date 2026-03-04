@@ -161,11 +161,12 @@
       .single-video { max-width: 480px; width: 100%; border-radius: var(--radius); border: 1px solid var(--border); overflow: hidden; background: #000; display: block; cursor: pointer; }
 
       /* ── МОДАЛКА КУКИ ── */
-      .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.92); z-index: 1501; align-items: center; justify-content: center; }
+      .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.92); z-index: 1501; align-items: flex-end; justify-content: center; padding: 0; }
       @media (min-width: 480px) { .modal-overlay { align-items: center; padding: 20px; } }
       .modal-overlay.show { display: flex; }
-      .modal { background: var(--surface); border: 1px solid var(--border); border-radius: 20px 20px 0 0; padding: 24px 20px; width: 100%; max-width: 560px; max-height: 90vh; overflow-y: auto; }
-      @media (min-width: 480px) { .modal { border-radius: 16px; padding: 28px; } }
+      .modal { background: var(--surface); border: 1px solid var(--border); border-radius: 20px 20px 0 0; padding: 24px 20px 32px; width: 100%; max-width: 560px; max-height: calc(100vh - 70px); overflow-y: auto; -webkit-overflow-scrolling: touch; }
+      @media (min-width: 480px) { .modal { border-radius: 16px; padding: 28px; max-height: calc(100vh - 80px); } }
+      @media (max-width: 640px) { .modal { max-height: calc(100vh - 56px - env(safe-area-inset-bottom, 0px) - 16px); } }
       .modal-handle { width: 36px; height: 4px; background: var(--border); border-radius: 2px; margin: 0 auto 20px; }
       @media (min-width: 480px) { .modal-handle { display: none; } }
       .modal h2 { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 1.1rem; margin-bottom: 8px; letter-spacing: -0.02em; }
@@ -791,7 +792,7 @@
           return;
         }
         hideStatus();
-        renderResults(data.media, data.shortcode, data.username || '', data.caption || '');
+        renderResults(data.media, data.shortcode, data.username || '', data.caption || '', data.profilePicUrl || '');
       } catch { showStatus('Ошибка соединения с сервером', 'error'); }
       finally { btn.disabled = !siteEnabled; btn.textContent = 'Найти'; }
     }
@@ -802,7 +803,7 @@
       document.body.appendChild(a); a.click(); document.body.removeChild(a);
     }
 
-    function renderResults(media, shortcode, username, caption) {
+    function renderResults(media, shortcode, username, caption, profilePicUrl) {
       const results = document.getElementById('results');
       const divider = document.getElementById('divider');
       results.innerHTML = '';
@@ -813,7 +814,7 @@
         sendBtn.className = 'btn-fetch';
         sendBtn.style.cssText = 'width:100%;margin-bottom:12px;background:var(--surface);color:var(--text);border:1.5px solid var(--border);';
         sendBtn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" style="margin-right:6px"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>Отправить фото в пост`;
-        sendBtn.onclick = () => sendInstagramToPost(photos, username, shortcode, caption);
+        sendBtn.onclick = () => sendInstagramToPost(photos, username, shortcode, caption, profilePicUrl);
         results.appendChild(sendBtn);
       }
 
@@ -1461,6 +1462,7 @@
     // ── POSTS ──────────────────────────────────────────────────────────────────
     let postImages = []; // массив {file, preview, uploaded}
     let postOverrideAuthor = null; // Instagram username как автор
+    let postOverrideAuthorPhoto = null; // аватарка автора из Instagram
     let currentUser = null;
 
     // Загружаем текущего юзера
@@ -1480,6 +1482,7 @@
       postImages.forEach(item => URL.revokeObjectURL(item.preview));
       postImages = [];
       postOverrideAuthor = null;
+      postOverrideAuthorPhoto = null;
       document.getElementById('postText').value = '';
       document.getElementById('postCharCount').textContent = '0';
       document.getElementById('postImgInput').value = '';
@@ -1558,7 +1561,7 @@
       const res = await fetch('/api/posts', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text, images: imageUrls, overrideAuthor: postOverrideAuthor || undefined })
+        body: JSON.stringify({ text, images: imageUrls, overrideAuthor: postOverrideAuthor || undefined, overrideAuthorPhoto: postOverrideAuthorPhoto || undefined })
       });
       const data = await res.json();
       if (data.success) {
@@ -1568,7 +1571,7 @@
     }
 
     // ── Отправить фото из Instagram в пост ────────────────────────────────────
-    async function sendInstagramToPost(photos, username, shortcode, caption) {
+    async function sendInstagramToPost(photos, username, shortcode, caption, profilePicUrl) {
       showToast('Загружаем фото...', 4000);
       try {
         const uploadedUrls = [];
@@ -1585,18 +1588,16 @@
         if (!uploadedUrls.length) { showToast('Не удалось загрузить фото'); return; }
 
         openPostModal();
+        // Устанавливаем автора: username + аватарка из инсты
         postOverrideAuthor = username || null;
+        if (profilePicUrl) {
+          postOverrideAuthorPhoto = profilePicUrl;
+        }
 
-        // Текст: caption из поста, если нет — подпись с username
+        // Текст: только caption из поста (без username)
         let text = '';
         if (caption) text = caption;
-        else if (username) text = `от @${username}`;
         else text = `instagram.com/p/${shortcode}`;
-
-        // Если есть username но нет его в caption — добавляем в начало
-        if (caption && username && !caption.includes('@' + username)) {
-          text = `@${username}\n\n${caption}`;
-        }
 
         document.getElementById('postText').value = text;
         document.getElementById('postCharCount').textContent = text.length;
