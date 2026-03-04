@@ -582,7 +582,8 @@ app.delete('/api/links/:id', async (req, res) => {
 // ─── Admin ────────────────────────────────────────────────────────────────────
 app.get('/admin/releases', (req, res) => {
   const { key } = req.query;
-  if (!key || key !== loadConfig().adminUsername) return res.status(403).send('Forbidden');
+  const _adminKey = process.env.ADMIN_USERNAME || loadConfig().adminUsername || '';
+  if (!key || !_adminKey || key !== _adminKey) return res.status(403).send('Forbidden');
   try {
     const files = {};
     fs.readdirSync(DATA_DIR).filter(f => f.endsWith('.json')).forEach(f => {
@@ -598,7 +599,8 @@ app.get('/admin/releases', (req, res) => {
 
 app.post('/admin/save-file', (req, res) => {
   const { key } = req.query;
-  if (!key || key !== loadConfig().adminUsername) return res.status(403).json({ error: 'Forbidden' });
+  const _adminKey2 = process.env.ADMIN_USERNAME || loadConfig().adminUsername || '';
+  if (!key || !_adminKey2 || key !== _adminKey2) return res.status(403).json({ error: 'Forbidden' });
   const { filename, content } = req.body;
   if (!filename || !content) return res.status(400).json({ error: 'Missing fields' });
   try { JSON.parse(content); fs.writeFileSync(path.join(DATA_DIR, path.basename(filename)), content, 'utf8'); res.json({ success: true }); }
@@ -636,7 +638,8 @@ const server = app.listen(PORT, () => {
     ? `☁️  R2: ${R2_BUCKET} → ${R2_PUBLIC_URL || '/r2/... (proxy mode)'}`
     : '⚠️  R2 не настроен! Нужны: CF_ACCOUNT_ID, CF_ACCESS_KEY_ID, CF_SECRET_ACCESS_KEY, CF_BUCKET_NAME');
   const cfg = loadConfig();
-  console.log(cfg.adminUsername ? `👤 Admin: @${cfg.adminUsername}` : '⚠️  adminUsername не задан');
+  const _ak = process.env.ADMIN_USERNAME || cfg.adminUsername || '';
+  console.log(_ak ? `👤 Admin key: ${_ak}` : '⚠️  ADMIN_USERNAME не задан — admin недоступен');
 });
 
 server.on('listening', () => {
