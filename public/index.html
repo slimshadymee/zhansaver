@@ -997,7 +997,7 @@
       // Загружаем на сервер
       const fd = new FormData(); fd.append('image', file);
       try {
-        const r = await fetch('/api/upload-single', { method: 'POST', body: fd });
+        const r = await fetch('/api/upload-single?folder=releases', { method: 'POST', body: fd });
         const d = await r.json();
         if (d.success) { coverBase64 = d.url; coverChanged = true; }
         else showToast('Ошибка загрузки обложки');
@@ -1189,7 +1189,7 @@
       document.getElementById('linkAvatarText').style.display = 'none';
       const fd = new FormData(); fd.append('image', file);
       try {
-        const r = await fetch('/api/upload-single', { method: 'POST', body: fd });
+        const r = await fetch('/api/upload-single?folder=links', { method: 'POST', body: fd });
         const d = await r.json();
         if (d.success) { linkAvatarBase64 = d.url; linkAvatarChanged = true; }
         else showToast('Ошибка загрузки фото');
@@ -1543,7 +1543,7 @@
           if (toUpload.length > 0) {
             const formData = new FormData();
             toUpload.forEach(item => formData.append('images', item.file));
-            const r = await fetch('/api/upload', { method: 'POST', body: formData });
+            const r = await fetch('/api/upload?folder=posts', { method: 'POST', body: formData });
             const d = await r.json();
             if (!d.success) throw new Error(d.error);
             imageUrls = [...alreadyUploaded, ...d.urls];
@@ -1581,17 +1581,24 @@
           const blob = await r.blob();
           const fd = new FormData();
           fd.append('image', blob, `insta_${shortcode}_${i+1}.jpg`);
-          const up = await fetch('/api/upload-single', { method: 'POST', body: fd });
+          const up = await fetch('/api/upload-single?folder=posts', { method: 'POST', body: fd });
           const d = await up.json();
           if (d.success) uploadedUrls.push(d.url);
         }
         if (!uploadedUrls.length) { showToast('Не удалось загрузить фото'); return; }
 
         openPostModal();
-        // Устанавливаем автора: username + аватарка из инсты
+        // Устанавливаем автора: username + аватарка загруженная в R2
         postOverrideAuthor = username || null;
         if (profilePicUrl) {
-          postOverrideAuthorPhoto = profilePicUrl;
+          try {
+            // Загружаем аватарку через наш сервер в R2 чтобы не терять при редеплое
+            const avRes = await fetch(`/api/avatar?url=${encodeURIComponent(profilePicUrl)}`);
+            const avData = await avRes.json();
+            postOverrideAuthorPhoto = avData.url || profilePicUrl;
+          } catch {
+            postOverrideAuthorPhoto = profilePicUrl;
+          }
         }
 
         // Текст: только caption из поста (без username)
@@ -1754,7 +1761,7 @@
         let avatarEl;
         if (author.photo) {
           avatarEl = document.createElement('img');
-          avatarEl.className = 'post-avatar'; avatarEl.src = author.photo; avatarEl.alt = '';
+          avatarEl.className = 'post-avatar'; avatarEl.src = cachedImg(author.photo); avatarEl.alt = '';
         } else {
           avatarEl = document.createElement('div');
           avatarEl.className = 'post-avatar'; avatarEl.textContent = (author.name || 'Z')[0].toUpperCase();
@@ -1823,7 +1830,7 @@
           (comments || []).forEach(c => {
             const ci = document.createElement('div'); ci.className = 'comment-item';
             let cavEl;
-            if (c.author?.photo) { cavEl = document.createElement('img'); cavEl.className = 'comment-avatar'; cavEl.src = c.author.photo; }
+            if (c.author?.photo) { cavEl = document.createElement('img'); cavEl.className = 'comment-avatar'; cavEl.src = cachedImg(c.author.photo); }
             else { cavEl = document.createElement('div'); cavEl.className = 'comment-avatar'; cavEl.textContent = (c.author?.name || 'A')[0].toUpperCase(); }
             const cb = document.createElement('div'); cb.className = 'comment-body';
             const can = document.createElement('div'); can.className = 'comment-author'; can.textContent = c.author?.name || 'Аноним';
