@@ -1571,7 +1571,30 @@
     }
 
     // ── Отправить фото из Instagram в пост ────────────────────────────────────
+    // Кэш загруженных Instagram фото: shortcode -> urls[]
+    const _instaUploadCache = {};
+
     async function sendInstagramToPost(photos, username, shortcode, caption, profilePicUrl) {
+      openPostModal();
+
+      // Устанавливаем автора и текст сразу
+      postOverrideAuthor = username || null;
+      if (profilePicUrl) postOverrideAuthorPhoto = profilePicUrl;
+
+      let text = caption || `instagram.com/p/${shortcode}`;
+      document.getElementById('postText').value = text;
+      document.getElementById('postCharCount').textContent = text.length;
+
+      // Если уже загружали эти фото — используем кэш, не дублируем
+      if (_instaUploadCache[shortcode]) {
+        const cached = _instaUploadCache[shortcode];
+        postImages = cached.map(url => ({ file: null, preview: url, uploaded: url }));
+        renderPostImagePreviews();
+        document.getElementById('postImgText').style.display = 'none';
+        showToast(`✓ ${cached.length} фото (из кэша)`);
+        return;
+      }
+
       showToast('Загружаем фото...', 4000);
       try {
         const uploadedUrls = [];
@@ -1587,20 +1610,8 @@
         }
         if (!uploadedUrls.length) { showToast('Не удалось загрузить фото'); return; }
 
-        openPostModal();
-        // Устанавливаем автора: username + аватарка из инсты
-        postOverrideAuthor = username || null;
-        if (profilePicUrl) {
-          postOverrideAuthorPhoto = profilePicUrl;
-        }
-
-        // Текст: только caption из поста (без username)
-        let text = '';
-        if (caption) text = caption;
-        else text = `instagram.com/p/${shortcode}`;
-
-        document.getElementById('postText').value = text;
-        document.getElementById('postCharCount').textContent = text.length;
+        // Сохраняем в кэш
+        _instaUploadCache[shortcode] = uploadedUrls;
 
         postImages = uploadedUrls.map(url => ({ file: null, preview: url, uploaded: url }));
         renderPostImagePreviews();
